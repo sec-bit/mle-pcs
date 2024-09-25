@@ -8,7 +8,7 @@ $$
 \tilde{f}(X_0,X_1,\ldots, X_{n-1}) - v = \sum_{i=0}^{n-1} (X_k-u_k) \cdot q_i(X_0,X_1,\ldots, X_{k-1})
 $$
 
-For example, Virgo adopts this scheme for the MLE PCS protocol. However, Basefold [ZCF23] presents a refreshing approach to implementing the MLE Evaluation Argument by combining the Basefold-IOPP protocol and the Sumcheck protocol. We can use the Sumcheck protocol's summation proof as the main framework of the protocol, then use Basefold-IOPP to ensure the Low degree of the MLE polynomial. Additionally, the evaluation of the MLE polynomial at random points generated after multiple rounds of folding in the Basefold-IOPP protocol compensates for the correctness proof of the evaluation required in the last round of the Sumcheck protocol.
+For example, Virgo adopts this scheme for the MLE PCS protocol. However, Basefold [ZCF23] presents a refreshing approach to implementing the MLE Evaluation Argument by combining the Basefold-IOPP protocol and the Sumcheck protocol. We can use the Sumcheck protocol's summation and proof as the main framework of the protocol, then use Basefold-IOPP to ensure the Low degree of the MLE polynomial. Additionally, the evaluation of the MLE polynomial at random points generated after multiple rounds of folding in the Basefold-IOPP protocol compensates for the correctness proof of the evaluation required in the last round of the Sumcheck protocol.
 
 ## Final Output of the Basefold-IOPP Protocol
 
@@ -248,7 +248,7 @@ $$
 \end{split}
 $$
 
-This is equivalent to folding the vectors $(a_0, a_1, a_2, a_3)$ and $(a_4, a_5, a_6, a_7)$ with $(1-\alpha_2, \alpha_2)$. Compared to the folding method in the Basefold-IOPP protocol, which folds the vectors $(f_0, f_1, f_2, f_3)$ and $(f_4, f_5, f_6, f_7)$ with $(1, \alpha_2)$, this approach continues to fold in the same manner. Proceeding with the folding process, we ultimately obtain the same folded result as in the Basefold-IOPP protocol.
+This is equivalent to folding (linear combination) the vectors $(a_0, a_1, a_2, a_3)$ and $(a_4, a_5, a_6, a_7)$ with $(1-\alpha_2, \alpha_2)$. Compared with the folding method in the Basefold-IOPP protocol, it uses $(1, \alpha_2)$ to fold (linear combination) the vectors $(f_0, f_1, f_2, f_3)$ and $(f_4, f_5, f_6, f_7)$. If we continue to fold in the new way, we can eventually get the same folding result as the Basefold-IOPP protocol.
 
 $$
 \begin{split}

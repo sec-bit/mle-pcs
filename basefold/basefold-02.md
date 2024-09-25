@@ -2,7 +2,7 @@
 
 ## Proof of Proximity
 
-Below, we present a proof of IOPP using Foldable codes.
+Below, we present a proof of implementing IOPP using Foldable codes.
 
 Suppose there is an MLE polynomial $\tilde{f}(\mathbf{X})$ represented as follows:
 
@@ -95,7 +95,7 @@ $$
 
 We then interpolate each column of the above matrix over the domain $(t_j, t'_j)$ to produce a set of $n_{i-1}={n_i}/{2}$ polynomials, denoted as $p^{(i-1)}_j(X)$, where $0\leq j < n_{i-1}$. The Prover then evaluates each $p^{(i-1)}_j(X)$ at $X = \alpha_{i}$, resulting in $n_{i-1}$ values at $X=\alpha_{i}$. These values constitute the new codeword $\pi_{i-1}$.
 
-The definition of the folding function aligns with the linear polynomial interpolation process. We can manually derive the origin of the folding function definition. Since we are performing a binary folding of $\pi_{i}$, the folded codeword will have $n_{i-1}$ values corresponding to "linear polynomials." Suppose the $j$-th polynomial describes a line passing through two points $(x_0, y_0)$ and $(x_1, y_1)$. The interpolating polynomial $p(X)$ for these two points can be defined as:
+The definition of the folding function aligns with the linear polynomial interpolation process. We can manually derive the origin of the folding function definition. Since we are performing a half-folding of $\pi_{i}$, the folded codeword will have $n_{i-1}$ values corresponding to "linear polynomials." Suppose the $j$-th polynomial describes a line passing through two points $(x_0, y_0)$ and $(x_1, y_1)$. The interpolating polynomial $p(X)$ for these two points can be defined as:
 
 $$
 \begin{split}
@@ -158,7 +158,7 @@ $$
 \mathsf{fold}_\alpha(\pi_{i}) = \mathbf{m}_l G_{i-1} + \alpha\cdot \mathbf{m}_r G_{i-1} = (\mathbf{m}_l + \alpha\cdot \mathbf{m}_r)G_{i-1} 
 $$
 
-The folded codeword is exactly the half-folded version of $\mathbf{m}$ with respect to $\alpha$, denoted as $\mathbf{m}^{(i-1)}$, and then encoded with $G_{i-1}$ to obtain $\pi_{i-1}$. This is not surprising because Foldable Codes and the recursive folding of codewords are inverse processes, so the encoding parameters $T_i$ and $T'_i$ introduced by the encoding are eliminated after folding.
+The folded codeword is exactly the half-folded version of $\mathbf{m}$ with respect to $\alpha$, denoted as $\mathbf{m}^{(i-1)}$, and then encoded with $G_{i-1}$ to obtain $\pi_{i-1}$. This is not surprising because Foldable Codes and the recursive folding of codewords are inverse processes, so the parameters $T_i$ and $T'_i$ introduced by the encoding are eliminated after folding.
 
 Below, we walk through a simple example to illustrate how the Commit-phase of the Basefold-IOPP protocol operates.
 
@@ -240,7 +240,7 @@ To elevate reliability to a sufficient level, the Verifier must perform multiple
 
 ## Summary
 
-This document described the framework of the Commit-phase and Query-phase of the Basefold-IOPP protocol. This framework generalizes and extends the FRI protocol, expanding from RS-Codes to any Foldable Linear Codes. However, it is important to note that Basefold does not support codeword folding of degree greater than 2. This is because the Basefold-IOPP protocol must not only perform Proximity Testing but also provide an operational result of an MLE polynomial. This will be the topic of the next article in this series.
+This article described the framework of the Commit-phase and Query-phase of the Basefold-IOPP protocol. This framework generalizes and extends the FRI protocol, expanding from RS-Codes to any Foldable Linear Codes. However, it is important to note that Basefold does not support codeword folding of degree greater than 2. This is because the Basefold-IOPP protocol must not only perform Proximity Testing but also provide an operational result of an MLE polynomial. This will be the topic of the next article in this series.
 
 ## References
 
