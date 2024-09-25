@@ -14,39 +14,8 @@ Xs = variables[: 2 ** 6]
 As = variables[2 ** 6 :]
 Fp = field.magic(Fp)
 
-def bits_le_with_width(i, width):
-    if i >= 2**width:
-        return "Failed"
-    bits = []
-    while width:
-        bits.append(i % 2)
-        i //= 2
-        width -= 1
-    return bits
-
-def is_power_of_two(n):
-    d = n
-    k = 0
-    while d > 0:
-        d >>= 1
-        k += 1
-    if n == 2**(k-1):
-        return True
-    else:
-        return False
-
-def next_power_of_two(n):
-    assert n >= 0, "No negative integer"
-    if is_power_of_two(n):
-        return n
-    d = n
-    k = 0
-    while d > 0:
-        d >>= 1
-        k += 1
-    return k
-
 def rep_encode(m, k0, c):
+    assert k0 > 0 and c > 0, f"k0 <= 0 or c <= 0, k0: {k0}, c: {c}"
     assert len(m) % k0 == 0, "len(m): %d is not a multiple of k0: %d" % (len(m), k0)
     code = []
     for i in range(0, c*len(m), k0):
@@ -65,7 +34,7 @@ def rs_encode_single(m, alpha, c):
 def rs_encode(m, k0, c):
     assert len(m) % k0 == 0, "len(m): %d is not a multiple of k0: %d" % (len(m), k0)
     code = []
-    alpha = list(range(k0 * c)) # 这里默认 alpha = [0, 1, 2, ... , k0*c - 1]
+    alpha = list(range(k0 * c)) # alpha = [0, 1, 2, ... , k0*c - 1]
     for i in range(0, c*len(m), k0):
         code += rs_encode_single(m[i:i+k0], alpha, c)
     return code
@@ -111,33 +80,6 @@ def basefold_encode(m, k0, depth, c, T, G0=rep_encode, debug=False):
                 code[(c+1)*chunk_size + j] = lhs - rhs
         chunk_size = chunk_size * 2
         chunk_num = chunk_num // 2
-    return code
-
-def basefold_encode_rec(m, k0, depth, c, T, G0=rep_encode, debug=False):
-    if depth == 0:
-        assert len(m) == k0, "len(m): %d != k0: %d" % (len(m), k0)
-        return G0(m, k0, c)
-    
-    kd = len(m)
-    half = kd / 2
-    code_size = c * kd
-
-    m_left = m[:half]
-    m_right = m[half:]
-    
-    code_left = basefold_encode_rec(m_left, k0, depth-1, c, T, G0=G0, debug=debug)
-    print("code_left=", code_left)
-    code_right = basefold_encode_rec(m_right, k0, depth-1, c, T, G0=G0, debug=debug)
-    print("code_right=", code_right)
-
-    t = T[depth-1]
-    assert len(t) == code_size/2, "wrong table size, len(table)={}, code_size={})".format(len(t), code_size/2)
-    if debug: print("t=", t)
-    code_half = kd * c // 2
-    code = [0 for _ in range(code_half * 2)]
-    for j in range(code_half):
-        code[j] = code_left[j] + t[j] * code_right[j]
-        code[j+code_half] = code_left[j] - t[j] * code_right[j]
     return code
 
 def query_phase(transcript: MerlinTranscript, first_tree: MerkleTree, first_oracle, trees: list, oracles: list, num_vars, num_verifier_queries, debug=False):
@@ -195,7 +137,7 @@ def query_phase(transcript: MerlinTranscript, first_tree: MerkleTree, first_orac
 
     return query_paths, merkle_paths
 
-def prove_basefold_evaluation_arg_multilinear_basis(f_code, f_evals, us, v, k, T, blowup_factor, commit, num_verifier_queries, transcript: MerlinTranscript, debug=False):
+def prove_basefold_evaluation_arg_multilinear_basis(f_code, f_evals, us, v, k, k0, T, blowup_factor, commit, num_verifier_queries, transcript: MerlinTranscript, debug=False):
     # TODO: check if the length of f is a power of 2
     
     n = len(f_evals)
@@ -204,7 +146,7 @@ def prove_basefold_evaluation_arg_multilinear_basis(f_code, f_evals, us, v, k, T
     f_code_copy = f_code[:]
     f = f_evals[:]
     eq = eqs_over_hypercube(us)
-    
+
     challenge_vec = []
     sumcheck_sum = v
     h_poly_vec = []
@@ -254,9 +196,11 @@ def prove_basefold_evaluation_arg_multilinear_basis(f_code, f_evals, us, v, k, T
 
         # DEBUG: consistency check (invariant)
         # Enc(fold(message)) = fold(Enc(message)) 
-        debug_f_folded_code = basefold_encode(m=f, k0=1, depth=k-i-1, c=blowup_factor, G0=rs_encode, T=T[:k-i-1], debug=debug)
-        if debug: print("> fri: enc({})={}".format(f, debug_f_folded_code))
-        assert f_code == debug_f_folded_code, "Enc(fold(message)) != fold(Enc(message))"
+        if len(f) > k0:
+            if debug: print(f"len(f): {len(f)}")
+            debug_f_folded_code = basefold_encode(m=f, k0=k0, depth=k-i-1, c=blowup_factor, G0=rs_encode, T=T[:k-i-1], debug=debug)
+            if debug: print("> fri: enc({})={}".format(f, debug_f_folded_code))
+            assert f_code == debug_f_folded_code, "Enc(fold(message)) != fold(Enc(message))"
 
         for i, e in enumerate([h_eval_at_0, h_eval_at_1, h_eval_at_2]):
             transcript.append_message(f'h_eval_at_{i}'.encode('ascii'), str(e).encode('ascii'))
@@ -266,10 +210,11 @@ def prove_basefold_evaluation_arg_multilinear_basis(f_code, f_evals, us, v, k, T
         half = half >> 1
 
     # DEBUG:
-    f_eval_at_random = sumcheck_sum/eq[0]
-    assert rs_encode([f_eval_at_random], k0=1, c=blowup_factor) == f_code, "❌: Encode(f(rs)) != f_code_0"
-    if debug: print("end: f_code={}, sum={}, sum/eq={}".format(f_code, sumcheck_sum, sumcheck_sum/eq[0]))
-    if debug: print("🙈: fold(f_code) == encode(fold(f_eq)/fold(eq(us)))")
+    if k0 == 1:
+        f_eval_at_random = sumcheck_sum/eq[0]
+        assert rs_encode([f_eval_at_random], k0=1, c=blowup_factor) == f_code, "❌: Encode(f(rs)) != f_code_0"
+        if debug: print("end: f_code={}, sum={}, sum/eq={}".format(f_code, sumcheck_sum, sumcheck_sum/eq[0]))
+        if debug: print("🙈: fold(f_code) == encode(fold(f_eq)/fold(eq(us)))")
 
     query_paths, merkle_paths = query_phase(transcript, commit, f_code_copy, f_code_trees, f_code_vec, len(f_code_copy), num_verifier_queries, debug)
 
@@ -324,23 +269,16 @@ def verify_queries(commit, proof, k, num_vars, num_verifier_queries, T, debug=Fa
                 assert f_code_folded == ((1 - alpha) * (code_left + code_right)/2 + (alpha) * (code_left - code_right)/(2*table[x0])), "failed to check multilinear base fri"
 
             if i == 0:
-                if debug: print("mp:", mp)
-                if debug: print("commit:", commit.root)
-                if debug: print("idx:", x0)
                 assert verify_decommitment(x0, code_left, mp, commit.root)
             else:
-                if debug: print("mp:", mp)
-                if debug: print("commit:", proof['f_code_trees'][i - 1].root)
-                if debug: print("idx:", x0)
                 assert verify_decommitment(x0, code_left, mp, proof['f_code_trees'][i - 1].root)
 
             num_vars_copy >>= 1
             q = x0
 
-def verify_basefold_evaluation_arg_multilinear_basis(f_code, commit, proof, us, v, d, k, T, blowup_factor, num_verifier_queries, debug=False):
+def verify_basefold_evaluation_arg_multilinear_basis(N, commit, proof, us, v, d, k, T, blowup_factor, num_verifier_queries, debug=False):
     # TODO: check if the length of f is a power of 2
     
-    N = len(f_code)
     assert k == len(us), "k != len(us), k = %d, len(us) = %d" % (k, len(us))
     n = 1 << k
     assert N == n * blowup_factor, "N != n * blowup_factor, N = %d, n = %d, blowup_factor = %d" % (N, n, blowup_factor)
@@ -350,7 +288,6 @@ def verify_basefold_evaluation_arg_multilinear_basis(f_code, commit, proof, us, 
     f_code_vec = proof['f_code_vec']
     sumcheck_sum = v
     half = n >> 1
-    f_last_code = f_code
     eq_evals = eqs_over_hypercube(us)
     
     for i in range(k):
@@ -372,19 +309,8 @@ def verify_basefold_evaluation_arg_multilinear_basis(f_code, commit, proof, us, 
 
         if debug: print("fri round {}".format(i))
 
-        table = T[k-i-1]
         f_code_folded = f_code_vec[i]
         assert len(f_code_folded) == half * blowup_factor, "len(f_code_folded) != half * blowup_factor, len(f_code_folded) = %d, half = %d, blowup_factor = %d" % (len(f_code_folded), half, blowup_factor)
-        code_left = f_last_code[:half*blowup_factor]
-        code_right = f_last_code[half*blowup_factor:]
-        if debug: print("code_left={}".format(code_left))
-        if debug: print("code_right={}".format(code_right))
-        if debug: print("f_code_folded={}".format(f_code_folded))
-        if debug: print("alpha={}".format(alpha))
-        if debug: print("table={}".format(table))
-        for j in range(half*blowup_factor):
-            assert f_code_folded[j] == ((1 - alpha) * (code_left[j] + code_right[j])/2 + (alpha) * (code_left[j] - code_right[j])/(2*table[j])), "failed to check multilinear base fri"
-        f_last_code = f_code_folded
         half = half >> 1
 
     verify_queries(commit, proof, k, N, num_verifier_queries, T, debug)
@@ -404,15 +330,14 @@ def verify_basefold_evaluation_arg_multilinear_basis(f_code, commit, proof, us, 
     return True
 
 def basefold_fri_monomial_basis(vs, table, alpha, debug=False):
-    assert len(table) == len(vs)/2, "len(table) is not double len(vs), len(table) = %d, len(vs) = %d" % (len(table), len(vs))
+    assert len(table) == len(vs)//2, "len(table) is not double len(vs), len(table) = %d, len(vs) = %d" % (len(table), len(vs))
     n = len(vs)
-    half = n / 2
+    half = n // 2
     new_vs = []
     left = vs[:half]
     right = vs[half:]
 
     for i in range(0, half):
-        if debug: print("(left[i] + right[i])/2=", (left[i] + right[i])/2)
         if debug: print("(left[i] + right[i])/2=", (left[i] + right[i])/2)
         new_vs.append((left[i] + right[i])/2 + (alpha) * (left[i] - right[i])/(2*table[i]))
     return new_vs
@@ -426,7 +351,6 @@ def basefold_fri_multilinear_basis(vs, table, c, debug=False):
     right = vs[half:]
 
     for i in range(0, half):
-        if debug: print("(left[i] + right[i])/2=", (left[i] + right[i])/2)
         if debug: print("(left[i] + right[i])/2=", (left[i] + right[i])/2)
         new_vs.append((1 - c) * (left[i] + right[i])/2 + (c) * (left[i] - right[i])/(2*table[i]))
     return new_vs
@@ -450,8 +374,8 @@ if __name__ == '__main__':
 
         transcript = MerlinTranscript(b"verify queries")
         transcript.append_message(b"commit.root", bytes(commit.root, 'ascii'))
-        proof = prove_basefold_evaluation_arg_multilinear_basis(f_code=ff_code, f_evals=ff, us=point, v=eval, k=log_n - log_k0, T=T, blowup_factor=blowup_factor, commit=commit, num_verifier_queries=4, transcript=transcript); proof
-        verify_basefold_evaluation_arg_multilinear_basis(f_code=ff_code, commit=commit, proof=proof, us=point, v=eval, d=2, k=log_n - log_k0, T=T, blowup_factor=blowup_factor, num_verifier_queries=4)
+        proof = prove_basefold_evaluation_arg_multilinear_basis(f_code=ff_code, f_evals=ff, us=point, v=eval, k=log_n - log_k0, k0=2**log_k0, T=T, blowup_factor=blowup_factor, commit=commit, num_verifier_queries=4, transcript=transcript); proof
+        verify_basefold_evaluation_arg_multilinear_basis(len(ff_code), commit=commit, proof=proof, us=point, v=eval, d=2, k=log_n - log_k0, T=T, blowup_factor=blowup_factor, num_verifier_queries=4)
 
         print("Operations:", field.Field.get_operation_count())
         field.Field.reset_operation_count()
