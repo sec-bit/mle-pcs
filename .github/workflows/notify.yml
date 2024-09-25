@@ -20,9 +20,20 @@ jobs:
       with:
         to: ${{ secrets.TELEGRAM_TO }}
         token: ${{ secrets.TELEGRAM_TOKEN }}
+        format: html
         message: |
-          New push to ${{ github.repository }}
-          Commit message: ${{ github.event.head_commit.message }}
+          <b>New push to ${{ github.repository }}</b>
+          
+          Branch: <code>${{ github.ref_name }}</code>
+          Committer: ${{ github.event.pusher.name }}
+          Commit message: <i>${{ github.event.head_commit.message }}</i>
+          
+          Changes:
+          • Added: ${{ github.event.head_commit.added.length }} file(s)
+          • Modified: ${{ github.event.head_commit.modified.length }} file(s)
+          • Removed: ${{ github.event.head_commit.removed.length }} file(s)
+          
+          <a href="${{ github.event.head_commit.url }}">View commit details</a>
           
     - name: Send Telegram Message on Pull Request
       if: github.event_name == 'pull_request'
@@ -30,10 +41,23 @@ jobs:
       with:
         to: ${{ secrets.TELEGRAM_TO }}
         token: ${{ secrets.TELEGRAM_TOKEN }}
+        format: html
         message: |
-          ${{ github.event.pull_request.title }} (${{ github.event.action }})
+          <b>Pull Request ${{ github.event.action }}</b>
+          
+          Title: ${{ github.event.pull_request.title }}
           PR #${{ github.event.pull_request.number }}
-          ${{ github.event.pull_request.html_url }}
+          
+          Author: ${{ github.event.pull_request.user.login }}
+          Base branch: <code>${{ github.event.pull_request.base.ref }}</code>
+          Head branch: <code>${{ github.event.pull_request.head.ref }}</code>
+          
+          Status: ${{ github.event.pull_request.state }}
+          ${{ github.event.pull_request.additions }} addition(s), ${{ github.event.pull_request.deletions }} deletion(s)
+          
+          ${{ github.event.pull_request.body }}
+          
+          <a href="${{ github.event.pull_request.html_url }}">View Pull Request</a>
           
     - name: Send Telegram Message on Issue
       if: github.event_name == 'issues'
@@ -41,10 +65,19 @@ jobs:
       with:
         to: ${{ secrets.TELEGRAM_TO }}
         token: ${{ secrets.TELEGRAM_TOKEN }}
+        format: html
         message: |
-          Issue ${{ github.event.issue.title }} (${{ github.event.action }})
-          #${{ github.event.issue.number }}
-          ${{ github.event.issue.html_url }}
+          <b>Issue ${{ github.event.action }}</b>
+          
+          Title: ${{ github.event.issue.title }}
+          Issue #${{ github.event.issue.number }}
+          
+          Author: ${{ github.event.issue.user.login }}
+          Labels: ${{ join(github.event.issue.labels.*.name, ', ') }}
+          
+          ${{ github.event.issue.body }}
+          
+          <a href="${{ github.event.issue.html_url }}">View Issue</a>
           
     - name: Send Telegram Message on Release
       if: github.event_name == 'release'
@@ -52,7 +85,16 @@ jobs:
       with:
         to: ${{ secrets.TELEGRAM_TO }}
         token: ${{ secrets.TELEGRAM_TOKEN }}
+        format: html
         message: |
-          New release published: ${{ github.event.release.tag_name }}
-          ${{ github.event.release.name }}
-          ${{ github.event.release.html_url }}
+          <b>New Release Published</b>
+          
+          Version: ${{ github.event.release.tag_name }}
+          Name: ${{ github.event.release.name }}
+          
+          Author: ${{ github.event.release.author.login }}
+          Created at: ${{ github.event.release.created_at }}
+          
+          ${{ github.event.release.body }}
+          
+          <a href="${{ github.event.release.html_url }}">View Release</a>
