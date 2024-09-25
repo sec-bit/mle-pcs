@@ -1,0 +1,58 @@
+name: Telegram Notifications
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    types: [ opened, closed, reopened ]
+  issues:
+    types: [ opened, closed, reopened ]
+  release:
+    types: [ published ]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Send Telegram Message on Push
+      if: github.event_name == 'push'
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: |
+          New push to ${{ github.repository }}
+          Commit message: ${{ github.event.head_commit.message }}
+          
+    - name: Send Telegram Message on Pull Request
+      if: github.event_name == 'pull_request'
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: |
+          ${{ github.event.pull_request.title }} (${{ github.event.action }})
+          PR #${{ github.event.pull_request.number }}
+          ${{ github.event.pull_request.html_url }}
+          
+    - name: Send Telegram Message on Issue
+      if: github.event_name == 'issues'
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: |
+          Issue ${{ github.event.issue.title }} (${{ github.event.action }})
+          #${{ github.event.issue.number }}
+          ${{ github.event.issue.html_url }}
+          
+    - name: Send Telegram Message on Release
+      if: github.event_name == 'release'
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: |
+          New release published: ${{ github.event.release.tag_name }}
+          ${{ github.event.release.name }}
+          ${{ github.event.release.html_url }}
