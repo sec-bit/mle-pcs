@@ -1,4 +1,7 @@
-# Basefold Notes: MLE Evaluation Argument
+# Notes on Basefold: MLE Evaluation Argument
+
+- Yu Guo <yu.guo@secbi.io>
+- Jade Xie <jade@secbit.io>
 
 Assume we have an MLE polynomial $\tilde{f}(\vec{X})\in\mathbb{F}[\vec{X}]^{\leq1}$, an evaluation point $\mathbf{u}\in\mathbb{F}^d$, and the result of the polynomial's operation at the evaluation point $v=\tilde{f}(\mathbf{u})$. We aim to construct a Polynomial Evaluation Argument based on the Basefold-IOPP protocol.
 

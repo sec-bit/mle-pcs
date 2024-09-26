@@ -1,4 +1,7 @@
-# Basefold Notes
+# Notes on Basefold  (Part I): Foldable Linear Codes
+
+- Yu Guo <yu.guo@secbi.io>
+- Jade Xie <jade@secbit.io>
 
 Basefold can be regarded as an extension of FRI, thereby supporting Proximity Proofs and Evaluation Arguments for Multi-linear Polynomials. Compared to Libra-PCS, Hyrax-PCS, and Virgo-PCS, Basefold does not rely on the MLE Quotients Equation to prove the value of an MLE at the point $\mathbf{u}$:
 

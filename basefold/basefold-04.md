@@ -1,4 +1,7 @@
-# BaseFold Notes: Random Foldable Codes
+# Notes on BaseFold (Part IV): Random Foldable Codes
+
+- Jade Xie <jade@secbit.io>
+- Yu Guo <yu.guo@secbi.io>
 
 Previous articles have mentioned that BaseFold extends the FRI IOPP by introducing the concept of *foldable codes*. Additionally, by combining the Sumcheck protocol, it can support PCS for multi-linear polynomials. The next crucial question is how to explicitly construct such *foldable codes*. We aim for these foldable codes to possess the following properties:
 
@@ -102,16 +105,16 @@ Let $t = \text{diag}(T_i)$, $t' = \text{diag}(T'_i)$, $n_i = c \cdot 2^i$, $\mat
 
 $$
 \begin{aligned}
-    & \text{Enc}_{i+1}(\mathbf{v})  \\
-    & = \text{Enc}_{i}(\mathbf{v}_l) + \text{diag}(T_i) \circ \text{Enc}_{i}(\mathbf{v}_r) \quad \| \quad \text{Enc}_{i}(\mathbf{v}_l) + \text{diag}(T_i) \circ \text{Enc}_{i}(\mathbf{v}_r) \\
-    & {\color{blue}(by the encoding algorithm in \text{Protocol} 1)} \\
-    & = (P_l(\mathbf{x}_1), \ldots, P_l(\mathbf{x}_n)) + \text{diag}(T_i) \circ (P_r(\mathbf{x}_1), \ldots, P_r(\mathbf{x}_n)) \\
-    & \| \quad (P_l(\mathbf{x}_1), \ldots, P_l(\mathbf{x}_n)) + \text{diag}(T'_i) \circ (P_r(\mathbf{x}_1), \ldots, P_r(\mathbf{x}_n)) \\
-    & {\color{blue}(by the induction hypothesis)} \\
+    \mathrm{Enc}_{i+1}(\mathbf{v}) 
+    & = \mathrm{Enc}_{i}(\mathbf{v}_l) + \mathrm{diag}(T_i) \circ \mathrm{Enc}_{i}(\mathbf{v}_r) \quad \| \quad \mathrm{Enc}_{i}(\mathbf{v}_l) + \mathrm{diag}(T_i) \circ \mathrm{Enc}_{i}(\mathbf{v}_r) \\
+    & \quad \text{\color{blue}(by the encoding algorithm in Protocol 1)} \\
+    & = (P_l(\mathbf{x}_1), \ldots, P_l(\mathbf{x}_n)) + \mathrm{diag}(T_i) \circ (P_r(\mathbf{x}_1), \ldots, P_r(\mathbf{x}_n)) \\
+    & \| \quad (P_l(\mathbf{x}_1), \ldots, P_l(\mathbf{x}_n)) + \mathrm{diag}(T'_i) \circ (P_r(\mathbf{x}_1), \ldots, P_r(\mathbf{x}_n)) \\
+    & \quad\text{\color{blue}(by the induction hypothesis)} \\
     & = (P_l(\mathbf{x}_1) + t_1 P_r(\mathbf{x}_1), \ldots, P_l(\mathbf{x}_n) + t_n P_r(\mathbf{x}_n), P_l(\mathbf{x}_1) + t'_1 P_r(\mathbf{x}_1), \ldots, P_l(\mathbf{x}_n) + t'_n P_r(\mathbf{x}_n)) \\
-    & {\color{blue}(by the definition of the \text{Hadmard} product)} \\
+    & \quad\text{\color{blue}(by the definition of the Hadmard product)} \\
     & = (P(\mathbf{x}_1,t_1), \ldots, P(\mathbf{x}_n, t_n), P(\mathbf{x}_1,t'_1), \ldots, P(\mathbf{x}_n, t'_n))\\
-    & {\color{blue}(by the definition of $P$)}
+    & \quad\text{\color{blue}(by the definition of $P$)}
 \end{aligned}
 $$
 
@@ -241,7 +244,7 @@ $$
     & = \Pr [ X \ge 2 t_i + l_{i} - 2|S|] \\
     & = \Pr [\sum_{j \in \urcorner S^*}X_j \ge 2 t_i + l_{i} - 2|S|] \\
     & \le \sum_{j = 2 t_i + l_{i} - 2|S|}^{|\urcorner S^*|} \binom{|\urcorner S^*|}{i} \cdot (\frac{2}{|\mathbb{F}| - 1})^{i} \cdot (1 - \frac{2}{|\mathbb{F}| - 1})^{|\urcorner S^*| - i}\\
-    & {\color{blue}{(\text{By the binomial theorem, } \binom{|\urcorner S^*|}{i} \le 2^{|\urcorner S^*|})}} \\
+    & \text{\color{blue}{By the binomial theorem,  $\binom{|\urcorner S^*|}{i} \le 2^{|\urcorner S^*|})$}} \\
     & \le |\urcorner S^*| \cdot 2^{|\urcorner S^*|}  (\frac{2}{|\mathbb{F}| - 1})^{2 t_i + l_{i} - 2|S|} \\
     & \le |\urcorner S| \cdot 2^{|\urcorner S|} \cdot (\frac{2}{|\mathbb{F}| - 1})^{2 t_i + l_{i} - 2|S|} \quad (\urcorner S^* \subseteq \urcorner S)\\
     & = |[1, n_i] \backslash S| \cdot 2^{|[1, n_i] \backslash S|} \cdot (\frac{2}{|\mathbb{F}| - 1})^{2 t_i + l_{i} - 2|S|}\\

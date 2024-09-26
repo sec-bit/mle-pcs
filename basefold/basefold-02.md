@@ -1,4 +1,7 @@
-# Basefold Notes
+# Notes on Basefold (Part II): IOPP
+
+- Yu Guo <yu.guo@secbi.io>
+- Jade Xie <jade@secbit.io>
 
 ## Proof of Proximity
 
