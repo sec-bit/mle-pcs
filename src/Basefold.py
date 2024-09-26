@@ -1,7 +1,7 @@
 import field
 from random import randint
 from mle2 import MLEPolynomial
-from utils import uni_eval_from_evals
+from unipolynomial import UniPolynomial
 from merkle import MerkleTree, verify_decommitment
 from merlin.merlin_transcript import MerlinTranscript
 from sage.all import *
@@ -184,7 +184,7 @@ def prove_basefold_evaluation_arg_multilinear_basis(f_code, f_evals, us, v, k, k
         if debug: print("> sumcheck: eq_folded = {}".format(eq))
 
         # compute the new sum = h(alpha)
-        sumcheck_sum = uni_eval_from_evals([h_eval_at_0, h_eval_at_1, h_eval_at_2], alpha, [Fp(0),Fp(1),Fp(2)])
+        sumcheck_sum = UniPolynomial.uni_eval_from_evals([h_eval_at_0, h_eval_at_1, h_eval_at_2], alpha, [Fp(0),Fp(1),Fp(2)])
         if debug: print("> sumcheck: sumcheck_sum = {}".format(sumcheck_sum))
 
         if debug: print("fri round {}".format(i))
@@ -301,7 +301,7 @@ def verify_basefold_evaluation_arg_multilinear_basis(N, commit, proof, us, v, d,
 
         alpha = challenge_vec[i]
 
-        sumcheck_sum = uni_eval_from_evals(h_evals, alpha, [Fp(0),Fp(1),Fp(2)])
+        sumcheck_sum = UniPolynomial.uni_eval_from_evals(h_evals, alpha, [Fp(0),Fp(1),Fp(2)])
 
         eq_low = eq_evals[:half]
         eq_high = eq_evals[half:]

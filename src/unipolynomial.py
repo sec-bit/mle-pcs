@@ -642,6 +642,34 @@ class UniPolynomial:
         coeffs = cls.compute_coeffs_from_evals_fast(evals, domain)
         return cls(coeffs)
 
+    # barycentric interpolation
+    @classmethod
+    def barycentric_weights(cls, D):
+        n = len(D)
+        weights = [1] * n
+        for i in range(n):
+            # weights[i] = product([(D[i] - D[j]) if i !=j else Fp(1) for j in range(n)])
+            for j in range(n):
+                if i==j:
+                    weights[i] *= 1
+                    continue
+                weights[i] *= (D[i] - D[j])
+            weights[i] = 1/weights[i]
+        return weights
+
+    @classmethod
+    def uni_eval_from_evals(cls, evals, z, D):
+        n = len(evals)
+        if n != len(D):
+            raise ValueError("Domain size should be equal to the length of evaluations")
+        if z in D:
+            return evals[D.index(z)]
+        weights = cls.barycentric_weights(D)
+        # print("weights={}".format(weights))
+        e_vec = [weights[i] / (z - D[i]) for i in range(n)]
+        numerator = sum([e_vec[i] * evals[i] for i in range(n)])
+        denominator = sum([e_vec[i] for i in range(n)])
+        return (numerator / denominator)
 
 # Example usage
 if __name__ == "__main__":
