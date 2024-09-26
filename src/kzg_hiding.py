@@ -1,3 +1,8 @@
+# This KZG implementation is adapted from the arkworks project
+# https://github.com/arkworks-rs/poly-commit
+# Specifically, from the file poly-commit/src/kzg10/mod.rs
+# Commit version: 12f5529c9ca609d07dd4683fcd1e196bc375eb0d
+
 from group import DummyGroup
 from unipolynomial import UniPolynomial
 from field import Field
