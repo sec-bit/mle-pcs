@@ -23,17 +23,17 @@ jobs:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           format: markdown
           message: |
-            *New Push to ${{ github.repository }}*
+            🔔 *New Push to ${{ github.repository }}*
             
-            *Branch:* `${{ github.ref_name }}`
-            *Pusher:* ${{ github.actor }}
+            🌿 *Branch:* `${{ github.ref_name }}`
+            👨‍💻 *Pusher:* ${{ github.actor }}
             
-            *Commit Message:* 
+            📝 *Commit Message:* 
             ```
             ${{ github.event.head_commit.message }}
             ```
             
-            [View Commit](https://github.com/${{ github.repository }}/commit/${{github.sha}})
+            🔗 [View Commit](https://github.com/${{ github.repository }}/commit/${{github.sha}})
 
       - name: Send Telegram Message on Pull Request
         if: github.event_name == 'pull_request'
@@ -43,14 +43,14 @@ jobs:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           format: markdown
           message: |
-            *Pull Request ${{ github.event.action }} in ${{ github.repository }}*
+            🚀 *Pull Request ${{ github.event.action }} in ${{ github.repository }}*
             
-            *Title:* ${{ github.event.pull_request.title }}
-            *PR #:* ${{ github.event.pull_request.number }}
-            *State:* ${{ github.event.pull_request.state }}
-            *Author:* ${{ github.event.pull_request.user.login }}
+            📌 *Title:* ${{ github.event.pull_request.title }}
+            🔢 *PR #:* ${{ github.event.pull_request.number }}
+            🚦 *State:* ${{ github.event.pull_request.state }}
+            👤 *Author:* ${{ github.event.pull_request.user.login }}
             
-            [View PR](${{ github.event.pull_request.html_url }})
+            🔗 [View PR](${{ github.event.pull_request.html_url }})
 
       - name: Send Telegram Message on Issue
         if: github.event_name == 'issues'
@@ -60,14 +60,14 @@ jobs:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           format: markdown
           message: |
-            *Issue ${{ github.event.action }} in ${{ github.repository }}*
+            🎫 *Issue ${{ github.event.action }} in ${{ github.repository }}*
             
-            *Title:* ${{ github.event.issue.title }}
-            *Issue #:* ${{ github.event.issue.number }}
-            *State:* ${{ github.event.issue.state }}
-            *Author:* ${{ github.event.issue.user.login }}
+            📌 *Title:* ${{ github.event.issue.title }}
+            🔢 *Issue #:* ${{ github.event.issue.number }}
+            🚦 *State:* ${{ github.event.issue.state }}
+            👤 *Author:* ${{ github.event.issue.user.login }}
             
-            [View Issue](${{ github.event.issue.html_url }})
+            🔗 [View Issue](${{ github.event.issue.html_url }})
 
       - name: Send Telegram Message on Release
         if: github.event_name == 'release'
@@ -77,18 +77,18 @@ jobs:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           format: markdown
           message: |
-            *New Release Published in ${{ github.repository }}*
+            🚀 *New Release Published in ${{ github.repository }}*
             
-            *Tag:* ${{ github.event.release.tag_name }}
-            *Name:* ${{ github.event.release.name }}
-            *Author:* ${{ github.event.release.author.login }}
+            🏷️ *Tag:* ${{ github.event.release.tag_name }}
+            📛 *Name:* ${{ github.event.release.name }}
+            👤 *Author:* ${{ github.event.release.author.login }}
             
-            *Description:*
+            📝 *Description:*
             ```
             ${{ github.event.release.body }}
             ```
             
-            [View Release](${{ github.event.release.html_url }})
+            🔗 [View Release](${{ github.event.release.html_url }})
 
       - name: Send Telegram Message on Failure
         if: failure()
@@ -98,5 +98,5 @@ jobs:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           message: |
             ❌ Workflow failed in ${{ github.repository }}
-            Event: ${{ github.event_name }}
-            See details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            🚨 Event: ${{ github.event_name }}
+            🔍 See details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
