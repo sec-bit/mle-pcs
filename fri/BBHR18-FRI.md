@@ -1,6 +1,7 @@
-# [BBHR18] Analysis of FRI Protocol Soundness
+# Dive into  BBHR18-FRI Soundness
 
-> Authors: Yu Guo(yu.guo@secbit.io) Jade Xie(jade@secbit.io)
+- Jade Xie  <jade@secbit.io>
+- Yu Guo <yu.guo@secbit.io>
 
 This article mainly focuses on explaining the paper [BBHR18b] published by Eli Ben-Sasson et al. in 2018, with emphasis on the completeness and soundness proofs of the FRI protocol. In this paper, they proposed a new IOPP (Interactive Oracle Proof of Proximity) for Reed-Solomon (RS) encoding, called FRI (Fast RS IOPP). Subsequently, in [BBHR18a], they used the FRI protocol to construct a practical ZK system, which is the STARK we are familiar with.
 
@@ -84,7 +85,7 @@ The number of rounds in the protocol is $r \triangleq \left \lfloor \frac{k^{(0)
 > 	* both parties repeat the COMMIT protocol with common input
 > 		- parameters $(\mathcal{R}, \eta, i + 1)$
 > 		- a parametrization of $\text{RS}^{(i+1)} \triangleq \text{RS}[\mathbb{F},L^{(i+1)},\rho = 2^{-\mathcal{R}}]$ and $L_0^{(i+1)} \subset L^{(i+1)}$ , $\dim(L_0^{(i+1)})=\eta$
-> 	and prover input $f^{(i+1)}$ defined at the beginning of this step;
+> 		and prover input $f^{(i+1)}$ defined at the beginning of this step;
 
 ### QUERY Phase
 
@@ -205,7 +206,7 @@ In the partition set $\mathcal{S}^{(i)} = \{L_0^{(i)}, \cdots, L_{m-1}^{(i)}\}$,
 
 $$
 \Delta^{(i)}(f^{(i)}, g^{(i)}) = \frac{|\{j \in [m] | f^{(i)}|_{L_j^{(i)}} \neq g^{(i)}|_{L_j^{(i)}}\}|}{m} = 1 - \rho.
-$$ 
+$$
 
 Therefore, $\Delta^{\mathcal{(i)}}(f^{(i)},\text{RS}^{(i)})$ calculates the minimum value under the measure $\Delta^{(i)}$ between elements in $\text{RS}^{(i)}$ and $f^{(i)}$, which certainly won't exceed the distance of the found $g^{(i)} \in \text{RS}^{(i)}$, thus proving the left half of the inequality $1 - \rho \ge  \Delta^{\mathcal{(i)}}(f^{(i)},\text{RS}^{(i)})$.
 Next, prove the right half of the inequality $\Delta^{\mathcal{(i)}}(f^{(i)},\text{RS}^{(i)})  \ge \Delta_H(f^{(i)},\text{RS}^{(i)})$. Assume $\Delta^{(i)}(f^{(i)}, g^{(i)} \in \text{RS}^{(i)}) = \delta$, without loss of generality, assume $f^{(i)}$ and $g^{(i)}$ are not completely consistent on the cosets $\{L_0^{(i)}, \cdots, L_{\delta m - 1}^{(i)}\} = \{x_0, \cdots, x_{\delta |L^{(i)}| - 1}\}$, and are completely consistent on the remaining set $\{L_0^{(i)}, \cdots, L_{m-1}^{(i)}\} \backslash \{L_0^{(i)}, \cdots, L_{\delta m - 1}^{(i)}\}$. Then considering all points on $L^{(i)}$, $g^{(i)}$ is at most inconsistent with $f^{(i)}$ on these $\delta |L^{(i)}|$ points $\{L_0^{(i)}, \cdots, L_{\delta m - 1}^{(i)}\} = \{x_0, \cdots, x_{\delta |L^{(i)}| - 1}\}$, thus indicating that $\Delta_H(f^{(i)},g^{(i)}) \le \delta$. Furthermore, if we set $\Delta^{\mathcal{(i)}}(f^{(i)},\text{RS}^{(i)}) = \delta^*$, we can deduce $\Delta_H(f^{(i)},\text{RS}^{(i)}) \le \delta^* = \Delta^{\mathcal{(i)}}(f^{(i)},\text{RS}^{(i)})$. <span style="float: right;"> $\Box$ </span>
@@ -391,7 +392,7 @@ This definition is the block-wise distance of step $i$ mentioned earlier.
 
 * **Round error** For $i > 0$, the $i$th *round error set* is a subset of $L^{(i)}$, defined as follows:
   
- $$
+$$
  A_{\text{err}}^{(i)}\left(f^{(i)},f^{(i-1)},x^{(i-1)}\right) \triangleq \left \{ y_S^{(i)} \in L^{(i)} | \text{interpolant} ^{f^{(i-1)|_S}}\left(x^{(i-1)}\right) \neq f^{(i)}\left(y_S^{(i)}\right)\right \}
 $$
 
@@ -571,7 +572,7 @@ Now that we've done the preparation work, let's start proving the soundness of t
 > ![](./img/BBHR18-FRI-tosscoin-2.png)
 > If we analyze the soundness, that is the probability of the Verifier rejecting, the probability of accepting is at most $1/2$, so the probability of rejecting in one interaction is at least $1/2$. If it is repeated $k$ times, then the soundness is, for any $P^*$,
 > 
-> $$  
+> $$
 > \Pr[\left \langle \text{P}^* \leftrightarrow \text{V} \right \rangle = \text{reject}|\text{This page only contains 1 color}] \ge 1 - \left(\frac{1}{2}\right)^k
 > $$
 >
@@ -698,13 +699,13 @@ $$
 
 According to the definition of $r$
 
-$$ 
+$$
 r \triangleq \lfloor \frac{k^{(0)} - \mathcal{R}}{\eta}\rfloor
 $$
 
 And $k^{(0)} = \log |L^{(0)}|$, we can get
 
-$$ 
+$$
 r = \lfloor \frac{k^{(0)} - \mathcal{R}}{\eta}\rfloor \le \frac{k^{(0)} - \mathcal{R}}{\eta} = \frac{\log |L^{(0)}| - \mathcal{R}}{\eta}
 $$
 

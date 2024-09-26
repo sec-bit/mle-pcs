@@ -1,6 +1,7 @@
-# [BCIKS20] Proximity Gaps Paper Soundness Analysis
+# Dive into BCIKS20-FRI Soundness
 
-> Authors: Yu Guo(yu.guo@secbit.io) Jade Xie(jade@secbit.io)
+- Jade Xie <jade@secbit.io>
+- Yu Guo  <yu.guo@secbit.io>
 
 The paper [BCIKS20] improves the soundness of the FRI protocol in [BBHR18], mainly analyzing the case of batched FRI. This article will provide a detailed analysis of the content related to batched FRI soundness in the [BCIKS20] paper.
 
@@ -214,7 +215,7 @@ $$
 $$
 \Pr_{u \in U} [\text{agree}_{\mu}(u,V) \ge \alpha] > \epsilon,
 $$
-    
+
 where $\epsilon$ is as defined in Theorem 1.2 (with $\eta = \min(\alpha - \sqrt{\rho}, \frac{\sqrt{\rho}}{20})$), and additionally suppose
 
 $$
@@ -466,7 +467,7 @@ Assume the FRI protocol is used with $r$ rounds, and let $l^{(i)} = |\mathcal{D}
 $$
 \Pr_{x_1, \ldots, x_t, z^{(0)}, \ldots, z^{(r-1)}}\left[ \epsilon_Q > \alpha^{(0)}(\rho, m) \right] \le \epsilon_{\text{C}}, \tag{8.5}
 $$
-    
+
 where
 
 $$
