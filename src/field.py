@@ -71,6 +71,9 @@ class Field:
     def __truediv__(self, other):
         return self._operate(other, lambda a, b: a / b, 'div')
 
+    def __rtruediv__(self, other):
+        return self._operate(other, lambda a, b: b / a, 'div')
+
     def __pow__(self, exponent):
         self._increment_count('mul')  # Consider power as a series of multiplications
         if isinstance(exponent, int):
@@ -107,7 +110,7 @@ class Field:
 
     @classmethod
     def random_element(cls):
-        return cls(random.randint(0, 139))
+        return cls(random.randint(0, 193))
 
 def magic(Fp):
     def magic_field(value):

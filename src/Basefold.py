@@ -1,6 +1,7 @@
 import field
 from random import randint
-from mle import eqs_over_hypercube, uni_eval_from_evals, mle_eval_from_evals
+from mle2 import MLEPolynomial
+from utils import uni_eval_from_evals
 from merkle import MerkleTree, verify_decommitment
 from merlin.merlin_transcript import MerlinTranscript
 from sage.all import *
@@ -145,7 +146,7 @@ def prove_basefold_evaluation_arg_multilinear_basis(f_code, f_evals, us, v, k, k
     assert len(T) == k, "wrong table size, k={}, len(T)={}".format(k, len(T))
     f_code_copy = f_code[:]
     f = f_evals[:]
-    eq = eqs_over_hypercube(us)
+    eq = MLEPolynomial.eqs_over_hypercube(us)
 
     challenge_vec = []
     sumcheck_sum = v
@@ -183,7 +184,7 @@ def prove_basefold_evaluation_arg_multilinear_basis(f_code, f_evals, us, v, k, k
         if debug: print("> sumcheck: eq_folded = {}".format(eq))
 
         # compute the new sum = h(alpha)
-        sumcheck_sum = uni_eval_from_evals([h_eval_at_0, h_eval_at_1, h_eval_at_2], alpha, [0,1,2])
+        sumcheck_sum = uni_eval_from_evals([h_eval_at_0, h_eval_at_1, h_eval_at_2], alpha, [Fp(0),Fp(1),Fp(2)])
         if debug: print("> sumcheck: sumcheck_sum = {}".format(sumcheck_sum))
 
         if debug: print("fri round {}".format(i))
@@ -288,7 +289,7 @@ def verify_basefold_evaluation_arg_multilinear_basis(N, commit, proof, us, v, d,
     f_code_vec = proof['f_code_vec']
     sumcheck_sum = v
     half = n >> 1
-    eq_evals = eqs_over_hypercube(us)
+    eq_evals = MLEPolynomial.eqs_over_hypercube(us)
     
     for i in range(k):
         if debug: print("sumcheck round {}".format(i))
@@ -300,7 +301,7 @@ def verify_basefold_evaluation_arg_multilinear_basis(N, commit, proof, us, v, d,
 
         alpha = challenge_vec[i]
 
-        sumcheck_sum = uni_eval_from_evals(h_evals, alpha, [0,1,2])
+        sumcheck_sum = uni_eval_from_evals(h_evals, alpha, [Fp(0),Fp(1),Fp(2)])
 
         eq_low = eq_evals[:half]
         eq_high = eq_evals[half:]
@@ -325,7 +326,7 @@ def verify_basefold_evaluation_arg_multilinear_basis(N, commit, proof, us, v, d,
     if debug: print("f_eval_at_random={}".format(f_eval_at_random))
     if debug: print("rs_encode([f_eval_at_random], k0=1, c=blowup_factor)=", rs_encode([f_eval_at_random], k0=1, c=blowup_factor))
     assert rs_encode([f_eval_at_random], k0=1, c=blowup_factor) == f_code_folded, "❌: Encode(f(rs)) != f_code_0"
-    if debug: print("✅: Verified! fold({}) == encode(fold(f_eq)/fold(eq(us)))".format(f_code))
+    if debug: print("✅: Verified! fold({}) == encode(fold(f_eq)/fold(eq(us)))".format(commit))
 
     return True
 
@@ -370,7 +371,7 @@ if __name__ == '__main__':
         ff_code = basefold_encode(m=ff, k0=2 ** log_k0, depth=log_n - log_k0, c=blowup_factor, G0=rs_encode, T=T)
         commit = MerkleTree(ff_code)
         point = [randint(0, 100) for _ in range(log_n)]
-        eval = mle_eval_from_evals(ff, point)
+        eval = MLEPolynomial.evaluate_from_evals(ff, point)
 
         transcript = MerlinTranscript(b"verify queries")
         transcript.append_message(b"commit.root", bytes(commit.root, 'ascii'))

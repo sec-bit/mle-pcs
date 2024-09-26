@@ -29,10 +29,10 @@ def next_power_of_two(n):
     if is_power_of_two(n):
         return n
     d = n
-    k = 0
+    k = 1
     while d > 0:
         d >>= 1
-        k += 1
+        k <<= 1
     return k
 
 def log_2(x):
@@ -57,4 +57,44 @@ def log_2(x):
         result += 1
     return result
 
-is_power_of_two(15), next_power_of_two(15)
+# barycentric interpolation
+
+def barycentric_weights(D):
+    n = len(D)
+    weights = [1] * n
+    for i in range(n):
+        # weights[i] = product([(D[i] - D[j]) if i !=j else Fp(1) for j in range(n)])
+        for j in range(n):
+            if i==j:
+                weights[i] *= 1
+                continue
+            weights[i] *= (D[i] - D[j])
+        weights[i] = 1/weights[i]
+    return weights
+
+def uni_eval_from_evals(evals, z, D):
+    n = len(evals)
+    if n != len(D):
+        raise ValueError("Domain size should be equal to the length of evaluations")
+    if z in D:
+        return evals[D.index(z)]
+    weights = barycentric_weights(D)
+    # print("weights={}".format(weights))
+    e_vec = [weights[i] / (z - D[i]) for i in range(n)]
+    numerator = sum([e_vec[i] * evals[i] for i in range(n)])
+    denominator = sum([e_vec[i] for i in range(n)])
+    return (numerator / denominator)
+
+def uni_eval_from_coeffs(coeffs, z):
+    t = 1
+    eval = 0
+    for i in range(0, len(coeffs)):
+        eval += coeffs[i] * t
+        t *= z
+    return eval
+
+def uni_evals_from_coeffs(coeffs, D):
+    evals = []
+    for z in D:
+        evals += [uni_eval_from_coeffs(coeffs, z)]
+    return evals
