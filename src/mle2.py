@@ -1,6 +1,7 @@
 #!/usr/bin/env sage -python
 
-from utils import log_2, pow_2
+from functools import reduce
+from utils import log_2, pow_2, bits_le_with_width
 # from sage.all import product, GF
 
 class MLEPolynomial:
@@ -19,10 +20,22 @@ class MLEPolynomial:
         half = 1
         for i in range(k):
             for j in range(half):
-                evals[j+half] = Fp(evals[j] * rs[i])
-                evals[j] = Fp(evals[j] - evals[j+half])
+                evals[j+half] = evals[j] * rs[i]
+                evals[j] = evals[j] - evals[j+half]
             half *= 2
         return evals
+    
+    @classmethod
+    def eqs_over_hypercube_slow(cls, k, indeterminates):
+        if k > 5:
+            raise ValueError("k>5 isn't supported")
+        xs = indeterminates[:k]
+        n = 1 << k
+        eqs = [1] * n
+        for i in range(n):
+            bs = bits_le_with_width(i, k)
+            eqs[i] = reduce(lambda v, j: v * ((1 - xs[j]) * (1 - bs[j]) + xs[j] * bs[j]), range(k), 1)
+        return eqs
 
     @classmethod
     def from_coeffs(cls, coeffs, num_var):
@@ -58,7 +71,6 @@ class MLEPolynomial:
     
     @classmethod
     def evaluate_from_evals(cls, evals, zs):
-        z = len(zs)
         f = evals
 
         half = len(f) >> 1
@@ -67,6 +79,20 @@ class MLEPolynomial:
             odd = f[1::2]
             f = [even[i] + z * (odd[i] - even[i]) for i in range(half)]
             half >>= 1
+        return f[0]
+    
+    @classmethod
+    def evaluate_from_evals_2(cls, evals, zs):
+        k = len(zs)
+        f = evals
+
+        half = len(f) >> 1
+        for i in range(k):
+            u = zs[k-i-1]
+
+            f = [(1-u) * f[j] + u * f[j+half] for j in range(half)]
+            half >>= 1
+        
         return f[0]
     
     def evaluate(self, zs: list):

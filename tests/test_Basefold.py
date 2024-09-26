@@ -8,6 +8,7 @@ sys.path.append('src')
 import Basefold
 from merlin.merlin_transcript import MerlinTranscript
 from merkle import MerkleTree
+from mle2 import MLEPolynomial
 
 class BasefoldTest(TestCase):
     def test_rep_encode(self):
@@ -76,7 +77,7 @@ class BasefoldTest(TestCase):
             num_verifier_queries = randint(0, 8)
             us = [randint(0, 100) for _ in range(num_vars)]
             f_evals = [randint(0, 100) for _ in range(2 ** num_vars)]
-            v = Basefold.mle_eval_from_evals(f_evals, us)
+            v = MLEPolynomial.evaluate_from_evals(f_evals, us)
 
             params = {
                 'num_vars': num_vars,

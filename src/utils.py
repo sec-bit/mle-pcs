@@ -29,10 +29,10 @@ def next_power_of_two(n):
     if is_power_of_two(n):
         return n
     d = n
-    k = 0
+    k = 1
     while d > 0:
         d >>= 1
-        k += 1
+        k <<= 1
     return k
 
 def log_2(x):
@@ -56,5 +56,3 @@ def log_2(x):
         x >>= 1  # Bit shift right (equivalent to integer division by 2)
         result += 1
     return result
-
-is_power_of_two(15), next_power_of_two(15)
