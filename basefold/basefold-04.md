@@ -1,7 +1,7 @@
 # Notes on BaseFold (Part IV): Random Foldable Codes
 
 - Jade Xie <jade@secbit.io>
-- Yu Guo <yu.guo@secbi.io>
+- Yu Guo <yu.guo@secbit.io>
 
 Previous articles have mentioned that BaseFold extends the FRI IOPP by introducing the concept of *foldable codes*. Additionally, by combining the Sumcheck protocol, it can support PCS for multi-linear polynomials. The next crucial question is how to explicitly construct such *foldable codes*. We aim for these foldable codes to possess the following properties:
 

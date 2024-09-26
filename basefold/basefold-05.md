@@ -1,7 +1,7 @@
 # Notes on Basefold (Part V): IOPP Soundness
 
 - Jade Xie <jade@secbit.io>
-- Yu Guo <yu.guo@secbi.io>
+- Yu Guo <yu.guo@secbit.io>
 
 In this article, we will outline the proof approach for IOPP soundness presented in the [ZCF23] paper, which is similar to the soundness proof for the FRI protocol in [BKS18]. It employs a binary tree method to analyze points where the Prover might cheat, a concept also appearing in the soundness proof of the DEEP-FRI protocol in [BGKS20].
 
