@@ -105,16 +105,15 @@ $$
 
 $$
 \begin{aligned}
-    & \text{Enc}_{i+1}(\mathbf{v})  \\
-    & = \text{Enc}_{i}(\mathbf{v}_l) + \text{diag}(T_i) \circ \text{Enc}_{i}(\mathbf{v}_r) \quad \| \quad \text{Enc}_{i}(\mathbf{v}_l) + \text{diag}(T_i) \circ \text{Enc}_{i}(\mathbf{v}_r) \\
-    & {\color{blue}(由 \text{Protocol} 1 编码算法得)} \\
+    \text{Enc}_{i+1}(\mathbf{v}) & = \text{Enc}_{i}(\mathbf{v}_l) + \text{diag}(T_i) \circ \text{Enc}_{i}(\mathbf{v}_r) \quad \| \quad \text{Enc}_{i}(\mathbf{v}_l) + \text{diag}(T_i) \circ \text{Enc}_{i}(\mathbf{v}_r) \\
+    & \quad {\color{blue}(由 \text{Protocol} 1 编码算法得)} \\
     & = (P_l(\mathbf{x}_1), \ldots, P_l(\mathbf{x}_n)) + \text{diag}(T_i) \circ (P_r(\mathbf{x}_1), \ldots, P_r(\mathbf{x}_n)) \\
     & \| \quad (P_l(\mathbf{x}_1), \ldots, P_l(\mathbf{x}_n)) + \text{diag}(T'_i) \circ (P_r(\mathbf{x}_1), \ldots, P_r(\mathbf{x}_n)) \\
-    & {\color{blue}(由归纳假设可得)} \\
+    & \quad {\color{blue}(由归纳假设可得)} \\
     & = (P_l(\mathbf{x}_1) + t_1 P_r(\mathbf{x}_1), \ldots, P_l(\mathbf{x}_n) + t_n P_r(\mathbf{x}_n), P_l(\mathbf{x}_1) + t'_1 P_r(\mathbf{x}_1), \ldots, P_l(\mathbf{x}_n) + t'_n P_r(\mathbf{x}_n)) \\
-    & {\color{blue}(由\text{Hadmard}积的定义得)} \\
+    & \quad {\color{blue}(由\text{Hadmard}积的定义得)} \\
     & = (P(\mathbf{x}_1,t_1), \ldots, P(\mathbf{x}_n, t_n), P(\mathbf{x}_1,t'_1), \ldots, P(\mathbf{x}_n, t'_n))\\
-    & {\color{blue}(由 P 的定义得)}
+    & \quad {\color{blue}(由 P 的定义得)}
 \end{aligned}
 $$
 
@@ -244,12 +243,12 @@ $$
     & = \Pr [ X \ge 2 t_i + l_{i} - 2|S|] \\
     & = \Pr [\sum_{j \in \urcorner S^*}X_j \ge 2 t_i + l_{i} - 2|S|] \\
     & \le \sum_{j = 2 t_i + l_{i} - 2|S|}^{|\urcorner S^*|} \binom{|\urcorner S^*|}{i} \cdot (\frac{2}{|\mathbb{F}| - 1})^{i} \cdot (1 - \frac{2}{|\mathbb{F}| - 1})^{|\urcorner S^*| - i}\\
-    & {\color{blue}{(由二项式定理得 \binom{|\urcorner S^*|}{i} \le 2^{|\urcorner S^*|})}} \\
+    & \quad {\color{blue}{(由二项式定理得 \binom{|\urcorner S^*|}{i} \le 2^{|\urcorner S^*|})}} \\
     & \le |\urcorner S^*| \cdot 2^{|\urcorner S^*|}  (\frac{2}{|\mathbb{F}| - 1})^{2 t_i + l_{i} - 2|S|} \\
     & \le |\urcorner S| \cdot 2^{|\urcorner S|} \cdot (\frac{2}{|\mathbb{F}| - 1})^{2 t_i + l_{i} - 2|S|} \quad (\urcorner S^* \subseteq \urcorner S)\\
     & = |[1, n_i] \backslash S| \cdot 2^{|[1, n_i] \backslash S|} \cdot (\frac{2}{|\mathbb{F}| - 1})^{2 t_i + l_{i} - 2|S|}\\
     & = (n_i - |S|) \cdot 2^{n_i - |S|} \cdot (\frac{2}{|\mathbb{F}| - 1})^{2 t_i + l_{i} - 2|S|}\\
-    &{\color{blue}{(设 |\mathbb{F}| \ge 2^{10}，可得 \frac{2}{|\mathbb{F}| - 1} \le \frac{2.002}{|\mathbb{F}|})}}\\
+    & \quad {\color{blue}{(设 |\mathbb{F}| \ge 2^{10}，可得 \frac{2}{|\mathbb{F}| - 1} \le \frac{2.002}{|\mathbb{F}|})}}\\
     & \le n_i \cdot 2^{n_i - |S|} \left(\frac{2.002}{|\mathbb{F}|}\right)^{2 t_i + l_{i} - 2|S|}
 \end{aligned}
 $$
