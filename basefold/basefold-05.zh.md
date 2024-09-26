@@ -14,7 +14,7 @@
 - 对于 $i$ 从 $d-1$ 到 $0$：
     1. Verifier 从 $\mathbb{F}$ 中采样并发送 $\alpha_i \leftarrow \$ \mathbb{F}$ 给 Prover
     2. 对于每一个索引 $j \in [1, n_i]$，Prover
-        a. 设置 $f(X) := \text{interpolate}((\text{diag}(T_i)[j], \pi_{i+1}[j]), (\text{diag}(T'_i)[j], \pi_{i+1}[j+n_i]))$
+        a. 设置 $f(X) := \mathrm{interpolate}((\mathrm{diag}(T_i)[j], \pi_{i+1}[j]), (\mathrm{diag}(T'_i)[j], \pi_{i+1}[j+n_i]))$
         b. 设置 $\pi_i[j] = f(\alpha_i)$
     3. Prover 输出 oracle $\pi_i \in \mathbb{F}^{n_i}$ 。
 
@@ -26,7 +26,7 @@
 - Verifier 采样 $\mu \leftarrow \$ [1, n_{d-1}]$ 
 - 对于 $i$ 从 $d-1$ 到 $0$ ，Verifier
     1. 查询 oracle $\pi_{i+1}[\mu], \pi_{i+1}[\mu + n_i]$
-    2. 计算 $p(X) := \text{interpolate}((\text{diag}(T_i)[\mu], \pi_{i+1}[\mu]), (\text{diag}(T'_i)[\mu], \pi_{i+1}[\mu + n_i]))$
+    2. 计算 $p(X) := \mathrm{interpolate}((\mathrm{diag}(T_i)[\mu], \pi_{i+1}[\mu]), (\mathrm{diag}(T'_i)[\mu], \pi_{i+1}[\mu + n_i]))$
     3. 检查 $p(\alpha_i) = \pi_i[\mu]$
     4. 如果 $i > 0$ 且 $\mu > n_i - 1$，则更新 $\mu \leftarrow \mu - n_{i - 1}$
 - 如果 $\pi_0$ 是关于生成矩阵 $\mathbf{G}_0$ 的一个有效的码字，则输出 `accept`，否则输出 `reject`。
@@ -97,7 +97,7 @@ $\Delta^*(\mathbf{v},c)$ 衡量就是在所有的陪集中，有多少比例的�
 **情况 1** : Prover 非常幸运，由于 Verifer 选取随机数 $\alpha_i$ ，导致进行折叠(fold)之后的消息距离编码空间比较近，这样 Prover 后续都能通过 Verifier 的检查。对于 Verifier 来说，也就是发生了一些"坏"的事件，定义存在 $i \in [0, d-1]$ ，使得
 
 $$
-\Delta(\text{fold}_{\alpha_i}(\pi_{i+1}), C_i) \le \min(\Delta^*(\pi_{i+1}, C_{i+1}), J_{\gamma}(J_{\gamma}(\Delta_{C_d}))) - \gamma
+\Delta(\mathrm{fold}_{\alpha_i}(\pi_{i+1}), C_i) \le \min(\Delta^*(\pi_{i+1}, C_{i+1}), J_{\gamma}(J_{\gamma}(\Delta_{C_d}))) - \gamma
 $$
 
 用反证法通过 Correlated Agreement 定理（其能推导出对应的 Proximity Gaps 定理）可以证明发生“坏”的事件的概率是比较小的，证明得到其概率最多为 $\frac{2d}{\gamma^3 |\mathbb{F}|}$ 。
@@ -125,19 +125,19 @@ $$
 **推论 1** [ZCF23, Corollary 1] 固定任意的 $i \in [0, d-1]$ 和 $\gamma, \delta > 0$ ，使得 $\delta \le J_{\gamma}(J_{\gamma}(\Delta_{C_d}))$ ，那么如果 $\Delta^*(\mathbf{v}, C_{i+1}) > \delta$ ，有
 
 $$
-\Pr_{\alpha_i \leftarrow \$ \mathbb{F}}[\Delta(\text{fold}_{\alpha_i}(\mathbf{v}), C_i) \le \delta - \gamma] \le \frac{2}{\gamma^3 |\mathbb{F}|}. \tag{2}
+\Pr_{\alpha_i \leftarrow \$ \mathbb{F}}[\Delta(\mathrm{fold}_{\alpha_i}(\mathbf{v}), C_i) \le \delta - \gamma] \le \frac{2}{\gamma^3 |\mathbb{F}|}. \tag{2}
 $$
 
-其中的 $\text{fold}_{\alpha_i}(\cdot)$ 函数定义如下。令 $\mathbf{u},\mathbf{u'} \in \mathbf{F}^{n_i}$ 是两个唯一的插值向量使得
+其中的 $\mathrm{fold}_{\alpha_i}(\cdot)$ 函数定义如下。令 $\mathbf{u},\mathbf{u'} \in \mathbf{F}^{n_i}$ 是两个唯一的插值向量使得
 
 $$
-\pi_{i+1} = (\mathbf{u} + \text{diag}(T_i) \circ \mathbf{u}', \mathbf{u} + \text{diag}(T_i') \circ \mathbf{u}')
+\pi_{i+1} = (\mathbf{u} + \mathrm{diag}(T_i) \circ \mathbf{u}', \mathbf{u} + \mathrm{diag}(T_i') \circ \mathbf{u}')
 $$
 
-那么 $\text{fold}_{\alpha_i}(\pi_{i+1})$ 定义为
+那么 $\mathrm{fold}_{\alpha_i}(\pi_{i+1})$ 定义为
 
 $$
-\text{fold}_{\alpha_i}(\pi_{i+1}) := \mathbf{u}' + \alpha_i \mathbf{u}.
+\mathrm{fold}_{\alpha_i}(\pi_{i+1}) := \mathbf{u}' + \alpha_i \mathbf{u}.
 $$
 
 这其实就是对 $\pi_{i+1}$ 用随机数 $\alpha_i$ 进行折叠的过程。
@@ -153,7 +153,7 @@ $$
 用二叉树的思想来进行证明，首先定义一个“坏”的节点 $(i,\mu)$ ，如下图所示，将那些没有通过 IOPP.query 第 3 步的点表示出来。也就是当 Verifier 选取随机数 $\mu$ 之后，对任意的 $i \in [0, d-1]$ 以及任意的 $\mu \in [n_i]$ ，Verifier 先计算 IOPP.query 第 2 步，计算
 
 $$
-p(X) := \text{interpolate}((\text{diag}(T_i)[\mu], \pi_{i+1}[\mu]), (\text{diag}(T'_i)[\mu], \pi_{i+1}[\mu + n_i]))
+p(X) := \mathrm{interpolate}((\mathrm{diag}(T_i)[\mu], \pi_{i+1}[\mu]), (\mathrm{diag}(T'_i)[\mu], \pi_{i+1}[\mu + n_i]))
 $$
 
 接着检查 IOPP.query 协议的第 3 步，发现
@@ -170,7 +170,7 @@ $$
 
 ![](./img/basefold-05-binarytree.svg)
 
-如果在其中有一个 $(i,\mu)$ 节点是"坏"的，假设在第 $d-1$ 到第 $i +1$ 层的所有节点和其孩子节点都是一致的，也就是在 IOPP.query 协议中，从 $d-1$ 步直到第 $i+1$ 步都通过了第 3 步的检查，但是在第 $i$ 步，遇到了一个 $(i,u)$ 没有通过第 3 步的检查，这个时候 Verifier 就会拒绝。在图中，从第 $i+1$ 到第 $d-1$ 层都为“好”的节点。那么也就是说只要整棵树中有一个坏的节点，Verifier 就会拒绝。如果用 $\beta_i$ 表示的是在第 $i$ 层坏的节点的比率，那么在第 $i$ 层 Verifier 拒绝的概率就是 $\beta_i$ ，考虑整个 IOPP.query 阶段，其拒绝的概率就是 $\sum_{i=0}^{d-1}\beta_i$ ，其中 $\beta_i := \Delta(\pi_i, \text{fold}_{\alpha_i}(\pi_{i+1}))$ ，也就是那些“坏”的点，对 $\pi_{i+1}$ 折叠之后与 $\pi_i$ 不一致。
+如果在其中有一个 $(i,\mu)$ 节点是"坏"的，假设在第 $d-1$ 到第 $i +1$ 层的所有节点和其孩子节点都是一致的，也就是在 IOPP.query 协议中，从 $d-1$ 步直到第 $i+1$ 步都通过了第 3 步的检查，但是在第 $i$ 步，遇到了一个 $(i,u)$ 没有通过第 3 步的检查，这个时候 Verifier 就会拒绝。在图中，从第 $i+1$ 到第 $d-1$ 层都为“好”的节点。那么也就是说只要整棵树中有一个坏的节点，Verifier 就会拒绝。如果用 $\beta_i$ 表示的是在第 $i$ 层坏的节点的比率，那么在第 $i$ 层 Verifier 拒绝的概率就是 $\beta_i$ ，考虑整个 IOPP.query 阶段，其拒绝的概率就是 $\sum_{i=0}^{d-1}\beta_i$ ，其中 $\beta_i := \Delta(\pi_i, \mathrm{fold}_{\alpha_i}(\pi_{i+1}))$ ，也就是那些“坏”的点，对 $\pi_{i+1}$ 折叠之后与 $\pi_i$ 不一致。
 
 那么剩下的任务就是估计 $\sum_{i=0}^{d-1}\beta_i$ 。[ZCF23, Claim 2] 给出了每个 $\beta_i$ 的不等式。
 

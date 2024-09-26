@@ -142,7 +142,7 @@ $$
 \tilde{f}^{(2)}(X_0, X_1) = (f_0 + f_4\alpha_2) + (f_1 + f_5\alpha_2)\cdot X_0 + (f_2 + f_6\alpha_2)\cdot X_1 + (f_3 + f_7\alpha_2)\cdot X_0X_1
 $$
 
-- Prover sends the folded vector encoding: $\pi_2 = \text{Enc}_{2}[\tilde{f}^{(2)}]$
+- Prover sends the folded vector encoding: $\pi_2 = \mathrm{Enc}_{2}[\tilde{f}^{(2)}]$
 - Prover computes $h^{(2)}(\alpha_2)$ as the summation value for the next round of the Sumcheck protocol
 - Prover computes and sends $h^{(1)}(X)$
 
@@ -162,7 +162,7 @@ $$
 \tilde{f}^{(1)}(X_2) =f(X_0, \alpha_1, \alpha_2) = (f_0 + f_4\alpha_2 + f_2\alpha_1 + f_6\alpha_1\alpha_2) + (f_1 + f_5\alpha_2 + f_3\alpha_1 + f_7\alpha_1\alpha_2)\cdot X_0
 $$
 
-- Prover sends the folded vector encoding $\pi_1 = \text{Enc}_{1}[\tilde{f}^{(1)}]$
+- Prover sends the folded vector encoding $\pi_1 = \mathrm{Enc}_{1}[\tilde{f}^{(1)}]$
 - Prover computes the summation value for the next round of the Sumcheck protocol: $h^{(1)}(\alpha_1)$
 - Prover computes and sends $h^{(0)}(X)$
 

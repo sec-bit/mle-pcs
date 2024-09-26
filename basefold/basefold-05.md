@@ -17,7 +17,7 @@ Output oracles: $(\pi_{d-1}, \ldots, \pi_0) \in \mathbb{F}^{n_{d-1}} \times \cdo
 - For $i$ from $d-1$ down to $0$:
     1. Verifier samples and sends $\alpha_i \leftarrow \$ \mathbb{F}$ from $\mathbb{F}$ to Prover
     2. For each index $j \in [1, n_i]$, Prover:
-        a. Sets $f(X) := \text{interpolate}((\text{diag}(T_i)[j], \pi_{i+1}[j]), (\text{diag}(T'_i)[j], \pi_{i+1}[j+n_i]))$
+        a. Sets $f(X) := \mathrm{interpolate}((\mathrm{diag}(T_i)[j], \pi_{i+1}[j]), (\mathrm{diag}(T'_i)[j], \pi_{i+1}[j+n_i]))$
         b. Sets $\pi_i[j] = f(\alpha_i)$
     3. Prover outputs oracle $\pi_i \in \mathbb{F}^{n_i}$.
 
@@ -29,7 +29,7 @@ Output: accept or reject
 - Verifier samples $\mu \leftarrow \$ [1, n_{d-1}]$  
 - For $i$ from $d-1$ down to $0$, Verifier:
     1. Queries oracle $\pi_{i+1}[\mu], \pi_{i+1}[\mu + n_i]$
-    2. Computes $p(X) := \text{interpolate}((\text{diag}(T_i)[\mu], \pi_{i+1}[\mu]), (\text{diag}(T'_i)[\mu], \pi_{i+1}[\mu + n_i]))$
+    2. Computes $p(X) := \mathrm{interpolate}((\mathrm{diag}(T_i)[\mu], \pi_{i+1}[\mu]), (\mathrm{diag}(T'_i)[\mu], \pi_{i+1}[\mu + n_i]))$
     3. Checks $p(\alpha_i) = \pi_i[\mu]$
     4. If $i > 0$ and $\mu > n_i - 1$, then updates $\mu \leftarrow \mu - n_{i - 1}$
 - If $\pi_0$ is a valid codeword with respect to the generator matrix $\mathbf{G}_0$, output `accept`; otherwise, output `reject`.
@@ -99,7 +99,7 @@ Despite introducing these different definitions and Johnson functions, the proof
 **Case 1**: The Prover is extremely lucky. Due to the Verifier selecting random numbers $\alpha_i$, the folded messages are sufficiently close to the encoding space, allowing the Prover to pass all subsequent Verifier checks. For the Verifier, this corresponds to some "bad" events occurring, where there exists an $i \in [0, d-1]$ such that
 
 $$
-\Delta(\text{fold}_{\alpha_i}(\pi_{i+1}), C_i) \le \min(\Delta^*(\pi_{i+1}, C_{i+1}), J_{\gamma}(J_{\gamma}(\Delta_{C_d}))) - \gamma
+\Delta(\mathrm{fold}_{\alpha_i}(\pi_{i+1}), C_i) \le \min(\Delta^*(\pi_{i+1}, C_{i+1}), J_{\gamma}(J_{\gamma}(\Delta_{C_d}))) - \gamma
 $$
 
 Using proof by contradiction through the Correlated Agreement theorem (which can derive the corresponding Proximity Gaps theorem), it can be shown that the probability of such "bad" events is small, proven to be at most $\frac{2d}{\gamma^3 |\mathbb{F}|}$.
@@ -127,19 +127,19 @@ Let us examine Corollary 1 in detail.
 **Corollary 1** [ZCF23, Corollary 1] For any fixed $i \in [0, d-1]$ and $\gamma, \delta > 0$, such that $\delta \le J_{\gamma}(J_{\gamma}(\Delta_{C_d}))$, if $\Delta^*(\mathbf{v}, C_{i+1}) > \delta$, then
 
 $$
-\Pr_{\alpha_i \leftarrow \$ \mathbb{F}}[\Delta(\text{fold}_{\alpha_i}(\mathbf{v}), C_i) \le \delta - \gamma] \le \frac{2}{\gamma^3 |\mathbb{F}|}. \tag{2}
+\Pr_{\alpha_i \leftarrow \$ \mathbb{F}}[\Delta(\mathrm{fold}_{\alpha_i}(\mathbf{v}), C_i) \le \delta - \gamma] \le \frac{2}{\gamma^3 |\mathbb{F}|}. \tag{2}
 $$
 
-The function $\text{fold}_{\alpha_i}(\cdot)$ is defined as follows. Let $\mathbf{u},\mathbf{u'} \in \mathbf{F}^{n_i}$ be the unique interpolated vectors such that
+The function $\mathrm{fold}_{\alpha_i}(\cdot)$ is defined as follows. Let $\mathbf{u},\mathbf{u'} \in \mathbf{F}^{n_i}$ be the unique interpolated vectors such that
 
 $$
-\pi_{i+1} = (\mathbf{u} + \text{diag}(T_i) \circ \mathbf{u}', \mathbf{u} + \text{diag}(T_i') \circ \mathbf{u}')
+\pi_{i+1} = (\mathbf{u} + \mathrm{diag}(T_i) \circ \mathbf{u}', \mathbf{u} + \mathrm{diag}(T_i') \circ \mathbf{u}')
 $$
 
-Then, $\text{fold}_{\alpha_i}(\pi_{i+1})$ is defined as
+Then, $\mathrm{fold}_{\alpha_i}(\pi_{i+1})$ is defined as
 
 $$
-\text{fold}_{\alpha_i}(\pi_{i+1}) := \mathbf{u}' + \alpha_i \mathbf{u}.
+\mathrm{fold}_{\alpha_i}(\pi_{i+1}) := \mathbf{u}' + \alpha_i \mathbf{u}.
 $$
 
 This essentially represents the process of folding $\pi_{i+1}$ with the random number $\alpha_i$.
@@ -155,7 +155,7 @@ To prove that repeating the IOPP.query phase $l$ times results in the Verifier o
 Using the binary tree concept for the proof, we first define a "bad" node $(i,\mu)$, as shown in the figure below. These are the points where the Prover fails to pass step 3 of the IOPP.query protocol, meaning that after the Verifier selects a random number $\mu$, for any $i \in [0, d-1]$ and $\mu \in [n_i]$, the Verifier computes in step 2 of IOPP.query:
 
 $$
-p(X) := \text{interpolate}((\text{diag}(T_i)[\mu], \pi_{i+1}[\mu]), (\text{diag}(T'_i)[\mu], \pi_{i+1}[\mu + n_i]))
+p(X) := \mathrm{interpolate}((\mathrm{diag}(T_i)[\mu], \pi_{i+1}[\mu]), (\mathrm{diag}(T'_i)[\mu], \pi_{i+1}[\mu + n_i]))
 $$
 
 Subsequently, in step 3 of the IOPP.query protocol, the Verifier checks whether
@@ -172,7 +172,7 @@ Next, consider $i$ from $d-1$ down to $0$. For any $\mu \in [1, n_{d-1}]$, $\mu$
 
 ![](./img/basefold-05-binarytree.svg)
 
-If there exists at least one "bad" node $(i,\mu)$ within any of these trees—assuming that all nodes from layers $d-1$ down to $i +1$ and their children are "good", i.e., they pass step 3 of the IOPP.query protocol—then when a "bad" node occurs at level $i$, the Verifier will reject. As shown in the figure, nodes from levels $i +1$ to $d-1$ are all "good". This implies that as long as there is at least one bad node in the entire tree, the Verifier will reject. If we let $\beta_i$ denote the ratio of "bad" nodes at layer $i$, then the probability that the Verifier rejects at layer $i$ is $\beta_i$. Considering the entire IOPP.query phase, the Verifier's probability of rejection is thus $\sum_{i=0}^{d-1}\beta_i$, where $\beta_i := \Delta(\pi_i, \text{fold}_{\alpha_i}(\pi_{i+1}))$, representing those "bad" points where the folded $\pi_{i+1}$ does not agree with $\pi_i$.
+If there exists at least one "bad" node $(i,\mu)$ within any of these trees—assuming that all nodes from layers $d-1$ down to $i +1$ and their children are "good", i.e., they pass step 3 of the IOPP.query protocol—then when a "bad" node occurs at level $i$, the Verifier will reject. As shown in the figure, nodes from levels $i +1$ to $d-1$ are all "good". This implies that as long as there is at least one bad node in the entire tree, the Verifier will reject. If we let $\beta_i$ denote the ratio of "bad" nodes at layer $i$, then the probability that the Verifier rejects at layer $i$ is $\beta_i$. Considering the entire IOPP.query phase, the Verifier's probability of rejection is thus $\sum_{i=0}^{d-1}\beta_i$, where $\beta_i := \Delta(\pi_i, \mathrm{fold}_{\alpha_i}(\pi_{i+1}))$, representing those "bad" points where the folded $\pi_{i+1}$ does not agree with $\pi_i$.
 
 Thus, the remaining task is to estimate $\sum_{i=0}^{d-1}\beta_i$. [ZCF23, Claim 2] provides inequalities for each $\beta_i$.
 
