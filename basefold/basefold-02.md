@@ -34,7 +34,7 @@ $$
 
 This indicates that the folding process of the codeword does not disrupt the distance between the vector and the legitimate codeword space. By folding the vector sufficiently, the Verifier can use a very short code to verify whether the final folded vector is a legitimate codeword, thereby determining whether the original vector is a legitimate codeword.
 
-> 📖 **Draft of Proximity Gap**
+> 📖 **Notes on Proximity Gap**
 > Proof of Proximity utilizes a remarkable property of linear codes: the "Proximity Gap." Specifically, for two vectors $\pi, \pi'$, folding them with a random scalar $\alpha \in \mathbb{F}$ yields a set $A = \{\pi+\alpha\cdot \pi': \alpha \in \mathbb{F}\}$. Different $\alpha$ correspond to different elements in set $A$. The "Proximity Gap" theorem states that the elements in this set are either all close to the legitimate codeword space $C_{i}$ or only a negligible fraction of the elements are close to $C_{i}$, while the majority are at a distance of $\delta$ from $C_{i}$. In probabilistic terms:
 
 > 
@@ -248,3 +248,4 @@ This article described the framework of the Commit-phase and Query-phase of the 
 ## References
 
 - [ZCF23] Zeilberger, H., Chen, B., Fisch, B. (2024). BaseFold: Efficient Field-Agnostic Polynomial Commitment Schemes from Foldable Codes. In: Reyzin, L., Stebila, D. (eds) Advances in Cryptology – CRYPTO 2024. CRYPTO 2024. Lecture Notes in Computer Science, vol 14929. Springer, Cham.
+- [BCIKS20] Eli Ben-Sasson, Dan Carmon, Yuval Ishai, Swastik Kopparty, and Shubhangi Saraf. Proximity Gaps for Reed–Solomon Codes. In *Proceedings of the 61st Annual IEEE Symposium on Foundations of Computer Science*, pages 900–909, 2020.

@@ -32,7 +32,7 @@ $$
 
 这就说明了对 codeword 的折叠过程不会破坏向量与合法 codeword space 之间的距离，这个把向量折叠到足够小之后，Verifier 可以用极小的代码来验证折叠最后产生的向量是否是合法 codeword，从而可以得知原始向量是否是合法 codeword。
 
-> 📖 **Draft of Proximity Gap**
+> 📖 **Notes on Proximity Gap**
 > Proof of Proximity 利用了线性编码的一个神奇性质：「Proximity Gap」，即对两个向量 $\pi, \pi'$ 用随机数 $\alpha \in \mathbb{F}$ 进行折叠得到一个集合 $A = \{\pi+\alpha\cdot \pi': \alpha \in \mathbb{F}\}$ ，不同的 $\alpha$ 就对应集合 $A$ 中不同的元素，那么 「Proximity Gap」结论告诉我们这个集合中的元素要么都距离合法的 codeword space $C_{i}$ 很近，要么只有极小极小部分元素距离合法的 codeword space $C_{i}$ 比较近，大部分的元素都距离 $C_{i}$ 有 $\delta$ 那么远。用概率表示即为
 > 
 > $$
@@ -243,4 +243,5 @@ $$
 
 ## References
 
-- [ZCF23] Zeilberger, H., Chen, B., Fisch, B. (2024). BaseFold: Efficient Field-Agnostic Polynomial Commitment Schemes from Foldable Codes. In: Reyzin, L., Stebila, D. (eds) Advances in Cryptology – CRYPTO 2024. CRYPTO 2024. Lecture Notes in Computer Science, vol 14929. Springer, Cham.
+- [ZCF23] Hadas Zeilberger, Binyi Chen, and Ben Fisch. "BaseFold: efficient field-agnostic polynomial commitment schemes from foldable codes." Annual International Cryptology Conference. Cham: Springer Nature Switzerland, 2024.
+- [BCIKS20] Eli Ben-Sasson, Dan Carmon, Yuval Ishai, Swastik Kopparty, and Shubhangi Saraf. Proximity Gaps for Reed–Solomon Codes. In *Proceedings of the 61st Annual IEEE Symposium on Foundations of Computer Science*, pages 900–909, 2020.
