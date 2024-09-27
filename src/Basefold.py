@@ -16,6 +16,20 @@ As = variables[2 ** 6 :]
 Fp = field.magic(Fp)
 
 def rep_encode(m, k0, c):
+    """
+    Perform repetition encoding on the input message.
+
+    Args:
+        m (list): The input message to be encoded.
+        k0 (int): The size of each chunk in the message.
+        c (int): The number of times each chunk should be repeated.
+
+    Returns:
+        list: The repetition-encoded message.
+
+    Raises:
+        AssertionError: If k0 or c is not positive, or if the length of m is not a multiple of k0.
+    """
     assert k0 > 0 and c > 0, f"k0 <= 0 or c <= 0, k0: {k0}, c: {c}"
     assert len(m) % k0 == 0, "len(m): %d is not a multiple of k0: %d" % (len(m), k0)
     code = []
@@ -25,14 +39,73 @@ def rep_encode(m, k0, c):
     return code
 
 def rs_encode_single(m, alpha, c):
+    """
+    Perform Reed-Solomon encoding on a single chunk of the message.
+
+    This function encodes a single polynomial (represented by its coefficients)
+    by evaluating it at multiple points. It's a key component of the Reed-Solomon
+    error correction scheme.
+
+    Args:
+        m (list): A list of coefficients representing the message polynomial f(x).
+                  The length of this list is k0, where k0 is the degree of the 
+                  polynomial plus one.
+        alpha (list): A list of evaluation points where the polynomial f(x) will 
+                      be evaluated. The length of this list is k0 * c.
+        c (int): A scaling factor that determines the number of evaluation points 
+                 per message coefficient. It should be an integer greater than 1.
+
+    Returns:
+        list: A list of length k0 * c containing the Reed-Solomon encoded values.
+              Each element is the result of evaluating f(x) at a point in alpha.
+
+    Example:
+        >>> m = [1, 2, 3]  # represents f(x) = 1 + 2x + 3x^2
+        >>> alpha = [0, 1, 2, 3, 4, 5]
+        >>> c = 2
+        >>> rs_encode_single(m, alpha, c)
+        [1, 6, 17, 34, 57, 86]  # f(0) = 1, f(1) = 6, f(2) = 17, f(3) = 34, f(4) = 57, f(5) = 86
+    """
     k0 = len(m)
     code = [None] * (k0 * c)
     for i in range(k0 * c): 
-        # comput f_m(alpha[i])
+        # Compute f_m(alpha[i])
         code[i] = sum(m[j] * (alpha[i] ** j) for j in range(k0))
     return code
 
 def rs_encode(m, k0, c):
+    """
+    Apply Reed-Solomon encoding to the entire message.
+
+    This function divides the input message into chunks of size k0 and applies
+    Reed-Solomon encoding to each chunk. It's used to create an error-correcting
+    code for the entire message.
+
+    Args:
+        m (list): The entire message to be encoded, represented as a list of 
+                  coefficients. The length of m must be a multiple of k0.
+        k0 (int): The size of each message chunk (i.e., the number of coefficients 
+                  per chunk). This determines the degree of the polynomials used 
+                  for encoding.
+        c (int): A scaling factor that determines the number of evaluation points 
+                 per chunk.
+
+    Returns:
+        list: A list containing the Reed-Solomon encoded message. The length of 
+              this list is len(m) * c.
+
+    Raises:
+        AssertionError: If the length of m is not a multiple of k0.
+
+    Example:
+        >>> m = [1, 2, 3, 4]
+        >>> k0 = 2
+        >>> c = 2
+        >>> rs_encode(m, k0, c)
+        [1, 3, 5, 7, 3, 7, 11, 15]
+        # This represents two encoded chunks:
+        # [1, 3, 5, 7] for [1, 2] and [3, 7, 11, 15] for [3, 4]
+    """
     assert len(m) % k0 == 0, "len(m): %d is not a multiple of k0: %d" % (len(m), k0)
     code = []
     alpha = list(range(k0 * c)) # alpha = [0, 1, 2, ... , k0*c - 1]
@@ -41,6 +114,35 @@ def rs_encode(m, k0, c):
     return code
 
 def basefold_encode(m, k0, depth, c, T, G0=rep_encode, debug=False):
+    """
+    Perform basefold encoding on the input message.
+
+    This function encodes the input message `m` using the basefold encoding scheme with
+    specified parameters. It divides `m` into chunks, applies an encoding function `G0`
+    (default is repetition encoding), and iteratively combines chunks using transformation
+    tables `T` over a given depth.
+
+    Args:
+        m (list): The input message to be encoded. Must have a length of `k0 * 2**depth`.
+        k0 (int): The base chunk size for encoding.
+        depth (int): The number of encoding rounds or the depth of the encoding process.
+        c (int): The blowup factor determining the expansion of the code.
+        T (list of lists): Transformation tables for each encoding depth. Each table
+            must have a length equal to the current chunk size.
+        G0 (callable, optional): The encoding function to apply to each chunk.
+            Defaults to `rep_encode`.
+        debug (bool, optional): If `True`, prints debug information during encoding.
+            Defaults to `False`.
+
+    Returns:
+        list: The basefold encoded code as a list.
+
+    Raises:
+        AssertionError: If the length of `m` does not equal `k0 * 2**depth`.
+        AssertionError: If the length of `T` does not equal `depth`.
+        AssertionError: If the length of a transformation table does not match the current
+            chunk size during encoding.
+    """
     if debug: print(">>> basefold_encode: m={}, k0={}, d={}, blowup_factor={}, T={}".format(m, k0, depth, c, T))
     kd = k0 * 2 ** depth
     blowup_factor = c
