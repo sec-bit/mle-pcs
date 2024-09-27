@@ -311,7 +311,7 @@ class UniPolynomial:
         return cls.ntt_core(coeffs.copy(), omega, k_log_size)
 
     @classmethod
-    def ntt_coeffs_from_evals(cls, evals, k_log_size, omega):
+    def ntt_coeffs_from_evals(cls, evals, k_log_size, omega, one=1):
         n = len(evals)
         assert (n & (n - 1) == 0), "Domain size must be a power of 2"
 
@@ -320,7 +320,7 @@ class UniPolynomial:
 
         omega_inv = omega.inverse()
         domain_size = UniPolynomial.scalar_constructor(2 ** k_log_size)
-        domain_size_inv = domain_size.inverse()
+        domain_size_inv = one / domain_size
         
         coeffs = cls.ntt_core(evals.copy(), omega_inv, k_log_size)
         return [c * domain_size_inv for c in coeffs]
@@ -505,7 +505,7 @@ class UniPolynomial:
         left_result = UniPolynomial.polynomial_multiplication(left_poly, right_tree["poly"])
         right_result = UniPolynomial.polynomial_multiplication(right_poly, left_tree["poly"])
 
-        result = [left_result[i] + right_result[i] for i in range(len(left_result))]
+        result = UniPolynomial.polynomial_addition(left_result, right_result)
 
         return result
     
@@ -539,7 +539,7 @@ class UniPolynomial:
         
         quotient = [0] * (len(dividend) - len(divisor) + 1)
         for i in range(len(quotient)-1, -1, -1):
-            quotient[i] = dividend[-1] / divisor[-1]
+            quotient[i] = dividend[-1] // divisor[-1]
             for j in range(len(divisor)):
                 dividend[i+j] -= quotient[i] * divisor[j]
             dividend.pop()

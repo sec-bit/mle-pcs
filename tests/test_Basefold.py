@@ -89,7 +89,7 @@ class BasefoldTest(TestCase):
                 'f_evals': f_evals,
                 'v': v
             }
-            print(f'{i}th test, params:{params}')
+            # print(f'{i}th test, params:{params}')
 
             T = []
             cnt = 0
