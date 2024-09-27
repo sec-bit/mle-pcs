@@ -7,15 +7,17 @@ class Field:
         'add': 0,
         'sub': 0,
         'mul': 0,
-        'div': 0
+        'div': 0,
+        'mod': 0,
+        'ivs': 0,
     }
 
     def __init__(self, value):
         self.value = value if isinstance(value, list) else [value]
 
     @classmethod
-    def _increment_count(cls, operation):
-        cls.operation_counts[operation] += 1
+    def _increment_count(cls, operation, cnt=1):
+        cls.operation_counts[operation] += cnt
 
     @classmethod
     def get_operation_count(cls, operation=None):
@@ -74,8 +76,14 @@ class Field:
     def __rtruediv__(self, other):
         return self._operate(other, lambda a, b: b / a, 'div')
 
+    def __floordiv__(self, other):
+        return self._operate(other, lambda a, b: a // b, 'div')
+
+    def __rfloordiv__(self, other):
+        return self._operate(other, lambda a, b: b // a, 'div')
+
     def __pow__(self, exponent):
-        self._increment_count('mul')  # Consider power as a series of multiplications
+        self._increment_count('mul', exponent - 1)  # Consider power as a series of multiplications
         if isinstance(exponent, int):
             if exponent >= 0:
                 return Field([pow(a, exponent) for a in self.value])
@@ -89,6 +97,7 @@ class Field:
             raise TypeError(f"Unsupported exponent type: {type(exponent)}")
 
     def inverse(self):
+        self._increment_count('ivs')
         return Field([1 / a for a in self.value])
 
     def __str__(self):
@@ -111,6 +120,16 @@ class Field:
     @classmethod
     def random_element(cls):
         return cls(random.randint(0, 193))
+
+    def __neg__(self):
+        self._increment_count('sub')  # Negation is essentially subtraction from zero
+        return Field([-a for a in self.value])
+
+    def __mod__(self, other):
+        return self._operate(other, lambda a, b: a % b, 'mod')
+
+    def __rmod__(self, other):
+        return self._operate(other, lambda a, b: b % a, 'mod')
 
 def magic(Fp):
     def magic_field(value):
