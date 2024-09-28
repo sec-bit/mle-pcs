@@ -211,19 +211,6 @@ class UniPolynomialTest(TestCase):
         
         self.assertEqual(evals, expected)
 
-    # def test_compute_linear_combination_linear_moduli(self):
-    #     from sage.all import GF
-    #     from field import magic
-
-    #     Fp = magic(GF(193))
-    #     domain = [Fp(1), Fp(2), Fp(3), Fp(4)]
-    #     tree = UniPolynomial.construct_subproduct_tree_fix(domain)
-    #     ws = [Fp(1), Fp(8), Fp(27), Fp(64)]
-    #     result = UniPolynomial.compute_linear_combination_linear_moduli_fix(tree, ws, domain)
-    #     expected = UniPolynomial.compute_eval_fix(tree, result, domain)
-
-    #     self.assertEqual(ws, expected)
-
     def test_compute_z_derivative(self):
         z = [1, 2, 3, 4]
         result = UniPolynomial.compute_z_derivative(z)
