@@ -1,5 +1,10 @@
 import unittest
 from sage.all import GF
+import sys
+
+sys.path.append('../src')
+sys.path.append('src')
+
 from mle2 import MLEPolynomial, pow_2
 
 # Assuming Fp is defined in your original file, if not, you may need to import or define it here
