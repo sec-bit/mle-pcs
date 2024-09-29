@@ -94,8 +94,7 @@ $$
 \begin{bmatrix}
 G_{0} &  G_{0} \\
 G_{0}\cdot T_{0} & G_{0}\cdot T'_{0}
-\end{bmatrix}
-=
+\end{bmatrix}=
 \begin{bmatrix} 1 & 1 \end{bmatrix} 
 \begin{bmatrix}
 \mathbf{m}_lG_0 & \mathbf{m}_lG_0\\
@@ -113,41 +112,42 @@ m_0 & m_1
 \begin{bmatrix}
 1 & 0 & 1 & 0 \\
 0 & 1 & 0 & 1 \\
-\end{bmatrix}
-= 
+\end{bmatrix} = 
 \begin{bmatrix}
 m_0 & m_1 & m_0 & m_1 \\
 \end{bmatrix}
 $$
 
-Similarly, the bottom-left submatrix is:
+And the bottom-left submatrix is:
 
 $$
-\mathbf{m}_r(G_0T_0) = (\mathbf{m}_rG_0)T_0 =\begin{bmatrix}
+\begin{split}
+\mathbf{m}_r(G_0T_0) = (\mathbf{m}_rG_0)T_0 &=\begin{bmatrix}
 m_2 & m_3
 \end{bmatrix}
 \begin{bmatrix}
 1 & 0 & 1 & 0 \\
 0 & 1 & 0 & 1 \\
-\end{bmatrix} T_0 =  \begin{bmatrix}
+\end{bmatrix} T_0 \\
+& =  \begin{bmatrix}
 m_2 & m_3 & m_2 & m_3
 \end{bmatrix}\begin{bmatrix}
 t_0 & 0 & 0 & 0\\
 0 & t_1 & 0 & 0\\
 0 & 0 & t_2 & 0\\
 0 & 0 & 0 & t_3\\
-\end{bmatrix} = (t_0m_2, t_1m_3, t_2m_2, t_3m_3)
+\end{bmatrix} \\
+& = (t_0m_2, t_1m_3, t_2m_2, t_3m_3)
+\end{split}
 $$
 
-Similarly, the result for $\mathbf{m}_r(G_0T'_0)$ is analogous, with $t_i$ replaced by $t'_i$:
+The result for $\mathbf{m}_r(G_0T'_0)$ is almost the same, with $t_i$ replaced by $t'_i$:
 
 $$
 \mathbf{m}_r(G_0T'_0) = (t'_0m_2, t'_1m_3, t'_2m_2, t'_3m_3)
 $$
 
 It is easy to verify that we obtain the same result for $\mathbf{m}$ encoded with $G_1$.
-
-> TODO: Add an example of verification.
 
 We can simplify this computation process with the following equation:
 
