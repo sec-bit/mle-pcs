@@ -6,14 +6,16 @@
 
 - [Background](#background)
 - [Project Purpose](#project-purpose)
+- [Features](#features)
 - [Project Structure](#project-structure)
 - [Implementation Details](#implementation-details)
   - [Reference Implementations](#reference-implementations)
   - [Jupyter Notebooks](#jupyter-notebooks)
   - [Research Notes](#research-notes)
-- [Features](#features)
 - [Important Notices](#important-notices)
-- [Future Work](#future-work)
+- [PCS List](#pcs-list)
+  - [On-going](#on-going)
+  - [More PCS (Future work)](#more-pcs-future-work)
 - [Contributors](#contributors)
 - [References](#references)
 - [Acknowledgments](#acknowledgments)
@@ -27,6 +29,13 @@ This repository, **mle-pcs**, is a research-driven project focused on the Compar
 ## Project Purpose
 
 The primary objective of this project is to conduct a comprehensive comparison of various MLE PCS schemes. By implementing reference codes and analyzing their protocol designs, security parameters, and performance metrics, we aim to identify the strengths and weaknesses of each scheme.
+
+## Features
+
+- **Reference Implementations**: Python-based implementations of various MLE PCS schemes to deepen understanding.
+- **Interactive Tutorials**: Jupyter notebooks serve as interactive playgrounds for experimenting with different schemes.
+- **Comprehensive Notes**: Detailed research notes available in each folder, provided in both English and Chinese.
+- **Future Blog Posts**: Planned blog posts will elaborate on the research findings and comparisons.
 
 ## Project Structure
 
@@ -90,35 +99,24 @@ We have implemented reference code for several MLE PCS schemes using Python. Pyt
 
 Interactive Jupyter Notebooks are provided to serve as playgrounds and tutorials for experimenting with different PCS schemes. These notebooks allow users to run code snippets, visualize results, and gain hands-on experience with the algorithms.
 
-TODO: add links to the notebooks
-
-- **Basefold.ipynb**: Tutorial and experiments related to the BaseFold PCS scheme.
-- **bcho_pcs.ipynb**: Tutorial and experiments related to the BCHO PCS scheme.
-- **kzg10.ipynb**: Implementation and analysis of the KZG10 PCS scheme.
-- **zeromorph.ipynb**: Tutorial and experiments related to the Zeromorph PCS scheme.
-- **zeromorph_mapping_tutorial.ipynb**: Step-by-step guide to the Zeromorph PCS mapping process.
+- [**Basefold.ipynb**](src/Basefold.ipynb): Tutorial and experiments related to the BaseFold PCS scheme.
+- [**bcho_pcs.ipynb**](src/bcho_pcs.ipynb): Tutorial and experiments related to the BCHO PCS scheme.
+- [**kzg10.ipynb**](src/kzg10.ipynb): Implementation and analysis of the KZG10 PCS scheme.
+- [**zeromorph.ipynb**](src/zeromorph.ipynb): Tutorial and experiments related to the Zeromorph PCS scheme.
+- [**zeromorph_mapping_tutorial.ipynb**](zeromorph/zeromorph_mapping_tutorial.ipynb): Step-by-step guide to the Zeromorph PCS mapping process.
 
 ### Research Notes
 
 Comprehensive research notes are available within each relevant folder, provided in both English and Chinese. These notes document our understanding, analysis, and insights into each PCS scheme.
 
-TODO: add links to the notes
-
-- **basefold/**: Detailed notes on the BaseFold scheme.
-- **fri/**: Insights and analysis on the FRI scheme.
-- **fri-binius/**: Comprehensive exploration of the Binius-PCS scheme.
-- **zeromorph/**: Tutorials and notes on Zeromorph PCS.
+- [**basefold/**](basefold/): Detailed notes on the BaseFold scheme.
+- [**fri/**](fri/): Insights and analysis on the FRI scheme.
+- [**fri-binius/**](fri-binius/): Comprehensive exploration of the Binius-PCS scheme.
+- [**zeromorph/**](zeromorph/): Tutorials and notes on Zeromorph PCS.
 
 📌 **Request for Feedback**: These notes are open for proofreading and reviewing. We welcome any advice, corrections, or suggestions to improve the content. Your contributions are highly appreciated!
 
 📅 **Upcoming Blog Posts**: In the future, we plan to polish and publish these notes as blog posts to reach a wider audience and share our findings more broadly.
-
-## Features
-
-- **Reference Implementations**: Python-based implementations of various MLE PCS schemes to deepen understanding.
-- **Interactive Tutorials**: Jupyter notebooks serve as interactive playgrounds for experimenting with different schemes.
-- **Comprehensive Notes**: Detailed research notes available in each folder, provided in both English and Chinese.
-- **Future Blog Posts**: Planned blog posts will elaborate on the research findings and comparisons.
 
 ## Important Notices
 
