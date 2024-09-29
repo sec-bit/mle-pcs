@@ -446,8 +446,12 @@ $$
 其中 $d_5$ 的求逆运算可以沿着 Extension Tower 逐层递归，递归过程中的主要运算开销为三次乘法运算。还有 $d_3$ 的平方运算，它也可以递归地计算：
 
 $$
-a_1^2 = (e_0 + e_1\cdot\alpha_{i-1})^2 = e_0^2 + e_0\cdot e_1\cdot\alpha_{i-1} + e_1^2\cdot\alpha_{i-1}^2
-= (e_0^2 + e_1^2) + (e_1^2\alpha_{i-2})\cdot\alpha_{i-1} 
+\begin{split}
+a_1^2 &= (e_0 + e_1\cdot\alpha_{i-1})^2 \\
+& = e_0^2 + e_1^2\cdot\alpha_{i-1}^2 \\
+& = e_0^2 + e_1^2\cdot(\alpha_{i-2}\alpha_{i-1} + 1) \\
+& = (e_0^2 + e_1^2) + (e_1^2\alpha_{i-2})\cdot\alpha_{i-1}  \\
+\end{split}
 $$
 
 详细的递归效率分析可以参考 [FP97]。总体上，这个计算复杂度和 Karatsuba 算法复杂度相当，从而很大程度上降低了求逆的算法复杂度。

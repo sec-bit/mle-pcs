@@ -444,8 +444,12 @@ $$
 The inversion operation of $d_5$ can be recursively calculated layer by layer along the Extension Tower. The main computational cost in the recursive process is three multiplication operations. There's also the squaring operation of $d_3$, which can also be calculated recursively:
 
 $$
-a_1^2 = (e_0 + e_1\cdot\alpha_{i-1})^2 = e_0^2 + e_0\cdot e_1\cdot\alpha_{i-1} + e_1^2\cdot\alpha_{i-1}^2
-= (e_0^2 + e_1^2) + (e_1^2\alpha_{i-2})\cdot\alpha_{i-1} 
+\begin{split}
+a_1^2 &= (e_0 + e_1\cdot\alpha_{i-1})^2 \\
+& = e_0^2 + e_1^2\cdot\alpha_{i-1}^2 \\
+& = e_0^2 + e_1^2\cdot(\alpha_{i-2}\alpha_{i-1} + 1) \\
+& = (e_0^2 + e_1^2) + (e_1^2\alpha_{i-2})\cdot\alpha_{i-1}  \\
+\end{split}
 $$
 
 For detailed recursive efficiency analysis, please refer to [FP97]. Overall, the computational complexity is comparable to the Karatsuba algorithm, thus greatly reducing the algorithmic complexity of inversion.
