@@ -75,7 +75,7 @@ $$
     \Pr_{a \in A}[\Delta(a, V) = 0] = 1
 $$
 
-### 作弊的 Prover
+### 恶意的 Prover
 
 如果 Prover 作弊，假设在 Prover 发送给 Verifier 的 $m$ 个向量 $\vec{u} = (u_0, \ldots, u_{m-1})$ 中混入了一个向量距离 $V$ 有 $\delta$ 远，即
 
@@ -145,7 +145,9 @@ $$
   
 可以看到，$\delta$ 的增加使得 $\epsilon$ 变大， $(1 - \delta)^{\kappa}$ 变小，在实际中，$\epsilon$ 是非常小的，$(1 - \delta)^{\kappa}$ 在整个和式中所占比例更大，因此整体还是会变小的，这对于整个 FRI 协议来说，soundness 变小，也说明会更加安全。
 
-上面是从 soundness 角度分析的，视频 [Proximity Gaps & Applications to Succinct Proofs](https://www.youtube.com/watch?v=8AMiZdWA1eM) 中还提到一点，$\delta$ 的增大会使得对应的 Correlated Agreement 相关结论变得更弱，这并不是好事。 下面就介绍下 Correlated Agreement 结论。
+上面是从 soundness 角度分析的，视频 [Proximity Gaps & Applications to Succinct Proofs](https://www.youtube.com/watch?v=8AMiZdWA1eM) 中还提到一点，$\delta$ 的增大会使得 Correlated Agreement 结论变得更弱， Correlated Agreement 是一个比 Proximity Gaps 更强的结论（到目前为止，还没有证明出它们等价）。下面就介绍下 Correlated Agreement 结论。
+
+<!-- 我理解是从整个协议层面考虑，此时 Prover 能向 Verifier 确保的存在码字 $v_{i} \in V$ ，使得 $v_{i}$ 与 $u_{i}$ 一致的区域 $\mathcal{D}'$ 变得比原来更小了，说明协议能够承诺或者确保的事情比原来更弱了。举个例子，协议原来能确保的是一个数 $x > 100$ ，现在只能确保这个数 $x > 1$ 了。 -->
 
 ## Correlated Agreement
 
@@ -162,7 +164,16 @@ $$
 1. **Density** ： $\frac{|\mathcal{D}'|}{|\mathcal{D}|} \ge 1 - \delta$ ，
 2. **Agreement** ：对任意的 $i \in \{0, \ldots, m - 1\}$ ，有 $u_i|_{\mathcal{D}'} = v_i|_{\mathcal{D}'}$ 。
 
-意思是如果落入阴影区域的元素很多，占比比 Proximity Gaps 结论中的 $\epsilon$ 还大的话，那么在 $V$ 中存在码字 $v_0, \ldots, v_{m-1}$ ，会在区域 $\mathcal{D}$ 中存在一个占比很大(超过 $1 - \delta$ )的子集 $\mathcal{D}'$ ，在这里每个 $u_i$ 都能与对应的 $v_i$ 在 $\mathcal{D}'$ 上是一致的。
+意思是如果落入阴影区域的元素很多，占比比 Proximity Gaps 结论中的 $\epsilon$ 还大的话，那么在 $V$ 中存在码字 $v_0, \ldots, v_{m-1}$ ，会在区域 $\mathcal{D}$ 中存在一个占比很大(超过 $1 - \delta$ )的子集 $\mathcal{D}'$ ，在这里每个 $u_i$ 都能与对应的 $v_i$ 在 $\mathcal{D}'$ 上是一致的。根据 Proximity Gaps 的结论，$A$ 中的元素分为以下两种情况：
+
+1. $\Pr_{a \in A}[\Delta(a, V) \le \delta] \le \epsilon$
+2. $\Pr_{a \in A}[\Delta(a, V) \le \delta] = 1$
+
+现在落入阴影区域的元素占比比 $\epsilon$ 还大，那么自然排除第一种情况，得出 $A$ 中所有的元素都落在阴影区域中，即
+
+$$\Pr_{a \in A}[\Delta(a, V) \le \delta] = 1 .$$
+
+而 Correlated Agreement 定理给出了更加具体的结论，说的是在折叠之前的元素 $u_{i}$ 与在编码空间 $V$ 中找到的码字 $v_{i}$ 之间的关系。
 
 例如，Prover 想证明的是一个多项式 $f \in \mathrm{RS}[\mathbb{F}_q, \mathcal{D}^{(0)}, k]$ ，设 $\mathcal{D}^{(0)} = \{x_1, \ldots, x_n\}$ ，计算 $\{f(x_1), \ldots, f(x_n)\}$ ，Prover 就会将这些值的 oracle 发送给 Verifier ，实际中会采用 Merkle 树的方式来实现 oracle。
 

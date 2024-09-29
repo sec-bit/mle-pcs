@@ -32,7 +32,7 @@ Initially, the Prover wants to prove to the Verifier that the degree of $f(x)$ i
 2. Prove that the degree of function $h(x)$ is less than $k/2$, i.e., $h(x) \in \mathrm{RS}[\mathbb{F}_q, \mathcal{D}^{(1)}, k/2]$
 3. Prove that $f(x) = g(x^2) + x \cdot h(x^2)$
 
-Where $|{D}^{(1)}| = n/2$. The third item is to prove that the odd-even splitting is correct. Similarly, $g(x)$ and $h(x)$ can be decomposed into odd and even terms like $f(x)$, decomposing them into two polynomials of degree less than $k/4$, so we need to prove that 4 polynomials are of degree less than $k/4$, until finally decomposing to prove constant polynomials. This process is shown in the figure below, and we can see that the polynomials to be proved are growing in the form of powers of 2. In this process, in order to prove that the odd-even splitting is not problematic, we need to send oracles about all these polynomials to the Verifier, and we can imagine that there are too many polynomials being sent, which grow explosively as $k$ increases.
+where $|{D}^{(1)}| = n/2$. The third item is to prove that the odd-even splitting is correct. Similarly, $g(x)$ and $h(x)$ can be decomposed into odd and even terms like $f(x)$, decomposing them into two polynomials of degree less than $k/4$, so we need to prove that 4 polynomials are of degree less than $k/4$, until finally decomposing to prove constant polynomials. This process is shown in the figure below, and we can see that the polynomials to be proved are growing in the form of powers of 2. In this process, in order to prove that the odd-even splitting is not problematic, we need to send oracles about all these polynomials to the Verifier, and we can imagine that there are too many polynomials being sent, which grow explosively as $k$ increases.
 
 ![](./img/fri-proximity-gap-binary.svg)
 
@@ -75,7 +75,7 @@ $$
     \Pr_{a \in A}[\Delta(a, V) = 0] = 1
 $$
 
-### Cheating Prover
+### Malicious Prover
 
 If the Prover cheats, suppose one vector in the $m$ vectors $\vec{u} = (u_0, \ldots, u_{m-1})$ sent by the Prover to the Verifier is $\delta$ far from $V$, that is
 
@@ -145,7 +145,7 @@ This probability consists of two parts, the increase of $\delta$ will lead to:
   
 It can be seen that the increase of $\delta$ causes $\epsilon$ to increase and $(1 - \delta)^{\kappa}$ to decrease. In practice, $\epsilon$ is very small, and $(1 - \delta)^{\kappa}$ accounts for a larger proportion in the whole sum, so the overall will still decrease, which means that for the entire FRI protocol, the soundness decreases, indicating that it will be more secure.
 
-The above analysis is from the perspective of soundness. The video [Proximity Gaps & Applications to Succinct Proofs](https://www.youtube.com/watch?v=8AMiZdWA1eM) also mentions a point that the increase of $\delta$ will make the corresponding Correlated Agreement related conclusions weaker, which is not a good thing. Let's introduce the Correlated Agreement conclusion below.
+The above analysis is from the perspective of soundness. The video [Proximity Gaps & Applications to Succinct Proofs](https://www.youtube.com/watch?v=8AMiZdWA1eM) also mentions a point that the increase of $\delta$ will make the corresponding Correlated Agreement related conclusions weaker.  Correlated Agreement is a stronger conclusion than Proximity Gaps (so far, their equivalence has not been proven). Let's introduce the Correlated Agreement conclusion below.
 
 ## Correlated Agreement
 
@@ -163,6 +163,18 @@ where $\epsilon$ is the $\epsilon$ given in the Proximity Gaps conclusion, then 
 2. **Agreement**: For any $i \in \{0, \ldots, m - 1\}$, we have $u_i|_{\mathcal{D}'} = v_i|_{\mathcal{D}'}$.
 
 This means that if there are many elements falling into the shaded area, with a proportion larger than $\epsilon$ in the Proximity Gaps conclusion, then there exist codewords $v_0, \ldots, v_{m-1}$ in $V$, and there will be a subset $\mathcal{D}'$ in the domain $\mathcal{D}$ with a very large proportion (more than $1 - \delta$), where each $u_i$ is consistent with the corresponding $v_i$ on $\mathcal{D}'$.
+
+According to the conclusion of Proximity Gaps, the elements in $A$ fall into two categories:
+
+1. $\Pr_{a \in A}[\Delta(a, V) \le \delta] \le \epsilon$
+2. $\Pr_{a \in A}[\Delta(a, V) \le \delta] = 1$
+
+Now, if the proportion of elements falling into the shaded area is greater than $\epsilon$ , we can naturally exclude the first case. This leads to the conclusion that all elements in $A$ fall within the shaded area, i.e.,
+
+$$\Pr_{a \in A}[\Delta(a, V) \le \delta] = 1 .$$
+
+The correlated agreement theorem provides a more specific conclusion. It describes the relationship between the elements $u_{i}$ before folding and the codewords $v_{i}$ found in the encoding space $V$ .
+
 
 For example, if the Prover wants to prove that a polynomial $f \in \mathrm{RS}[\mathbb{F}_q, \mathcal{D}^{(0)}, k]$, let $\mathcal{D}^{(0)} = \{x_1, \ldots, x_n\}$, calculate $\{f(x_1), \ldots, f(x_n)\}$, the Prover will send the oracle of these values to the Verifier. In practice, Merkle trees are used to implement the oracle.
 
