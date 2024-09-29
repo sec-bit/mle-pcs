@@ -1,4 +1,4 @@
-# Basefold 笔记
+# Basefold 笔记：可折叠线性编码
 
 Basefold 可以看成是对 FRI 的扩展，从而能支持 Multi-linear Polynomial 的 Proximity Proofs 和 Evaluation Arguments。与 Libra-PCS, Hyrax-PCS，Virgo-PCS 相比，Basefold 不依赖 MLE Quotients Equation 来证明一个 MLE 在 $\mathbf{u}$ 点处的取值：
 

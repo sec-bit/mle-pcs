@@ -1,4 +1,4 @@
-# Basefold 笔记： MLE Evaluation Argument
+# Basefold 笔记： MLE 求值证明
 
 
 假设我们有一个 MLE 多项式 $\tilde{f}(\vec{X})\in\mathbb{F}[\vec{X}]^{\leq1}$，一个求值点 $\mathbf{u}\in\mathbb{F}^d$，以及多项式在求值点的运算结果 $v=\tilde{f}(\mathbf{u})$ 。我们想基于 Basefold-IOPP 协议来构造一个 Polynomial Evaluation Argument。

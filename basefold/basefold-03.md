@@ -1,4 +1,4 @@
-# Notes on Basefold: MLE Evaluation Argument
+# Notes on Basefold (Part III): MLE Evaluation Argument
 
 - Yu Guo <yu.guo@secbit.io>
 - Jade Xie <jade@secbit.io>

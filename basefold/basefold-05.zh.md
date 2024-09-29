@@ -1,4 +1,4 @@
-# Basefold 笔记：IOPP Soundness
+# Basefold 笔记：IOPP 可靠性分析
 
 在本篇文章中将梳理 [ZCF23] 论文中给出的 IOPP soundness 证明思路，其与 [BKS18] 中关于 FRI 协议的 soundness 证明类似。其中用到了二叉树的方式来分析 Prover 可能作弊的点，这个思想也在 [BGKS20] DEEP-FRI  协议的 soundness 证明中出现过。
 
