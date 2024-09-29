@@ -114,6 +114,8 @@ Comprehensive research notes are available within each relevant folder, provided
 - [**fri-binius/**](fri-binius/): Comprehensive exploration of the Binius-PCS scheme.
 - [**zeromorph/**](zeromorph/): Tutorials and notes on Zeromorph PCS.
 
+*You can also find the PDF version of the research notes at [https://sec-bit.github.io/mle-pcs/](https://sec-bit.github.io/mle-pcs/). Note PDF files may not be fully updated to the latest version.*
+
 📌 **Request for Feedback**: These notes are open for proofreading and reviewing. We welcome any advice, corrections, or suggestions to improve the content. Your contributions are highly appreciated!
 
 📅 **Upcoming Blog Posts**: In the future, we plan to polish and publish these notes as blog posts to reach a wider audience and share our findings more broadly.
