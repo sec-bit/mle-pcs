@@ -1,4 +1,6 @@
-# ZeroMorph
+# Notes on ZeroMorph
+
+- Yu Guo <yu.guo@secbit.io>
 
 ZeroMorph [KT23] is an MLE polynomial commitment scheme based on KZG10. In fact, the ZeroMorph scheme is a more general framework that can be based on different Univariate Polynomial Commitment schemes, such as the FRI-based ZeroMorph scheme.
 

@@ -1,4 +1,6 @@
-# ZeroMorph
+# ZeroMorph 笔记
+
+- Yu Guo <yu.guo@secbit.io>
 
 Zeromorph [KT23] 是一个基于 KZG10 的 MLE 多项式承诺方案。事实上，Zeromorph 方案是一个更一般性的框架，可以基于不同的 Univariate Polynomial Commitment 方案，比如 FRI-based Zeromorph 方案。
 
