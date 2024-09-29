@@ -1,5 +1,8 @@
 # Notes on FRI-Binius (Part I): Binary Towers
 
+- Yu Guo <yu.guo@secbit.io>
+- Jade Xie <jade@secbit.io>
+
 Binary fields possess elegant internal structures, and Binius aims to fully utilize these internal structures to construct efficient SNARK proof systems. This article mainly discusses the Binary Fields that Binius relies on at its core and the construction methods of Extension Towers based on Binary Fields. Binary Fields provide smaller fields and are compatible with various tool constructions in traditional cryptography while also being able to fully utilize optimization of special instructions on hardware. There are two main advantages to choosing Extension Towers: one is that the recursive Extension construction provides a consistent and incremental Basis selection, allowing Small Fields to be embedded into Large Fields in a very natural way; the other advantage is that multiplication and inversion operations have efficient recursive algorithms.
 
 ## Extension Fields

@@ -1,5 +1,8 @@
 # Notes on FRI-Binius (Part I): Binary Towers
 
+- Yu Guo <yu.guo@secbit.io>
+- Jade Xie <jade@secbit.io>
+
 二进制域拥有优美的内部结构，而 Binius 是意图充分利用这些内部结构，构造高效的 SNARK 证明系统。本文主要讨论 Binius 底层所依赖的 Binary Fields 以及 基于 Binary Fields 的 Extension Tower 的构造方法。Binary Fields 提供了更小的 Fields，并且兼容传统密码学中的各种工具构造，同时也可以充分利用硬件上的特殊指令的优化。选用 Extension Tower 优点主要有两个，一个是递归的 Extension 构造提供了一致的、增量式的 Basis 选择，从而使得 Small Field 可以以非常自然的方式嵌入到一个 Large Field 中，另一个优点是乘法和求逆运算存在高效的递归算法。
 
 ## Extension Fields
