@@ -3,7 +3,7 @@ class DummyGroup:
     def __init__(self, field):
         self.field = field
     
-    def identity():
+    def identity(self):
         return self.field.zero()
     
     def generator(self):
