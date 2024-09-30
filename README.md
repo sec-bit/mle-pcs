@@ -172,6 +172,8 @@ We encourage contributions from the community to enhance this project. If you wo
 
 TODO: list current contributors
 
+You can find guidelines for contributing to this project [here](CONTRIBUTING.md).
+
 ## References
 
 - [DP23] Diamond, Benjamin E., and Jim Posen. "Succinct arguments over towers of binary fields." Cryptology ePrint Archive (2023).
