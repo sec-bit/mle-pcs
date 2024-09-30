@@ -123,15 +123,6 @@ class MLEPolynomial:
             half >>= 1
         return f[0]
 
-    @staticmethod
-    def eval_from_coeffs(coeffs, z):
-        t = 1
-        v = 0
-        for i in range(0, len(coeffs)):
-            v += coeffs[i] * t
-            t *= z
-        return v
-
     def decompose_by_div(self, point):
         """
         Divide an MLE at the point: [X_0, X_1, ..., X_{n-1}] in O(N) (Linear!)
@@ -192,3 +183,25 @@ class MLEPolynomial:
             half >>= 1
 
         return quotients, coeffs[0]
+    
+    def mul_quotients(quotient, remainder, p):
+        """
+        r: current remainder
+        q: current quotient
+        p: current point
+
+        last_remainder
+        = r + (xi - p) * q
+        = r - p * q + xi * q
+        = (r - p * q) * (1 - xi) + (r - (p - 1) * q) * xi
+        """
+
+        assert isinstance(quotient, MLEPolynomial), "quotient must be an MLEPolynomial"
+        assert isinstance(remainder, MLEPolynomial), "remainder must be an MLEPolynomial"
+
+        half = len(quotient.evals)
+        result = [0] * 2 * half
+        for i, (q, r) in enumerate(zip(quotient.evals, remainder.evals)):
+            result[i] = r - p * q
+            result[i + half] = r - (p - 1) * q
+        return MLEPolynomial(result, quotient.num_var + 1)
