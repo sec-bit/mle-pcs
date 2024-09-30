@@ -85,7 +85,9 @@ class KZG10Commitment:
 
         if isinstance(polynomial, list):
             polynomial = UniPolynomial(polynomial)
-        elif not isinstance(polynomial, type(Commitment.scalar)):    
+        elif isinstance(polynomial, UniPolynomial):
+            pass
+        else:
             raise TypeError("Invalid polynomial type")
         
         if polynomial.degree > self.max_degree:

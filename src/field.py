@@ -138,4 +138,5 @@ def magic(Fp):
     magic_field.zero = lambda : Fp.zero()
     magic_field.one = lambda : Fp.one()
     magic_field.primitive_element = lambda : Fp.primitive_element()
+    magic_field.random_element = lambda : Fp.random_element()
     return magic_field
