@@ -56,3 +56,9 @@ def log_2(x):
         x >>= 1  # Bit shift right (equivalent to integer division by 2)
         result += 1
     return result
+
+def from_bytes(bytes):
+    res = 0
+    for b in bytes:
+        res = (res << 8) + b
+    return res
