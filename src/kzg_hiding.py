@@ -1,6 +1,7 @@
 # This KZG implementation is adapted from the arkworks project
 # https://github.com/arkworks-rs/poly-commit
 # Specifically, from the file poly-commit/src/kzg10/mod.rs
+# Any modification to arkwork's code will be marked in this file
 # Commit version: 12f5529c9ca609d07dd4683fcd1e196bc375eb0d
 
 from group import DummyGroup
@@ -8,8 +9,11 @@ from unipolynomial import UniPolynomial
 from field import Field
 from random import randint
 
+# This argument is set false to not use the WNAF method for multi-scalar multiplication
+# because WNAF method is not tested yet
 negation_is_cheap = False
 
+# This class is builded by ourselves.
 class Commitment:
     """Represents a commitment in the KZG scheme."""
     def __init__(self, group, value):
@@ -60,29 +64,33 @@ class Commitment:
     def __repr__(self):
         return f"Commitment({self.value})"
 
+# This class is partially adapted from 'struct KZG10' in arkworks project
 class KZG10Commitment:
     """KZG10 commitment scheme implementation."""
 
-    def __init__(self, G1, G2, max_degree, debug=False):
+    # There is a little modification
+    # In python implementation, we use __init__ instead of generics in rust, to store information of G1, G2
+    def __init__(self, G1, G2, debug=False):
         """
         Initialize the KZG10 commitment scheme.
         
         Args:
             G1, G2: Elliptic curve groups
-            max_degree: Maximum polynomial degree supported
             debug: Enable debug assertions
         """
         self.G1 = G1
         self.G2 = G2
-        self.max_degree = max_degree
         self.debug = debug
-        self.params = self.setup()
     
-    def setup(self, produce_g2_powers=False, secret_symbol = None, g1_generator = None, g2_generator = None) -> None:
+    # Implemented following the function 'setup' in arkworks project,
+    # expect that this function enables input a secret_symbol rather than generate the beta using random function
+    # and this function does not return prepared_h and prepared_beta_h which are not used in python implementation
+    def setup(self, max_degree, produce_g2_powers=False, secret_symbol = None, g1_generator = None, g2_generator = None) -> None:
         """
         Generate the structured reference string (SRS).
         
         Args:
+            max_degree: Maximum polynomial degree supported
             produce_g2_powers: Whether to produce powers in G2
             secret_symbol: Secret value for SRS (if None, randomly generated)
             g1_generator, g2_generator: Generators for G1 and G2 (if None, randomly chosen)
@@ -98,35 +106,57 @@ class KZG10Commitment:
             h = self.G2.field(g2_generator)
 
         if secret_symbol is None:
-            s = self.G1.field.random_element()
+            beta = self.G1.field.random_element()
         else:
-            s = secret_symbol
+            beta = secret_symbol
 
         gamma_g = self.G1.field.random_element()
 
-        powers_of_s = [s ** i for i in range(self.max_degree + 2)]
-        powers_of_g = [g * powers_of_s[i] for i in range(self.max_degree + 1)]
-        powers_of_gamma_g = [gamma_g * powers_of_s[i] for i in range(self.max_degree + 2)]
+        powers_of_s = [beta ** i for i in range(max_degree + 2)]
+        powers_of_g = [g * powers_of_s[i] for i in range(max_degree + 1)]
+        powers_of_gamma_g = [gamma_g * powers_of_s[i] for i in range(max_degree + 2)]
         neg_powers_of_h = []
         if produce_g2_powers:
             neg_powers_of_beta = [1]
-            cur = 1 / s
-            for _ in range(self.max_degree):
+            cur = 1 / beta
+            for _ in range(max_degree):
                 neg_powers_of_beta.append(cur)
-                cur /= s
+                cur /= beta
 
-            neg_powers_of_h = [h * neg_powers_of_beta[i] for i in range(self.max_degree + 1)]
+            neg_powers_of_h = [h * neg_powers_of_beta[i] for i in range(max_degree + 1)]
 
         result = {}
         result['powers_of_g'] = powers_of_g
         result['powers_of_gamma_g'] = powers_of_gamma_g
         result['h'] = h
-        result['beta_h'] = s * h
+        result['beta_h'] = beta * h
         result['neg_powers_of_h'] = neg_powers_of_h
 
         return result
     
-    def commit(self, polynomial: UniPolynomial, hiding_bound=None):
+    # Implemented following the function 'trim' in arkworks project,
+    # but this function does not return prepared_h and prepared_beta_h which are not used in python implementation
+    def trim(self, pp, supported_degree):
+        if supported_degree == 1:
+            supported_degree += 1
+        powers_of_g = pp['powers_of_g'][:supported_degree + 1]
+        powers_of_gamma_g = pp['powers_of_gamma_g'][:supported_degree + 1]
+
+        powers = {
+            'powers_of_g': powers_of_g,
+            'powers_of_gamma_g': powers_of_gamma_g,
+        }
+
+        vk = {
+            'g': pp['powers_of_g'][0],
+            'gamma_g': pp['powers_of_gamma_g'][0],
+            'h': pp['h'],
+            'beta_h': pp['beta_h']
+        }
+        return powers, vk
+    
+    # Implemented basically following the function 'commit' in arkworks project, except some differences in grammar
+    def commit(self, powers, polynomial: UniPolynomial, hiding_bound=None):
         """
         Commit to a polynomial.
         
@@ -138,25 +168,16 @@ class KZG10Commitment:
         """
         # Check if polynomial degree is too large
         num_coefficients = polynomial.degree + 1
-        num_powers = len(self.params['powers_of_g'])
+        num_powers = len(powers['powers_of_g'])
         assert num_coefficients <= num_powers, f"Too many coefficients, num_coefficients: {num_coefficients}, num_powers: {num_powers}"
         
-        # Compute the commitment
-        commitment = self.G1.field.zero()  # Start with identity element
-        for gi, coeff in zip(self.params['powers_of_g'], polynomial.coeffs):
-            commitment += coeff * gi
+        # Commitment calculation
+        num_leading_zeros, plain_coeffs = skip_leading_zeros_and_convert_to_bigints(polynomial)
+        commitment = msm_bigint(negation_is_cheap, powers['powers_of_g'][num_leading_zeros:], plain_coeffs)
 
         # Debug assertion
         if self.debug:
             assert isinstance(commitment, Field), f"commitment: {commitment.coeffs}"
-
-        # Commitment calculation
-        num_leading_zeros, plain_coeffs = skip_leading_zeros_and_convert_to_bigints(polynomial)
-        commitment = msm_bigint(negation_is_cheap, self.params['powers_of_g'][num_leading_zeros:], plain_coeffs)
-
-        # Debug assertion
-        if self.debug:
-            assert isinstance(commitment, Field)
 
         # Add hiding polynomial if hiding_bound is set
         random_ints = []
@@ -169,11 +190,11 @@ class KZG10Commitment:
         
             # Check hiding bound
             hiding_poly_degree = len(random_ints) - 1
-            num_powers = len(self.params['powers_of_gamma_g'])
+            num_powers = len(powers['powers_of_gamma_g'])
             assert hiding_bound != 0, "Hiding bound is zero"
             assert hiding_poly_degree < num_powers, "Hiding bound is too large"
         
-            random_commitment = msm_bigint(negation_is_cheap, self.params['powers_of_gamma_g'], random_ints)
+            random_commitment = msm_bigint(negation_is_cheap, powers['powers_of_gamma_g'], random_ints)
             commitment += random_commitment
 
         # Final debug assertion
@@ -182,6 +203,7 @@ class KZG10Commitment:
 
         return Commitment(self.G1, commitment), random_ints
     
+    # Implemented completely following the function 'compute_witness_polynomial' in arkworks project
     def compute_witness_polynomial(self, polynomial: UniPolynomial, point, random_ints, hiding=False):
         """
         Compute the witness polynomial for a given polynomial and point.
@@ -203,7 +225,8 @@ class KZG10Commitment:
             random_witness_polynomial, _pr = UniPolynomial(random_ints).division_by_linear_divisor(point)
         return witness_polynomial, random_witness_polynomial
     
-    def open_with_witness_polynomial(self, point, random_ints, witness_polynomial, hiding_witness_polynomial=None):
+    # Implemented completely following the function 'open_with_witness_polynomial' in arkworks project
+    def open_with_witness_polynomial(self, powers, point, random_ints, witness_polynomial, hiding_witness_polynomial=None):
         """
         Open the commitment with a witness polynomial.
         
@@ -216,20 +239,21 @@ class KZG10Commitment:
         Returns:
             Dictionary containing the proof values
         """
-        assert witness_polynomial.degree + 1 < len(self.params['powers_of_g']), "Too many coefficients"
+        assert witness_polynomial.degree + 1 < len(powers['powers_of_g']), "Too many coefficients"
         num_leading_zeros, witness_coeffs = skip_leading_zeros_and_convert_to_bigints(witness_polynomial)
 
-        w = msm_bigint(negation_is_cheap, self.params['powers_of_g'][num_leading_zeros:], witness_coeffs)
+        w = msm_bigint(negation_is_cheap, powers['powers_of_g'][num_leading_zeros:], witness_coeffs)
 
         random_v = None
         if hiding_witness_polynomial is not None:
             blinding_p = UniPolynomial(random_ints)
             random_v = blinding_p.evaluate(point)
-            w += msm_bigint(negation_is_cheap, self.params['powers_of_gamma_g'], hiding_witness_polynomial.coeffs)
+            w += msm_bigint(negation_is_cheap, powers['powers_of_gamma_g'], hiding_witness_polynomial.coeffs)
 
         return {'w': w, 'random_v': random_v}
     
-    def open(self, polynomial: UniPolynomial, point, random_ints, hiding=False):
+    # Implemented completely following the function 'open' in arkworks project
+    def open(self, powers, polynomial: UniPolynomial, point, random_ints, hiding=False):
         """
         Open the polynomial at a given point.
         
@@ -241,14 +265,14 @@ class KZG10Commitment:
         Returns:
             Dictionary containing the proof values
         """
-        assert polynomial.degree + 1 < len(self.params['powers_of_g']), f"Too many coefficients, polynomial.degree: {polynomial.degree}"
+        assert polynomial.degree + 1 < len(powers['powers_of_g']), f"Too many coefficients, polynomial.degree: {polynomial.degree}"
         
         witness_poly, hiding_witness_poly = self.compute_witness_polynomial(polynomial, point, random_ints, hiding)
 
-        return self.open_with_witness_polynomial(point, random_ints, witness_poly, hiding_witness_poly)
+        return self.open_with_witness_polynomial(powers, point, random_ints, witness_poly, hiding_witness_poly)
 
-    
-    def check(self, comm: Commitment, point, value, proof, hiding=False):
+    # Implemented completely following the function 'check' in arkworks project
+    def check(self, vk, comm: Commitment, point, value, proof, hiding=False):
         """
         Check the validity of the proof.
         
@@ -261,15 +285,15 @@ class KZG10Commitment:
         Returns:
             bool: True if the proof is valid, False otherwise
         """
-        inner = comm.value - self.params['powers_of_g'][0] * value
+        inner = comm.value - vk['g'] * value
         if hiding:
-            inner -= self.params['powers_of_gamma_g'][0] * proof['random_v']
-        lhs = DummyGroup.pairing(inner, self.params['h'])
-        rhs = DummyGroup.pairing(proof['w'], self.params['beta_h'] - self.params['h'] * point)
+            inner -= vk['gamma_g'] * proof['random_v']
+        lhs = DummyGroup.pairing(inner, vk['h'])
+        rhs = DummyGroup.pairing(proof['w'], vk['beta_h'] - vk['h'] * point)
         return lhs.value[0] == rhs.value[0]
     
-
-    def batch_check(self, commitments, points, values, proofs, hiding=False):
+    # Implemented completely following the function 'batch_check' in arkworks project
+    def batch_check(self, vk, commitments, points, values, proofs, hiding=False):
         total_c = 0
         total_w = 0
 
@@ -287,14 +311,14 @@ class KZG10Commitment:
             total_w += proof['w'] * randomizer
             randomizer = randint(0, 1 << 128)
 
-        total_c -= self.params['powers_of_g'][0] * g_multiplier
+        total_c -= vk['g'] * g_multiplier
         if hiding:
-            total_c -= self.params['powers_of_gamma_g'][0] * gamma_g_multiplier
+            total_c -= vk['gamma_g'] * gamma_g_multiplier
         
-        return DummyGroup.pairing(total_w, self.params['beta_h']) \
-            == DummyGroup.pairing(total_c, self.params['h'])
+        return DummyGroup.pairing(total_w, vk['beta_h']) \
+            == DummyGroup.pairing(total_c, vk['h'])
 
-
+    # This function is totally built by ourselves
     @staticmethod
     def division_by_linear_divisor(coeffs, d):
         """
@@ -322,6 +346,7 @@ class KZG10Commitment:
         return quotient, remainder
     
     
+# Implemented completely following the function 'skip_leading_zeros_and_convert_to_bigints' in arkworks project
 def skip_leading_zeros_and_convert_to_bigints(p):
     """
     Remove leading zeros from polynomial coefficients and convert to big integers.
@@ -341,6 +366,7 @@ def skip_leading_zeros_and_convert_to_bigints(p):
     return num_leading_zeros, coeffs[num_leading_zeros:]
 
 
+# BE CAREFUL: This function is not totally tested yet
 def msm_bigint(negation_is_cheap, bases, bigints):
     """
     Perform multi-scalar multiplication using big integers.
@@ -359,6 +385,8 @@ def msm_bigint(negation_is_cheap, bases, bigints):
         return msm_bigint_basic(bases, bigints)
 
 
+# This is a simple implementation of multi-scalar multiplication using big integers
+# built by ourselves
 def msm_bigint_basic(bases, bigints):
     """
     Basic implementation of multi-scalar multiplication using big integers.
@@ -376,6 +404,7 @@ def msm_bigint_basic(bases, bigints):
     return result
 
 
+# BE CAREFUL: This function is not totally tested yet
 def msm_bigint_wnaf(bases, bigints):
     """
     Implementation of multi-scalar multiplication using big integers and the Window NAF method.
@@ -407,6 +436,7 @@ def msm_bigint_wnaf(bases, bigints):
     return result
     
 
+# This function is implemented by ourselves
 def next_power_of_two(n):
     """
     Find the next power of two greater than or equal to a given number.
@@ -435,26 +465,28 @@ if __name__ == '__main__':
     test_point = randint(0, 100)
     
     # Create KZG10 commitment scheme instance
-    kzg = KZG10Commitment(DummyGroup(Field), DummyGroup(Field), 10, debug=True)
+    kzg = KZG10Commitment(DummyGroup(Field), DummyGroup(Field), debug=True)
+    params = kzg.setup(100, False, None, None, None)
+    powers, vk = kzg.trim(params, 100)
     
     # Commit to the polynomial
-    commitment, random_ints = kzg.commit(test_poly)
+    commitment, random_ints = kzg.commit(powers, test_poly)
     
     # Evaluate the polynomial
     value = test_poly.evaluate(test_point)
     
     # Generate proof
-    proof = kzg.open(test_poly, test_point, random_ints)
+    proof = kzg.open(powers, test_poly, test_point, random_ints)
     
     # Verify
-    assert kzg.check(commitment, test_point, value, proof), "Regular check failed"
+    assert kzg.check(vk, commitment, test_point, value, proof), "Regular check failed"
     
     print("Regular check passed successfully")
     
     # Test with an invalid proof
-    invalid_proof = kzg.open(test_poly, test_point + 1, random_ints)  # Invalid point
+    invalid_proof = kzg.open(powers, test_poly, test_point + 1, random_ints)  # Invalid point
     
-    assert not kzg.check(commitment, test_point, value, invalid_proof), "Regular check should have failed with invalid proof"
+    assert not kzg.check(vk, commitment, test_point, value, invalid_proof), "Regular check should have failed with invalid proof"
     
     print("Regular check correctly failed with invalid proof")
 
@@ -468,6 +500,8 @@ if __name__ == '__main__':
     
     # Create KZG10 commitment scheme instance
     kzg = KZG10Commitment(DummyGroup(Field), DummyGroup(Field), 101)
+    params = kzg.setup(100, False, None, None, None)
+    powers, vk = kzg.trim(params, 100)
     
     commitments = []
     values = []
@@ -475,7 +509,7 @@ if __name__ == '__main__':
     
     for p, point in zip(polynomials, points):
         # Commit to the polynomial
-        comm, random_ints = kzg.commit(p, hiding_bound=3)
+        comm, random_ints = kzg.commit(powers, p, hiding_bound=3)
         commitments.append(comm)
         
         # Evaluate the polynomial
@@ -483,19 +517,19 @@ if __name__ == '__main__':
         values.append(value)
         
         # Generate proof
-        proof = kzg.open(p, point, random_ints, True)
+        proof = kzg.open(powers, p, point, random_ints, True)
         proofs.append(proof)
     
     # Verify batch
-    assert kzg.batch_check(commitments, points, values, proofs, True), "Batch check failed"
+    assert kzg.batch_check(vk, commitments, points, values, proofs, True), "Batch check failed"
     
     print("Batch check passed successfully")
     
     # Test with an invalid proof
     invalid_proof_index = randint(0, num_polynomials - 1)
-    proofs[invalid_proof_index] = kzg.open(polynomials[invalid_proof_index], points[invalid_proof_index] + 1, random_ints, True)  # Invalid point
+    proofs[invalid_proof_index] = kzg.open(powers, polynomials[invalid_proof_index], points[invalid_proof_index] + 1, random_ints, True)  # Invalid point
     
-    assert not kzg.batch_check(commitments, points, values, proofs, True), "Batch check should have failed with invalid proof"
+    assert not kzg.batch_check(vk, commitments, points, values, proofs, True), "Batch check should have failed with invalid proof"
     
     print("Batch check correctly failed with invalid proof")
 
