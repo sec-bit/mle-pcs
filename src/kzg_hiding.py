@@ -63,20 +63,18 @@ class Commitment:
 class KZG10Commitment:
     """KZG10 commitment scheme implementation."""
 
-    def __init__(self, G1, G2, max_degree, hiding_bound=None, debug=False):
+    def __init__(self, G1, G2, max_degree, debug=False):
         """
         Initialize the KZG10 commitment scheme.
         
         Args:
             G1, G2: Elliptic curve groups
             max_degree: Maximum polynomial degree supported
-            hiding_bound: Upper bound for the hiding polynomial degree (optional)
             debug: Enable debug assertions
         """
         self.G1 = G1
         self.G2 = G2
         self.max_degree = max_degree
-        self.hiding_bound = hiding_bound
         self.debug = debug
         self.params = self.setup()
     
@@ -128,7 +126,7 @@ class KZG10Commitment:
 
         return result
     
-    def commit(self, polynomial: UniPolynomial):
+    def commit(self, polynomial: UniPolynomial, hiding_bound=None):
         """
         Commit to a polynomial.
         
@@ -162,9 +160,9 @@ class KZG10Commitment:
 
         # Add hiding polynomial if hiding_bound is set
         random_ints = []
-        if self.hiding_bound is not None:
+        if hiding_bound is not None:
             while UniPolynomial(random_ints).degree == 0:
-                random_ints = [self.G1.field.random_element() for _ in range(self.hiding_bound + 1)]
+                random_ints = [self.G1.field.random_element() for _ in range(hiding_bound + 1)]
             
             if self.debug:
                 assert UniPolynomial(random_ints).degree > 0, f"Degree of random poly is zero, random_ints: {random_ints}"
@@ -172,7 +170,7 @@ class KZG10Commitment:
             # Check hiding bound
             hiding_poly_degree = len(random_ints) - 1
             num_powers = len(self.params['powers_of_gamma_g'])
-            assert self.hiding_bound != 0, "Hiding bound is zero"
+            assert hiding_bound != 0, "Hiding bound is zero"
             assert hiding_poly_degree < num_powers, "Hiding bound is too large"
         
             random_commitment = msm_bigint(negation_is_cheap, self.params['powers_of_gamma_g'], random_ints)
@@ -184,7 +182,7 @@ class KZG10Commitment:
 
         return Commitment(self.G1, commitment), random_ints
     
-    def compute_witness_polynomial(self, polynomial: UniPolynomial, point, random_ints):
+    def compute_witness_polynomial(self, polynomial: UniPolynomial, point, random_ints, hiding=False):
         """
         Compute the witness polynomial for a given polynomial and point.
         
@@ -198,7 +196,7 @@ class KZG10Commitment:
         """
         witness_polynomial, _pz = polynomial.division_by_linear_divisor(point)
         random_witness_polynomial = None
-        if self.hiding_bound is not None:
+        if hiding:
             random_poly = UniPolynomial(random_ints)
             if self.debug:
                 assert random_poly.degree > 0, f"Degree of random poly is zero, random_ints: {random_ints}"
@@ -231,7 +229,7 @@ class KZG10Commitment:
 
         return {'w': w, 'random_v': random_v}
     
-    def open(self, polynomial: UniPolynomial, point, random_ints):
+    def open(self, polynomial: UniPolynomial, point, random_ints, hiding=False):
         """
         Open the polynomial at a given point.
         
@@ -245,15 +243,12 @@ class KZG10Commitment:
         """
         assert polynomial.degree + 1 < len(self.params['powers_of_g']), f"Too many coefficients, polynomial.degree: {polynomial.degree}"
         
-        witness_poly, hiding_witness_poly = self.compute_witness_polynomial(polynomial, point, random_ints)
-        if self.debug:
-            assert isinstance(witness_poly, UniPolynomial)
-        if self.debug:
-            assert isinstance(hiding_witness_poly, UniPolynomial)
+        witness_poly, hiding_witness_poly = self.compute_witness_polynomial(polynomial, point, random_ints, hiding)
+
         return self.open_with_witness_polynomial(point, random_ints, witness_poly, hiding_witness_poly)
 
     
-    def check(self, comm: Commitment, point, value, proof):
+    def check(self, comm: Commitment, point, value, proof, hiding=False):
         """
         Check the validity of the proof.
         
@@ -267,14 +262,14 @@ class KZG10Commitment:
             bool: True if the proof is valid, False otherwise
         """
         inner = comm.value - self.params['powers_of_g'][0] * value
-        if self.hiding_bound is not None:
+        if hiding:
             inner -= self.params['powers_of_gamma_g'][0] * proof['random_v']
         lhs = DummyGroup.pairing(inner, self.params['h'])
         rhs = DummyGroup.pairing(proof['w'], self.params['beta_h'] - self.params['h'] * point)
         return lhs.value[0] == rhs.value[0]
     
 
-    def batch_check(self, commitments, points, values, proofs):
+    def batch_check(self, commitments, points, values, proofs, hiding=False):
         total_c = 0
         total_w = 0
 
@@ -286,14 +281,14 @@ class KZG10Commitment:
         for c, z, v, proof in zip(commitments, points, values, proofs):
             c = z * proof['w'] + c.value.value[0]
             g_multiplier += randomizer * v
-            if self.hiding_bound is not None:
+            if hiding:
                 gamma_g_multiplier += randomizer * proof['random_v']
             total_c += c.value[0] * randomizer
             total_w += proof['w'] * randomizer
             randomizer = randint(0, 1 << 128)
 
         total_c -= self.params['powers_of_g'][0] * g_multiplier
-        if self.hiding_bound is not None:
+        if hiding:
             total_c -= self.params['powers_of_gamma_g'][0] * gamma_g_multiplier
         
         return DummyGroup.pairing(total_w, self.params['beta_h']) \
@@ -440,7 +435,7 @@ if __name__ == '__main__':
     test_point = randint(0, 100)
     
     # Create KZG10 commitment scheme instance
-    kzg = KZG10Commitment(DummyGroup(Field), DummyGroup(Field), 10, hiding_bound=3, debug=True)
+    kzg = KZG10Commitment(DummyGroup(Field), DummyGroup(Field), 10, debug=True)
     
     # Commit to the polynomial
     commitment, random_ints = kzg.commit(test_poly)
@@ -472,7 +467,7 @@ if __name__ == '__main__':
     points = [randint(0, 100) for _ in range(num_polynomials)]
     
     # Create KZG10 commitment scheme instance
-    kzg = KZG10Commitment(DummyGroup(Field), DummyGroup(Field), 101, hiding_bound=3)
+    kzg = KZG10Commitment(DummyGroup(Field), DummyGroup(Field), 101)
     
     commitments = []
     values = []
@@ -480,7 +475,7 @@ if __name__ == '__main__':
     
     for p, point in zip(polynomials, points):
         # Commit to the polynomial
-        comm, random_ints = kzg.commit(p)
+        comm, random_ints = kzg.commit(p, hiding_bound=3)
         commitments.append(comm)
         
         # Evaluate the polynomial
@@ -488,19 +483,19 @@ if __name__ == '__main__':
         values.append(value)
         
         # Generate proof
-        proof = kzg.open(p, point, random_ints)
+        proof = kzg.open(p, point, random_ints, True)
         proofs.append(proof)
     
     # Verify batch
-    assert kzg.batch_check(commitments, points, values, proofs), "Batch check failed"
+    assert kzg.batch_check(commitments, points, values, proofs, True), "Batch check failed"
     
     print("Batch check passed successfully")
     
     # Test with an invalid proof
     invalid_proof_index = randint(0, num_polynomials - 1)
-    proofs[invalid_proof_index] = kzg.open(polynomials[invalid_proof_index], points[invalid_proof_index] + 1, random_ints)  # Invalid point
+    proofs[invalid_proof_index] = kzg.open(polynomials[invalid_proof_index], points[invalid_proof_index] + 1, random_ints, True)  # Invalid point
     
-    assert not kzg.batch_check(commitments, points, values, proofs), "Batch check should have failed with invalid proof"
+    assert not kzg.batch_check(commitments, points, values, proofs, True), "Batch check should have failed with invalid proof"
     
     print("Batch check correctly failed with invalid proof")
 
