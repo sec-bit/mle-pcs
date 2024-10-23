@@ -1,34 +1,36 @@
 from merkle import MerkleTree, verify_decommitment
 from merlin.merlin_transcript import MerlinTranscript
-from utils import from_bytes, log_2, is_power_of_two, next_power_of_two
+from utils import from_bytes, log_2, is_power_of_two
 from unipolynomial import UniPolynomial
 
 class FRI:
     security_level = 128
 
     @classmethod
-    def open(cls, evals, rate, point, gen, domain, debug=False):
+    def prove(cls, evals, rate, point, gen, domain, debug=False):
         if debug: print("evals:", evals)
         N = len(evals)
-        degree_bound = next_power_of_two(N - 1) if not is_power_of_two(N - 1) else N - 1
+        assert is_power_of_two(N)
+        degree_bound = N
         if debug: print("degree_bound:", degree_bound)
         coeffs = UniPolynomial.compute_coeffs_from_evals_fast(evals, domain[:N])
         if debug: print("coeffs:", coeffs)
-        val = UniPolynomial.uni_eval_from_evals(evals, point, domain[:N])
-        if debug: print("val:", val)
-        assert len(domain) == N * rate, f"domain: {domain}, N: {N}, rate: {rate}"
         code = cls.rs_encode_single(coeffs, domain, rate)
         if debug: print("code:", code)
         assert len(code) == N * rate, f"code: {code}, degree_bound: {degree_bound}, rate: {rate}"
+        val = UniPolynomial.uni_eval_from_evals(evals, point, domain[:N])
+        if debug: print("val:", val)
+        assert len(domain) == N * rate, f"domain: {domain}, N: {N}, rate: {rate}"
         
         code_tree = MerkleTree(code)
-        transcript = MerlinTranscript(b"FRI.open")
+        transcript = MerlinTranscript(b"FRI")
         transcript.append_message(b"code", code_tree.root.encode('ascii'))
         
         quotient = [(code[i] - val) / (domain[i] - point) for i in range(len(code))]
         
         quotient_tree = MerkleTree(quotient)
         transcript.append_message(b"quotient", quotient_tree.root.encode('ascii'))
+        transcript.append_message(b"value at z", str(val).encode('ascii'))
 
         z = from_bytes(transcript.challenge_bytes(b"z", 4)) % len(code)
         code_at_z_proof = code_tree.get_authentication_path(z)
@@ -49,7 +51,7 @@ class FRI:
         if cls.security_level % log_2(rate) != 0:
             num_verifier_queries += 1
 
-        low_degree_proof = cls.prove_low_degree(quotient, rate, degree_bound, gen, num_verifier_queries, debug)
+        low_degree_proof = cls.prove_low_degree(quotient, rate, degree_bound, gen, num_verifier_queries, transcript, debug)
 
         return {
             'low_degree_proof': low_degree_proof,
@@ -68,13 +70,14 @@ class FRI:
         assert degree_bound >= proof['degree_bound']
         degree_bound = proof['degree_bound']
 
-        transcript = MerlinTranscript(b"FRI.open")
+        transcript = MerlinTranscript(b"FRI")
 
         code_commitment = proof['code_commitment']
         quotient_commitment = proof['quotient_commitment']
 
         transcript.append_message(b"code", code_commitment.encode('ascii'))
         transcript.append_message(b"quotient", quotient_commitment.encode('ascii'))
+        transcript.append_message(b"value at z", str(value).encode('ascii'))
 
         z = from_bytes(transcript.challenge_bytes(b"z", 4)) % (evals_size * rate)
         code_at_z_proof = proof['code_at_z_proof']
@@ -96,15 +99,14 @@ class FRI:
         if cls.security_level % log_2(rate) != 0:
             num_verifier_queries += 1
         
-        cls.verify_low_degree(degree_bound, rate, proof['low_degree_proof'], gen, num_verifier_queries, debug)
+        cls.verify_low_degree(degree_bound, rate, proof['low_degree_proof'], gen, num_verifier_queries, transcript, debug)
 
     @staticmethod
-    def prove_low_degree(evals, rate, degree_bound, gen, num_verifier_queries, debug=False):
+    def prove_low_degree(evals, rate, degree_bound, gen, num_verifier_queries, transcript, debug=False):
         assert is_power_of_two(degree_bound)
 
         first_tree = MerkleTree(evals)
         evals_copy = evals
-        transcript = MerlinTranscript(b"FRI")
         transcript.append_message(b"first_oracle", first_tree.root.encode('ascii'))
 
         alpha = transcript.challenge_bytes(b"alpha", 4)
@@ -171,12 +173,12 @@ class FRI:
 
 
     @staticmethod
-    def verify_low_degree(degree_bound, rate, proof, gen, num_verifier_queries, debug=False):
+    def verify_low_degree(degree_bound, rate, proof, gen, num_verifier_queries, transcript, debug=False):
         log_degree_bound = log_2(degree_bound)
         log_evals = log_2(degree_bound * rate)
         T = [[(gen**(2 ** j)) ** i for i in range(2 ** (log_evals - j - 1))] for j in range(0, log_evals)]
         if debug: print("T:", T)
-        FRI.verify_queries(proof, log_degree_bound, degree_bound * rate, num_verifier_queries, T, debug)
+        FRI.verify_queries(proof, log_degree_bound, degree_bound * rate, num_verifier_queries, T, transcript, debug)
 
     @staticmethod
     def query_phase(transcript: MerlinTranscript, first_tree: MerkleTree, first_oracle, trees: list, oracles: list, num_vars, num_verifier_queries, debug=False):
@@ -238,8 +240,7 @@ class FRI:
         return query_paths, merkle_paths
     
     @staticmethod
-    def verify_queries(proof, k, num_vars, num_verifier_queries, T, debug=False):
-        transcript = MerlinTranscript(b"FRI")
+    def verify_queries(proof, k, num_vars, num_verifier_queries, T, transcript, debug=False):
         transcript.append_message(b"first_oracle", bytes(proof['first_oracle'], 'ascii'))
         alpha = transcript.challenge_bytes(b"alpha", 4)
         alpha = from_bytes(alpha)

@@ -33,22 +33,22 @@ class TestFRI(TestCase):
         from sage.all import GF
         from field import magic
         from random import randint
+        from merlin.merlin_transcript import MerlinTranscript
 
         Fp = magic(GF(193))
 
         assert Fp.primitive_element() ** 192 == 1
 
         degree_bound = 8
-        blow_up_factor = 4
+        blow_up_factor = 2
         num_verifier_queries = 8
-
         assert is_power_of_two(degree_bound)
 
         evals = FRI.rs_encode_single([randint(0, 193) for _ in range(degree_bound)], [Fp.primitive_element() ** (i * 192 // (degree_bound * 2 ** blow_up_factor)) for i in range(degree_bound * 2 ** blow_up_factor)], 2 ** blow_up_factor)
-        proof = FRI.prove_low_degree(evals, 2 ** blow_up_factor, degree_bound, Fp.primitive_element() ** (192 // len(evals)), num_verifier_queries, debug=False)
-        FRI.verify_low_degree(degree_bound, 2 ** blow_up_factor, proof, Fp.primitive_element() ** (192 // len(evals)), num_verifier_queries, debug=False)
+        proof = FRI.prove_low_degree(evals, 2 ** blow_up_factor, degree_bound, Fp.primitive_element() ** (192 // len(evals)), num_verifier_queries, MerlinTranscript(b'test'), debug=False)
+        FRI.verify_low_degree(degree_bound, 2 ** blow_up_factor, proof, Fp.primitive_element() ** (192 // len(evals)), num_verifier_queries, MerlinTranscript(b'test'), debug=False)
 
-    def test_open(self):
+    def test_prove(self):
         from sage.all import GF
         from field import magic
         from random import randint
@@ -63,7 +63,7 @@ class TestFRI(TestCase):
         point = coset ** 0 * Fp.primitive_element()
         evals = [randint(0, 193) for i in range(evals_size)]
         value = UniPolynomial.uni_eval_from_evals(evals, point, [coset ** i for i in range(len(evals))])
-        proof = FRI.open(evals, rate, point, coset, [coset ** i for i in range(evals_size * rate)], debug=False)
+        proof = FRI.prove(evals, rate, point, coset, [coset ** i for i in range(evals_size * rate)], debug=False)
         FRI.verify(proof['degree_bound'], evals_size, rate, proof, point, value, [coset ** i for i in range(evals_size * rate)], coset, debug=False)
 
 
