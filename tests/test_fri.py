@@ -60,7 +60,7 @@ class TestFRI(TestCase):
         rate = 4
         evals_size = 4
         coset = Fp.primitive_element() ** (192 // (evals_size * rate))
-        point = coset ** 0 * Fp.primitive_element()
+        point = coset ** randint(evals_size * rate, 192) * Fp.primitive_element()
         evals = [randint(0, 193) for i in range(evals_size)]
         value = UniPolynomial.uni_eval_from_evals(evals, point, [coset ** i for i in range(len(evals))])
         proof = FRI.prove(evals, rate, point, coset, [coset ** i for i in range(evals_size * rate)], debug=False)
