@@ -15,6 +15,9 @@ CSS_FILENAME = "style.css"
 # Define the GitHub repository URL
 GITHUB_REPO_URL = "https://github.com/sec-bit/mle-pcs/"
 
+# Add this constant near the top of the file, with the other configurations
+GOOGLE_ANALYTICS_ID = "G-JT3HKW7GRY"  # Replace XXXXXXXXXX with your actual Google Analytics ID
+
 # HTML templates
 HTML_TEMPLATE_START = """<!DOCTYPE html>
 <html lang="en">
@@ -23,6 +26,14 @@ HTML_TEMPLATE_START = """<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Repository</title>
     <link rel="stylesheet" href="{css_filename}">
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={google_analytics_id}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){{dataLayer.push(arguments);}}
+        gtag('js', new Date());
+        gtag('config', '{google_analytics_id}');
+    </script>
 </head>
 <body>
     <header>
@@ -147,7 +158,12 @@ def generate_html(pdf_dict, build_time, css_filename, github_repo_url):
     Returns:
         str: The complete HTML content.
     """
-    html_content = HTML_TEMPLATE_START.format(css_filename=css_filename, build_time=build_time, github_repo_url=github_repo_url)
+    html_content = HTML_TEMPLATE_START.format(
+        css_filename=css_filename,
+        build_time=build_time,
+        github_repo_url=github_repo_url,
+        google_analytics_id=GOOGLE_ANALYTICS_ID
+    )
     
     for directory, pdfs in pdf_dict.items():
         html_content += f"    <section>\n"
