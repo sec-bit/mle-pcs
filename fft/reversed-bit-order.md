@@ -62,7 +62,9 @@ Since reversed bit order is reversed by bits compared to natural order, the freq
 
 ## 2. Why FFT produces result in reversed bit order?
 
-First, we know what to do in the first step of FFT.
+What if we want the result in natural order?
+
+First, we know what to do in the first level recursion of FFT.
 
 $$
 f(x) = C_0 + C_1 x + C_2 x^2 + \cdots + C_{n-1} x^{n-1}
@@ -113,7 +115,7 @@ into
 
 We can see that we sort the terms by the first bit of their indices.
 
-In the next step, we do the same thing for the second bit. (We only focus on the even terms for simplicity.)
+In the next level recursion, we do the same thing for the second bit. (We only focus on the even terms for simplicity.)
 
 $$
 f_{ee}(x) = C_0 + C_4 x^4 + \cdots + C_{n-4} x^{n-4}
@@ -139,7 +141,7 @@ Again, we divide the index of terms simultaneously.
 | 3 | 110 |
 | 7 | 111 |
 
-The last step is the same.
+The last level recursion is the same.
 
 $$
 f_{eee}(x) = C_0 + C_8 x^8 + \cdots + C_{n-8} x^{n-8}
@@ -169,19 +171,10 @@ So as indices.
 | --- | --- |
 | 7 | 111 |
 
-And then, as we do in the end of FFT, we simply combine the results.
+Until now, we apply the required coefficients to the corresponding indices.
 
-| indices | bits |
-| - | - |
-| 0 | 000 |
-| 4 | 001 |
-| 2 | 010 |
-| 6 | 011 |
-| 1 | 100 |
-| 5 | 101 |
-| 3 | 110 |
-| 7 | 111 |
+As you can see, if we want the result in natural order, we have to apply the coefficients in reversed bit order.
 
-This is what we got, the result in reversed bit order.
+It is because that as we divide the polynomial into two parts, we sort the terms into reversed bit order step by step unconsciously, which is the inner structure of FFT.
 
-In a word, we sort the terms into reversed bit order step by step unconsciously when we divide the polynomial into two parts, since we simply combine the results of the two parts without sort them back, we get the final result in reversed bit order.
+So that if we input the coefficients in natural order, then we will get the result in reversed bit order.
