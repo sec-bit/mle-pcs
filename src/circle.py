@@ -31,7 +31,12 @@ def sq(D):
 
 def group_inv(g1):
     x1, y1 = g1
-    return x1 - y1 * i
+    return x1 - y1 * I
+
+def group_mul(g1, g2):
+    x1, y1 = g1
+    x2, y2 = g2
+    return (x1 * x2 - y1 * y2) + (x1 * y2 + y1 * x2) * I
 
 def pi(t):
     # x^2 - y^2 == 2 * x^2 - 1 (x^2 + y^2 = 1)
@@ -96,7 +101,7 @@ def evaluate_at_point(evals, domain, point, debug=False):
     lagrange_num = zeroifier(x, shift, log_n)
     lagrange_den = compute_lagrange_den_batched(domain, point, log_n, debug)
 
-    return lagrange_num * sum([evals[i] * lagrange_den[i] for i in range(len(evals))])
+    return sum([lagrange_den[i] * evals[i] for i in range(len(evals))]) * lagrange_num
 
 def deep_quotient_vanishing_part(x, zeta, alpha_pow_width):
     v_p = lambda p, at: (1 - (p - at)[0], -(p - at)[1])
@@ -107,18 +112,21 @@ def deep_quotient_reduce(evals, domain, alpha, zeta, p_at_zeta):
     vp_nums, vp_demons = zip(*[(deep_quotient_vanishing_part(x, zeta, alpha)) for x in domain])
     vp_denom_invs = batch_multiplicative_inverse(vp_demons)
 
-    return [vp_nums[i] * vp_denom_invs[i] * (evals[i] - p_at_zeta) for i in range(len(evals))]
+    return [vp_nums[i] * vp_denom_invs[i] * (-p_at_zeta + evals[i]) for i in range(len(evals))]
 
-def deep_quotient_reduce_row(alpha, x, zeta, ps_at_x, ps_at_zeta):
+def deep_quotient_reduce_row(alpha, x, zeta, ps_at_x, ps_at_zeta, debug=False):
     vp_num, vp_denom = deep_quotient_vanishing_part(x, zeta, alpha)
-    return vp_num * (ps_at_x - ps_at_zeta) / vp_denom
+    if debug: print('vp_num:', vp_num, 'vp_denom:', vp_denom, 'ps_at_x:', ps_at_x, 'ps_at_zeta:', ps_at_zeta)
+    return vp_num * (-ps_at_zeta + ps_at_x) / vp_denom
 
 def extract_lambda(lde, log_blowup, debug=False):
     if debug:
         assert isinstance(lde, list), f'lde is not of type list: {lde}'
     log_lde_size = log_2(len(lde))
 
-    v_d_init = [v_n(p, log_lde_size - log_blowup) for p in CirclePCS.domains[log_lde_size][:1 << log_blowup]]
+    if debug: print('log_lde_size:', log_lde_size, ', log_blowup:', log_blowup)
+    if debug: print('CirclePCS.domains[log_lde_size][:1 << log_blowup]:', CirclePCS.domains[log_lde_size][:1 << log_blowup])
+    v_d_init = [v_n(p[0], log_lde_size - log_blowup) for p in CirclePCS.domains[log_lde_size][:1 << log_blowup]]
 
     v_d = v_d_init + v_d_init[:-1]
     while (len(v_d) < len(lde)):
@@ -126,12 +134,16 @@ def extract_lambda(lde, log_blowup, debug=False):
     
     v_d_2 = C31(2) ** (log_lde_size - 1)
     
+    if debug: print('lde:', lde)
+    if debug: print('v_d:', v_d)
     lambda_ = sum([lde[i] * v_d[i] for i in range(len(lde))]) * (1 / v_d_2)
+    if debug: print('lambda_:', lambda_)
 
+    new_lde = []
     for y, v_x in zip(lde, v_d):
-        y -= lambda_ * v_x
+        new_lde.append(y - lambda_ * v_x)
 
-    return lde, lambda_
+    return new_lde, lambda_
 
 class CFFT:
     @classmethod
@@ -291,10 +303,23 @@ class FRI:
         for i, (_, y) in enumerate(domain[:N//2]):
             f0 = (left[i] + right[i]) / 2
             f1 = (left[i] - right[i]) / (2 * y)
-            evals[i] = f0 + beta * f1
-            if debug: print(f"f[{i}] = {evals[i]} = ({left[i]} + {right[i]})/2 + {beta} * ({left[i]} - {right[i]})/(2 * {y * i})")
+            evals[i] = f0 + group_mul(beta, f1)
+            if debug: print('fold y')
+            if debug: print(f"f0 = (({left[i]}) + ({right[i]}))/2 = {f0}")
+            if debug: print(f"f1 = (({left[i]}) - ({right[i]}))/(2 * {y}) = {f1}")
+            if debug: print(f"f0 + {beta} * f1 = ({f0}) + {beta} * ({f1}) = {f0 + group_mul(beta, f1)}")
 
         return evals
+    
+    @classmethod
+    def fold_y_row(cls, y, beta, left, right, debug=False):
+        f0 = (left + right) / 2
+        f1 = (left - right) / (2 * y)
+        if debug: print('fold y row')
+        if debug: print(f"f0 = (({left}) + ({right}))/2 = {f0}")
+        if debug: print(f"f1 = (({left}) - ({right}))/(2 * {y}) = {f1}")
+        if debug: print(f"f0 + {beta} * f1 = ({f0}) + {beta} * ({f1}) = {f0 + group_mul(beta, f1)}")
+        return f0 + group_mul(beta, f1)
     
     # Inputs:
     #   f is the polynomial to be folded
@@ -320,6 +345,7 @@ class FRI:
             f0 = (left[i] + right[i]) * (1 / F31(2))
             f1 = (left[i] - right[i]) * (1 / (F31(2) * x))
             # f[:N//2] stores the folded polynomial
+            if debug: print('fold x')
             if debug: print(f"f[{i}] = {f[i]} = ({left[i]} + {right[i]})/2 + {r} * ({left[i]} - {right[i]})/(2 * {x})")
             f[i] = f0 + r * f1
             # if debug: print(f"{f[i]} = ({left[i]} + {right[i]})/2 + {r} * ({left[i]} - {right[i]})/(2 * {x})")
@@ -347,6 +373,8 @@ class FRI:
             oracles.append(folded[:])
 
             beta = int.from_bytes(transcript.challenge_bytes(b'beta', int(4)), 'big')
+            if debug: print('beta:', beta)
+            if debug: print('folded:', folded, ', domain:', domain)
             folded, domain = cls.fold_x(folded, domain, beta, debug)
 
             if debug: print(f"f={folded}, D={domain}")
@@ -358,6 +386,8 @@ class FRI:
                 assert final_poly == x, "final_poly != x, {} != {}, final_poly={}, x={}".format(final_poly, x, final_poly, x)
         transcript.append_message(b"final_poly", bytes(str(final_poly), 'ascii'))
 
+        if debug: print('oracles:', oracles)
+
         return {
             "commits": [tree.root for tree in trees],
             "trees": trees,
@@ -367,13 +397,14 @@ class FRI:
     
     @classmethod
     def answer_query(cls, trees, oracles, index, debug=False):
+        if debug: print('answer_query')
         opening_proofs = []
         sibling_values = []
         if debug:
             print('trees:', [tree.data for tree in trees])
+        index_i = index
         for i, tree in enumerate(trees):
             assert isinstance(tree, MerkleTree), "tree should be a MerkleTree"
-            index_i = index >> i
             if debug:
                 print('len(tree.data):', len(tree.data), ', index_i:', index_i)
             assert len(tree.data) >= 1 + index_i, "len(tree.data) < 1 + index_i, {} < {}, tree.data={}, index_i={}".format(len(tree.data), 1 + index_i, tree.data, index_i)
@@ -388,8 +419,12 @@ class FRI:
             sibling_values.append(oracle[index_i_sibling])
 
             if debug:
+                print('index_i:', index_i, ', oracle[index_i]:', oracle[index_i], ', opening_proofs[-1][0]:', opening_proofs[-1][0], ', tree.root:', tree.root)
                 assert verify_decommitment(index_i, oracle[index_i], opening_proofs[-1][0], tree.root), "verify_decommitment failed"
+                print('index_i_sibling:', index_i_sibling, ', oracle[index_i_sibling]:', oracle[index_i_sibling], ', opening_proofs[-1][1]:', opening_proofs[-1][1], ', tree.root:', tree.root)
                 assert verify_decommitment(index_i_sibling, oracle[index_i_sibling], opening_proofs[-1][1], tree.root), "verify_decommitment failed"
+
+            index_i = min(index_i, index_i_sibling)
 
         return zip(opening_proofs, sibling_values)
 
@@ -403,14 +438,19 @@ class FRI:
         commit_phase_result = cls.commit_phase(input, blowup_factor, domain, transcript, debug)
 
         # query phase
-        sample = lambda: int.from_bytes(transcript.challenge_bytes(b"query", 4), "big")
-        queries = [sample() for _ in range(num_queries)]
+        queries = []
+        for _ in range(num_queries):
+            queries.append(int.from_bytes(transcript.challenge_bytes(b"query", 4), "big"))
+            if debug: print('query:', queries[-1])
 
         query_proofs = []
+        if debug: print('queries:', queries, ', degree:', degree, ', query >> (32 - log_2(degree)):', [query >> (32 - log_2(degree)) for query in queries])
         for query in queries:
+            index = query >> (32 - log_2(degree) - 1)
+            index_sibling = degree * 2 - 1 - index
             query_proofs.append({
-                "input_proof": open_input(query),
-                "commit_phase_openings": cls.answer_query(commit_phase_result["trees"], commit_phase_result["oracles"], query >> (32 - log_2(degree)), debug)
+                "input_proof": open_input(index),
+                "commit_phase_openings": cls.answer_query(commit_phase_result["trees"], commit_phase_result["oracles"], min(index, index_sibling), debug)
             })
 
         return {
@@ -421,25 +461,33 @@ class FRI:
 
     @classmethod
     def verify_query(cls, index, steps, reduced_opening, log_max_height, debug=False):
+        if debug: print('verify_query')
+        if debug: print('index:', index)
         folded_eval = reduced_opening
         if debug: print('log_max_height:', log_max_height)
-        for log_folded_height, (beta, comm, opening) in zip(range(log_max_height - 1, -1, -1), steps):
-            assert 1 << log_folded_height >= 1 + index, "log_folded_height < 1 + index, {} < 1 + {}".format(log_folded_height, index)
+        for log_folded_height, (beta, comm, opening) in zip(range(log_max_height, 0, -1), steps):
+            assert 1 << log_folded_height >= 1 + index, "1 << log_folded_height < 1 + index, {} < 1 + {}".format(1 << log_folded_height, index)
             if debug:
                 print('log_folded_height:', log_folded_height, ', index:', index)
-            index_sibling = 1 << log_folded_height - 1 - index
+            index_sibling = (1 << log_folded_height) - 1 - index
 
             opening_proofs = opening[0]
             sibling_values = opening[1]
 
+            if debug: print('index:', index, ', folded_eval:', folded_eval, ', opening_proofs[0]:', opening_proofs[0], ', comm:', comm)
             assert verify_decommitment(index, folded_eval, opening_proofs[0], comm), "verify_decommitment failed"
+            if debug: print('index_sibling:', index_sibling, ', sibling_values:', sibling_values, ', opening_proofs[1]:', opening_proofs[1], ', comm:', comm)
             assert verify_decommitment(index_sibling, sibling_values, opening_proofs[1], comm), "verify_decommitment failed"
 
-            domain = CirclePCS.natural_domain_for_degree(1 << log_folded_height)
-            x = domain[index]
+            domain = CirclePCS.natural_domain_for_degree(2 << log_folded_height)
+            domain = [t[0] for t in domain]
+            x = domain[min(index, index_sibling)]
             left = folded_eval if index < index_sibling else sibling_values
             right = sibling_values if index < index_sibling else folded_eval
-            folded_eval = (left + right) / C31(2) + beta * ((left - right) / (C31(2) * x))
+            if debug: print('left:', left, ', right:', right, ', x:', x)
+            folded_eval = (left + right) / F31(2) + beta * ((left - right) / (F31(2) * x))
+
+            index = min(index, index_sibling)
 
         return folded_eval
 
@@ -450,19 +498,25 @@ class FRI:
         betas = []
         for commit in proof["commit_phase_commits"]:
             transcript.append_message(b"tree", bytes(commit, 'ascii'))
-            beta = transcript.challenge_bytes(b"beta", 4)
-            beta = int.from_bytes(beta, "big")
+            beta = int.from_bytes(transcript.challenge_bytes(b"beta", 4), "big")
+            if debug: print('beta:', beta)
             betas.append(beta)
         transcript.append_message(b"final_poly", bytes(str(proof["final_poly"]), 'ascii'))
 
         folded_eval = 0
         for qp in proof["query_proofs"]:
-            index = transcript.challenge_bytes(b"query", 4)
-            index = int.from_bytes(index, "big")
-            ro = open_input(index, qp["input_proof"])
+            index = int.from_bytes(transcript.challenge_bytes(b"query", 4), "big")
+            if debug: print('query:', index)
 
             log_max_height = len(proof["commit_phase_commits"])
-            folded_eval = cls.verify_query(index >> (32 - log_max_height), zip(betas, proof["commit_phase_commits"], qp["commit_phase_openings"]), ro, log_max_height, debug)
+            index >>= (32 - log_max_height - 1)
+            index_sibling = (1 << log_max_height) * 2 - 1 - index
+            if debug: print('log_max_height:', log_max_height, ', index:', index, ', index_sibling:', index_sibling)
+
+            ro = open_input(index, qp["input_proof"])
+            folded_eval = cls.verify_query(min(index, index_sibling), zip(betas, proof["commit_phase_commits"], qp["commit_phase_openings"]), ro, log_max_height, debug)
+
+            if debug: print('folded_eval:', folded_eval)
 
         assert folded_eval == proof["final_poly"], "folded_eval != proof['final_poly'], {} != {}".format(folded_eval, proof["final_poly"])
 
@@ -497,8 +551,8 @@ class CirclePCS:
     @classmethod
     def open(cls, evals, evals_commit, zeta, log_blowup, transcript, num_queries, debug=False):
         assert isinstance(transcript, MerlinTranscript), "transcript should be a MerlinTranscript"
-        alpha = transcript.challenge_bytes(b"alpha", 4)
-        alpha = int.from_bytes(alpha, "big")
+        alpha = int.from_bytes(transcript.challenge_bytes(b"alpha", 4), "big")
+        if debug: print('alpha:', alpha)
 
         # evaluate the polynomial at the point zeta
         domain = cls.natural_domain_for_degree(len(evals))
@@ -509,13 +563,13 @@ class CirclePCS:
 
         # extract lambda
         first_layer, lambda_ = extract_lambda(reduced_opening, log_blowup, debug)
+        if debug: print('first_layer:', first_layer, ', lambda_:', lambda_)
 
         # commit first layer
         first_layer_tree = MerkleTree(first_layer)
         transcript.append_message(b"first_layer_root", bytes(first_layer_tree.root, 'ascii'))
-        bivariate_beta = transcript.challenge_bytes(b"bivariate_beta", 4)
-        bivariate_beta = int.from_bytes(bivariate_beta, "big")
-
+        bivariate_beta = int.from_bytes(transcript.challenge_bytes(b"bivariate_beta x", 4), "big") + int.from_bytes(transcript.challenge_bytes(b"bivariate_beta y", 4), "big") * I
+        if debug: print('bivariate_beta:', bivariate_beta)
         # fold first layer
         # a little modified compared to code in p3
         fri_input = FRI.fold_y(first_layer, domain, bivariate_beta, debug)
@@ -526,7 +580,8 @@ class CirclePCS:
             print('domain:', domain)
 
         def open_input(index):
-            index >>= 32 - log_2(len(evals))
+            if debug: print('open_input')
+            # index >>= 32 - log_2(len(evals))
             assert isinstance(evals_commit, MerkleTree), "evals_commit should be a MerkleTree"
             input_opening = (evals_commit.get_authentication_path(index), evals[index])
 
@@ -535,8 +590,14 @@ class CirclePCS:
                 assert verify_decommitment(index, evals[index], input_opening[0], evals_commit.root), "verify_decommitment failed"
 
             first_layer_index = index
-            first_layer_index_sibling = first_layer_index ^ 1
+            first_layer_index_sibling = len(first_layer) - 1 - first_layer_index
             first_layer_proof = (first_layer_tree.get_authentication_path(first_layer_index), first_layer_tree.get_authentication_path(first_layer_index_sibling))
+
+            if debug:
+                print('first_layer_index:', first_layer_index, ', first_layer[first_layer_index]:', first_layer[first_layer_index], ', first_layer_proof[0]:', first_layer_proof[0], ', first_layer_tree.root:', first_layer_tree.root)
+                assert verify_decommitment(first_layer_index, first_layer[first_layer_index], first_layer_proof[0], first_layer_tree.root), "verify_decommitment failed"
+                print('first_layer_index_sibling:', first_layer_index_sibling, ', first_layer[first_layer_index_sibling]:', first_layer[first_layer_index_sibling], ', first_layer_proof[1]:', first_layer_proof[1], ', first_layer_tree.root:', first_layer_tree.root)
+                assert verify_decommitment(first_layer_index_sibling, first_layer[first_layer_index_sibling], first_layer_proof[1], first_layer_tree.root), "verify_decommitment failed"
 
             return {
                 "input_opening": input_opening,
@@ -553,34 +614,62 @@ class CirclePCS:
         }
 
     @classmethod
-    def verify(cls, commitment, domain, point, value, proof, transcript, debug=False):
+    def verify(cls, commitment, domain, log_blowup, point, value, proof, transcript, debug=False):
         assert isinstance(transcript, MerlinTranscript), "transcript should be a MerlinTranscript"
-        alpha = transcript.challenge_bytes(b"alpha", 4)
-        alpha = int.from_bytes(alpha, "big")
+        alpha = int.from_bytes(transcript.challenge_bytes(b"alpha", 4), "big")
+        if debug: print('alpha:', alpha)
         transcript.append_message(b"first_layer_root", bytes(proof["first_layer_commitment"], 'ascii'))
-        bivariate_beta = transcript.challenge_bytes(b"bivariate_beta", 4)
-        bivariate_beta = int.from_bytes(bivariate_beta, "big")
+        bivariate_beta = int.from_bytes(transcript.challenge_bytes(b"bivariate_beta x", 4), "big") + int.from_bytes(transcript.challenge_bytes(b"bivariate_beta y", 4), "big") * I
+        if debug: print('bivariate_beta:', bivariate_beta)
 
         def open_input(index, input_proof):
+            if debug: print('open_input')
+            if debug: print('index:', index)
+            # verify first layer
             input_opening = input_proof['input_opening']
             first_layer_proof = input_proof['first_layer_proof']
             first_layer_sibling_value = input_proof['first_layer_sibling_value']
 
-            index_shifted = index >> (32 - len(domain))
-            verify_decommitment(index_shifted, input_opening[1], input_opening[0], commitment)
-            verify_decommitment(len(domain) - 1 - index_shifted, first_layer_sibling_value, first_layer_proof[0], commitment)
+            # index_shifted = index >> (32 - log_2(len(domain)))
+            index_shifted = index
+            if debug: print('len(domain):', len(domain))
+            if debug: print('index_shifted:', index_shifted, ', input_opening[0]:', input_opening[0], ', commitment:', commitment)
+            assert verify_decommitment(index_shifted, input_opening[1], input_opening[0], commitment)
+
+            # deep quotient
+            reduced_opening = deep_quotient_reduce_row(alpha, domain[index_shifted], point, input_opening[1], value, debug)
+            if debug: print('domain:', domain, ', log_2(len(domain)) - log_blowup:', log_2(len(domain)) - log_blowup, ', v_n(domain[index_shifted], log_2(len(domain)) - log_blowup):', v_n(domain[index_shifted], log_2(len(domain)) - log_blowup))
+            if debug: print('reduced_opening:', reduced_opening, ', proof["lambda"]:', proof["lambda"])
+            lambda_corrected = reduced_opening - proof["lambda"] * v_n(domain[index_shifted][0], log_2(len(domain)) - log_blowup)
+            if debug: print('lambda_corrected:', lambda_corrected)
+
+            left = lambda_corrected if index_shifted < len(domain) // 2 else first_layer_sibling_value
+            right = first_layer_sibling_value if index_shifted < len(domain) // 2 else lambda_corrected
+            _, y = domain[index_shifted]
+            fri_input = FRI.fold_y_row(y, bivariate_beta, left, right, debug)
+            fri_input = fri_input[0]
+            if debug: print('fri_input:', fri_input)
+
+            if debug: print('index_shifted:', index_shifted, ', lambda_corrected:', lambda_corrected, ', first_layer_proof[0]:', first_layer_proof[0], ', commitment:', proof['first_layer_commitment'])
+            assert verify_decommitment(index_shifted, lambda_corrected, first_layer_proof[0], proof['first_layer_commitment'])
+            if debug: print('len(domain) - 1 - index_shifted:', len(domain) - 1 - index_shifted, ', first_layer_sibling_value:', first_layer_sibling_value, ', first_layer_proof[1]:', first_layer_proof[1], ', commitment:', proof['first_layer_commitment'])
+            assert verify_decommitment(len(domain) - 1 - index_shifted, first_layer_sibling_value, first_layer_proof[1], proof['first_layer_commitment'])
+
+            return fri_input
 
         FRI.verify(proof["fri_proof"], transcript, open_input, debug)
 
 if __name__ == "__main__":
-    evals = [1, 2, 3, 4]
+    from random import randint
+    rand_ext = lambda: randint(0, 31) + randint(0, 31) * I
+    evals = [rand_ext() for _ in range(4)]
     domain = CirclePCS.natural_domain_for_degree(len(evals))
     log_blowup = 0
 
     commitment, lde = CirclePCS.commit(evals, domain, 1 << log_blowup)
 
     transcript = MerlinTranscript(b'circle pcs')
-    transcript.append_message(b'commitment', bytes(str(commitment), 'ascii'))
+    transcript.append_message(b'commitment', bytes(str(commitment.root), 'ascii'))
 
     query_num = 1
 
@@ -589,5 +678,5 @@ if __name__ == "__main__":
     proof = CirclePCS.open(lde, commitment, point, log_blowup, transcript, query_num, True)
 
     transcript = MerlinTranscript(b'circle pcs')
-    transcript.append_message(b'commitment', bytes(str(commitment), 'ascii'))
-    CirclePCS.verify(commitment, domain, point, evaluate_at_point(evals, domain, point), proof, transcript, True)
+    transcript.append_message(b'commitment', bytes(str(commitment.root), 'ascii'))
+    CirclePCS.verify(commitment.root, domain, log_blowup, point, evaluate_at_point(evals, domain, point), proof, transcript, True)
