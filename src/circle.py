@@ -130,23 +130,50 @@ def evaluate_at_point(evals, domain, point, debug=False):
 
     return sum([lagrange_den[i] * evals[i] for i in range(len(evals))]) * lagrange_num
 
+def eval_at_p_recursive(evals, twiddle, debug=False):
+    if len(evals) == 1:
+        return evals[0]
+    else:
+        f0 = eval_at_p_recursive(evals[:len(evals)//2], pi(twiddle), debug)
+        f1 = eval_at_p_recursive(evals[len(evals)//2:], pi(twiddle), debug)
+        return f0 + f1 * twiddle
+
+def eval_at_point_raw(evals, domain, point, debug=False):
+
+    x, y = point
+    poly = CFFT.vec_2_poly(evals, domain)
+    coeffs = CFFT.ifft(poly)
+
+    left, right = coeffs[:len(coeffs)//2], coeffs[len(coeffs)//2:]
+    left_eval = eval_at_p_recursive(left, x)
+    right_eval = eval_at_p_recursive(right, x)
+
+    return left_eval + right_eval * y
+
 def deep_quotient_vanishing_part(x, zeta, alpha_pow_width, debug=False):
-    v_p = lambda p, at: (1 - (p - at)[0], -(p - at)[1])
+    v_p = lambda p, at: (1 - group_mul(p, group_inv(at))[0], -group_mul(p, group_inv(at))[1])
     re_v_zeta, im_v_zeta = v_p(x, zeta)
     # if debug: print('re_v_zeta:', re_v_zeta, 'im_v_zeta:', im_v_zeta)
-    return (re_v_zeta - alpha_pow_width * im_v_zeta, re_v_zeta ** 2 + im_v_zeta ** 2)
+    # return (re_v_zeta - alpha_pow_width * im_v_zeta, re_v_zeta ** 2 + im_v_zeta ** 2)
+    return (re_v_zeta - im_v_zeta * alpha_pow_width, re_v_zeta ** 2 + im_v_zeta ** 2)
 
 def deep_quotient_reduce(evals, domain, alpha, zeta, p_at_zeta, debug=False):
     vp_nums, vp_demons = zip(*[(deep_quotient_vanishing_part(x, zeta, alpha, debug)) for x in domain])
     vp_denom_invs = batch_multiplicative_inverse(vp_demons)
     if debug: print('vp_nums:', vp_nums, 'vp_denom_invs:', vp_denom_invs, 'p_at_zeta:', p_at_zeta, 'evals:', evals)
 
-    return [vp_nums[i] * vp_denom_invs[i] * (-p_at_zeta + evals[i]) for i in range(len(evals))]
+    return [vp_denom_invs[i] * vp_nums[i] * group_mul(group_inv(p_at_zeta), evals[i]) for i in range(len(evals))]
 
 def deep_quotient_reduce_row(alpha, x, zeta, ps_at_x, ps_at_zeta, debug=False):
     vp_num, vp_denom = deep_quotient_vanishing_part(x, zeta, alpha)
     if debug: print('vp_num:', vp_num, 'vp_denom:', vp_denom, 'ps_at_x:', ps_at_x, 'ps_at_zeta:', ps_at_zeta)
-    return vp_num * (-ps_at_zeta + ps_at_x) / vp_denom
+    return vp_num * group_mul(group_inv(ps_at_zeta), ps_at_x) / vp_denom
+
+def deep_quotient_reduce_raw(evals, domain, alpha, zeta, p_at_zeta, debug=False):
+    res = []
+    for ps_at_x, x in zip(evals, domain):
+        res.append(deep_quotient_reduce_row(alpha, x, zeta, ps_at_x, p_at_zeta, debug))
+    return res
 
 def extract_lambda(lde, log_blowup, debug=False):
     if debug:
@@ -207,13 +234,6 @@ def combine(cosets):
             t, cosets[n - 1 - i] = pop(cosets[n - 1 - i])
             res += [t]
     return res
-
-# test twin_cosets
-tcs = twin_cosets(2, 4)
-for tc in tcs:
-    for t in tc:
-        assert t in standard_position_cosets[log_2(8)]
-assert combine(tcs) == standard_position_cosets[log_2(8)], f'combine error, {combine(tcs)}, {standard_position_cosets[log_2(8)]}'
 
 class CFFT:
     @classmethod
@@ -344,8 +364,8 @@ class CFFT:
         return f
     
     @classmethod
-    def poly_2_vec(cls, poly):
-        return [poly[t] for t in poly]
+    def poly_2_vec(cls, poly, domain):
+        return [poly[t] for t in domain]
     
     @classmethod
     def extrapolate(cls, evals, domain, blowup_factor):
@@ -354,8 +374,7 @@ class CFFT:
         cosets = twin_cosets(blowup_factor, len(evals))
         res = []
         for coset in cosets:
-            res += [cls.fft(coeffs, coset)]
-        res = [cls.poly_2_vec(x) for x in res]
+            res += [cls.poly_2_vec(cls.fft(coeffs, coset), coset)]
         return combine(res)
     
 class FRI:
@@ -625,11 +644,11 @@ class CirclePCS:
 
         # evaluate the polynomial at the point zeta
         domain = cls.natural_domain_for_degree(len(evals))
-        p_at_zeta = evaluate_at_point(evals, domain, zeta, debug)
+        p_at_zeta = eval_at_point_raw(evals, domain, zeta, debug)
         if debug: print('p_at_zeta:', p_at_zeta)
 
         # deep quotient
-        reduced_opening = deep_quotient_reduce(evals, domain, alpha, zeta, p_at_zeta, debug)
+        reduced_opening = deep_quotient_reduce_raw(evals, domain, alpha, zeta, p_at_zeta, debug)
         if debug: print('reduced_opening:', reduced_opening)
         # extract lambda
         first_layer, lambda_ = extract_lambda(reduced_opening, log_blowup, debug)
@@ -753,4 +772,4 @@ if __name__ == "__main__":
 
     transcript = MerlinTranscript(b'circle pcs')
     transcript.append_message(b'commitment', bytes(str(commitment.root), 'ascii'))
-    CirclePCS.verify(commitment.root, domain, log_blowup, point, evaluate_at_point(evals, CirclePCS.natural_domain_for_degree(len(evals)), point), proof, transcript, True)
+    CirclePCS.verify(commitment.root, domain, log_blowup, point, eval_at_point_raw(evals, CirclePCS.natural_domain_for_degree(len(evals)), point), proof, transcript, True)
