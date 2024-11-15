@@ -221,7 +221,7 @@ class UniPolynomialTest(TestCase):
         domain = [1, 2, 3, 4]
         z = 5
         result = UniPolynomial.uni_eval_from_evals(evals, z, domain)
-        self.assertEqual(result, 125)
+        self.assertEqual(int(result), 125)
 
 if __name__ == '__main__':
     main()

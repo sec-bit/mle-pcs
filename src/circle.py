@@ -67,7 +67,7 @@ def group_mul(g1, g2):
 
 def pi(t):
     # x^2 - y^2 == 2 * x^2 - 1 (x^2 + y^2 = 1)
-    return C31(2 * t**2 - 1)
+    return F31(2 * t**2 - 1)
 
 def pie_group(D):
     D_new = []
@@ -162,12 +162,12 @@ def deep_quotient_reduce(evals, domain, alpha, zeta, p_at_zeta, debug=False):
     vp_denom_invs = batch_multiplicative_inverse(vp_demons)
     if debug: print('vp_nums:', vp_nums, 'vp_denom_invs:', vp_denom_invs, 'p_at_zeta:', p_at_zeta, 'evals:', evals)
 
-    return [vp_denom_invs[i] * vp_nums[i] * group_mul(group_inv(p_at_zeta), evals[i]) for i in range(len(evals))]
+    return [vp_denom_invs[i] * vp_nums[i] * (evals[i] - p_at_zeta) for i in range(len(evals))]
 
 def deep_quotient_reduce_row(alpha, x, zeta, ps_at_x, ps_at_zeta, debug=False):
     vp_num, vp_denom = deep_quotient_vanishing_part(x, zeta, alpha)
     if debug: print('vp_num:', vp_num, 'vp_denom:', vp_denom, 'ps_at_x:', ps_at_x, 'ps_at_zeta:', ps_at_zeta)
-    return vp_num * group_mul(group_inv(ps_at_zeta), ps_at_x) / vp_denom
+    return vp_num * (ps_at_x - ps_at_zeta) / vp_denom
 
 def deep_quotient_reduce_raw(evals, domain, alpha, zeta, p_at_zeta, debug=False):
     res = []
@@ -243,8 +243,8 @@ class CFFT:
         for t in f:
             x, y = t
 
-            f0[x] = (f[t] + f[group_inv(t)]) / C31(2)
-            f1[x] = (f[t] - f[group_inv(t)]) / (C31(2) * y)
+            f0[x] = (f[t] + f[group_inv(t)]) / F31(2)
+            f1[x] = (f[t] - f[group_inv(t)]) / (F31(2) * y)
 
             # Check that f is divided into 2 parts correctly
             assert f[t] == f0[x] + y * f1[x]
@@ -269,6 +269,7 @@ class CFFT:
 
             # Check that f is divided into 2 parts correctly
             assert f[x] == f0[pi(x)] + x * f1[pi(x)]
+            assert f[-x] == f0[pi(x)] - x * f1[pi(x)]
 
         return cls._ifft_normal_step(f0) + cls._ifft_normal_step(f1)
     
@@ -392,7 +393,7 @@ class FRI:
         for i, (_, y) in enumerate(domain[:N//2]):
             f0 = (left[i] + right[i]) / 2
             f1 = (left[i] - right[i]) / (2 * y)
-            evals[i] = f0 + group_mul(beta, f1)
+            evals[i] = f0 + f1 * beta
             if debug: print('fold y')
             if debug: print(f"f0 = (({left[i]}) + ({right[i]}))/2 = {f0}")
             if debug: print(f"f1 = (({left[i]}) - ({right[i]}))/(2 * {y}) = {f1}")
@@ -435,7 +436,7 @@ class FRI:
             f1 = (left[i] - right[i]) * (1 / (F31(2) * x))
             # f[:N//2] stores the folded polynomial
             if debug: print('fold x')
-            if debug: print(f"f[{i}] = {f[i]} = ({left[i]} + {right[i]})/2 + {r} * ({left[i]} - {right[i]})/(2 * {x})")
+            if debug: print(f"f[{i}] = {f[i]} = (({left[i]}) + ({right[i]}))/2 + {r} * (({left[i]}) - ({right[i]}))/(2 * {x})")
             f[i] = f0 + r * f1
             # if debug: print(f"{f[i]} = ({left[i]} + {right[i]})/2 + {r} * ({left[i]} - {right[i]})/(2 * {x})")
             # reuse f[N//2:] to store new domain
@@ -581,7 +582,7 @@ class FRI:
         return folded_eval
 
     @classmethod
-    def verify(cls, proof, transcript, open_input, debug=False):
+    def verify(cls, proof, blowup_factor, transcript, open_input, debug=False):
         assert isinstance(transcript, MerlinTranscript), "transcript should be a MerlinTranscript"
 
         betas = []
@@ -593,11 +594,11 @@ class FRI:
         transcript.append_message(b"final_poly", bytes(str(proof["final_poly"]), 'ascii'))
 
         folded_eval = 0
+        log_max_height = len(proof["commit_phase_commits"]) + log_2(blowup_factor)
         for qp in proof["query_proofs"]:
             index = int.from_bytes(transcript.challenge_bytes(b"query", 4), "big")
             if debug: print('query:', index)
 
-            log_max_height = len(proof["commit_phase_commits"])
             index >>= (32 - log_max_height - 1)
             index_sibling = (1 << log_max_height) * 2 - 1 - index
             if debug: print('log_max_height:', log_max_height, ', index:', index, ', index_sibling:', index_sibling)
@@ -747,19 +748,15 @@ class CirclePCS:
 
             return fri_input
 
-        FRI.verify(proof["fri_proof"], transcript, open_input, debug)
+        FRI.verify(proof["fri_proof"], 1 << log_blowup, transcript, open_input, debug)
 
 if __name__ == "__main__":
     from random import randint
-    rand_ext = lambda: randint(0, 31) + randint(0, 31) * I
-    # evals = [rand_ext() for _ in range(2)]
-    evals = [F31(1), F31(2), F31(3), F31(4)]
+    evals = [F31(randint(0, 31)) for _ in range(4)]
     domain = CirclePCS.natural_domain_for_degree(len(evals))
-    print('domain:', domain)
     log_blowup = 1
 
     commitment, lde = CirclePCS.commit(evals, domain, 1 << log_blowup)
-    print('lde:', lde)
 
     transcript = MerlinTranscript(b'circle pcs')
     transcript.append_message(b'commitment', bytes(str(commitment.root), 'ascii'))
