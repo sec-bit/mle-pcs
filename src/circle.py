@@ -8,18 +8,24 @@ from utils import log_2
 from merkle import MerkleTree, verify_decommitment
 from merlin.merlin_transcript import MerlinTranscript
 
+# Base field is the prime field of p = 31
 F31 = GF(31)
 R = PolynomialRing(F31, ['X'])
 R.inject_variables()
 X, = R.gens()
 
+# Extension field is the field of p = 31^2
 C31 = R.extension(X ** 2 + 1, 'i')
 C31.inject_variables()
 I, = C31.gens()
 
-# g = 10 + 5 * I # not a generator
-# g = 29 + 11 * I # neither
-
+# This function is to test if a given element is a generator
+# of the size 32 multiplicative subgroup of the extension field
+# Inputs:
+#   x: integer in range [0,30] representing real part
+#   y: integer in range [0,30] representing imaginary part
+# Returns:
+#   bool: True if x + y*I is a generator, False otherwise
 def test_generator(x, y):
     g = x + y * I
     g_30 = g**30
@@ -30,6 +36,7 @@ def test_generator(x, y):
 
 g = 0
 
+# Try to find the generator by brute force
 for x in range(31):
     for y in range(31):
         if test_generator(x, y):
@@ -38,8 +45,15 @@ for x in range(31):
 
 g_30 = g**30
 
+# Check that the generator's order is 32
 assert g_30**32 == 1
 
+# This is a function to compute the next domain
+# by squaring the previous domain
+# Inputs:
+#   D: list of domain elements
+# Returns:
+#   list: new domain with squared elements
 def sq(D):
     rs = []
     for t in D[:len(D)//2]:
@@ -47,32 +61,52 @@ def sq(D):
         rs += [t**2]
     return rs
 
+# G5 is a multiplicative group of size 32
 G5 = [g_30**k for k in range(32)]
+# G is a list of domains
 G = [G5]
+# tmp is the last domain in G
 tmp = G[-1]
+# Compute the next domain by squaring the previous domain
 for i in range(5):
     tmp = sq(tmp)
     G = [tmp] + G
 
-standard_position_cosets = [[G[i + 1][1] * p for p in G[i]] for i in range(4)]
+# standard_position_cosets are cosets of G_n
+# that shifted by G_(n+1)'s first element
+standard_position_cosets = [[G[i + 1][1] * p for p in G[i]] for i in range(5)]
 
+# Define inverse operation on the group
 def group_inv(g1):
     x1, y1 = g1
     return x1 - y1 * I
 
+# Define multiplication operation on the group
 def group_mul(g1, g2):
     x1, y1 = g1
     x2, y2 = g2
     return (x1 * x2 - y1 * y2) + (x1 * y2 + y1 * x2) * I
 
-def pi(t):
+# Define pie mapping of elements on the group
+# This function is only applied to the x coordinate of a point
+# Inputs:
+#   t: field element representing x coordinate
+# Returns:
+#   field element: mapped x coordinate
+def pie(t):
     # x^2 - y^2 == 2 * x^2 - 1 (x^2 + y^2 = 1)
     return F31(2 * t**2 - 1)
 
+# Define pie mapping of elements on the group
+# This function is only applied to the x coordinate of points
+# Inputs:
+#   D: list of domain elements
+# Returns:
+#   list: new domain with mapped x coordinates
 def pie_group(D):
     D_new = []
     for x in D:
-        x_new = pi(x)
+        x_new = pie(x)
         if x_new not in D_new:
             D_new.append(x_new)
 
@@ -81,14 +115,17 @@ def pie_group(D):
     
     return D_new
 
+# This function is to generate the vanishing polynomial of degree n
 def v_n(x, log_n):
     for _ in range(log_n - 1):
         x = 2 * x**2 - 1
     return x
 
+# NOT TESTED
 def zeroifier(at, shift, log_n):
     return v_n(at, log_n) - v_n(shift, log_n)
 
+# This function is to compute the vanishing polynomial of degree n - 1
 def v_n_prod(x, log_n):
     output = x
     for _ in range(log_n - 2):
@@ -96,15 +133,22 @@ def v_n_prod(x, log_n):
         output *= x
     return output
 
+# NOT TESTED
 def s_p_at_p(at, log_n, debug=False):
     x, y = at
     if debug:
         print('v_n_prod(x):', v_n_prod(x, log_n), 'y:', y)
     return -v_n_prod(x, log_n) * (2 ** (2 * log_n - 1)) * y
 
+# This function is to compute the multiplicative inverse of a list of elements
+# Inputs:
+#   x: list of field elements
+# Returns:
+#   list: multiplicative inverses of input elements
 def batch_multiplicative_inverse(x):
     return [1 / x_i for x_i in x]
 
+# NOT TESTED
 def compute_lagrange_den_batched(points, at, log_n, debug=False):
     numer = []
     denom = []
@@ -120,6 +164,8 @@ def compute_lagrange_den_batched(points, at, log_n, debug=False):
 
     return [numer[i] * inv_d[i] for i in range(len(numer))]
 
+# This function is to evaluate the polynomial at a given point
+# NOT TESTED
 def evaluate_at_point(evals, domain, point, debug=False):
     assert len(evals) == len(domain), "len(evals) != len(domain), {} != {}, evals={}, domain={}".format(len(evals), len(domain), evals, domain)
     x, _ = point
@@ -130,14 +176,16 @@ def evaluate_at_point(evals, domain, point, debug=False):
 
     return sum([lagrange_den[i] * evals[i] for i in range(len(evals))]) * lagrange_num
 
+# Helper function for eval_at_point_raw
 def eval_at_p_recursive(evals, twiddle, debug=False):
     if len(evals) == 1:
         return evals[0]
     else:
-        f0 = eval_at_p_recursive(evals[:len(evals)//2], pi(twiddle), debug)
-        f1 = eval_at_p_recursive(evals[len(evals)//2:], pi(twiddle), debug)
+        f0 = eval_at_p_recursive(evals[:len(evals)//2], pie(twiddle), debug)
+        f1 = eval_at_p_recursive(evals[len(evals)//2:], pie(twiddle), debug)
         return f0 + f1 * twiddle
 
+# Evaluate polynomial at a given point with O(n*log(n))
 def eval_at_point_raw(evals, domain, point, debug=False):
 
     x, y = point
@@ -150,13 +198,19 @@ def eval_at_point_raw(evals, domain, point, debug=False):
 
     return left_eval + right_eval * y
 
+# Compute vanishing polynomial of zeta at x
+# v_p is single point vanishing polynomial, v_p(x, y) = (1 - x, -y)
+# x and y are real and imaginary parts of diff = group_mul(p, group_inv(at)) (diff = p - at)
 def deep_quotient_vanishing_part(x, zeta, alpha_pow_width, debug=False):
     v_p = lambda p, at: (1 - group_mul(p, group_inv(at))[0], -group_mul(p, group_inv(at))[1])
+    # real part and imaginary part
     re_v_zeta, im_v_zeta = v_p(x, zeta)
-    # if debug: print('re_v_zeta:', re_v_zeta, 'im_v_zeta:', im_v_zeta)
-    # return (re_v_zeta - alpha_pow_width * im_v_zeta, re_v_zeta ** 2 + im_v_zeta ** 2)
+    # This step is to rationalize the denominator of complex number
+    # with first return value as numerator and second return value as denominator
+    # and use alpha_pow_width to replace 'i'
     return (re_v_zeta - im_v_zeta * alpha_pow_width, re_v_zeta ** 2 + im_v_zeta ** 2)
 
+# Compute the deep quotient polynomial of evals at zeta
 def deep_quotient_reduce(evals, domain, alpha, zeta, p_at_zeta, debug=False):
     vp_nums, vp_demons = zip(*[(deep_quotient_vanishing_part(x, zeta, alpha, debug)) for x in domain])
     vp_denom_invs = batch_multiplicative_inverse(vp_demons)
@@ -164,30 +218,46 @@ def deep_quotient_reduce(evals, domain, alpha, zeta, p_at_zeta, debug=False):
 
     return [vp_denom_invs[i] * vp_nums[i] * (evals[i] - p_at_zeta) for i in range(len(evals))]
 
+# This function is the same as deep_quotient_reduce but only for one point
 def deep_quotient_reduce_row(alpha, x, zeta, ps_at_x, ps_at_zeta, debug=False):
     vp_num, vp_denom = deep_quotient_vanishing_part(x, zeta, alpha)
     if debug: print('vp_num:', vp_num, 'vp_denom:', vp_denom, 'ps_at_x:', ps_at_x, 'ps_at_zeta:', ps_at_zeta)
     return vp_num * (ps_at_x - ps_at_zeta) / vp_denom
 
+# Simplify deep_quotient_reduce by using deep_quotient_reduce_row
 def deep_quotient_reduce_raw(evals, domain, alpha, zeta, p_at_zeta, debug=False):
     res = []
     for ps_at_x, x in zip(evals, domain):
         res.append(deep_quotient_reduce_row(alpha, x, zeta, ps_at_x, p_at_zeta, debug))
     return res
 
+# Extract lambda from lde to fix the dimension gap
+# In this step, lde reduces a term which is the vanishing polynomial of degree N/2
+# Inputs:
+#   lde: list of field elements representing polynomial evaluations
+#   log_blowup: integer representing log2 of blowup factor
+#   debug: bool for debug printing
+# Returns:
+#   tuple: (new lde values, extracted lambda value)
 def extract_lambda(lde, log_blowup, debug=False):
     if debug:
         assert isinstance(lde, list), f'lde is not of type list: {lde}'
     log_lde_size = log_2(len(lde))
 
+    # v_n is constant on cosets of the same size as orig_domain, so we only have
+    # as many unique values as we have cosets.
     if debug: print('log_lde_size:', log_lde_size, ', log_blowup:', log_blowup)
     if debug: print('CirclePCS.domains[log_lde_size][:1 << log_blowup]:', CirclePCS.domains[log_lde_size][:1 << log_blowup])
     v_d_init = [v_n(p[0], log_lde_size - log_blowup) for p in CirclePCS.domains[log_lde_size][:1 << log_blowup]]
 
+    # The unique values are repeated over the rest of the domain like
+    # 0 1 2 .. n-1 n n n-1 .. 1 0 0 1 ..
     v_d = v_d_init + v_d_init[::-1]
     while (len(v_d) < len(lde)):
         v_d += v_d
     
+    # < v_d, v_d >
+    # This formula was determined experimentally...
     v_d_2 = C31(2) ** (log_lde_size - 1)
     
     if debug: print('lde:', lde)
@@ -201,6 +271,12 @@ def extract_lambda(lde, log_blowup, debug=False):
 
     return new_lde, lambda_
 
+# Divide a standard position coset of size n * size into n twin cosets
+# Inputs:
+#   n: number of cosets to divide into
+#   size: size of each coset
+# Returns:
+#   list: n twin cosets
 def twin_cosets(n, size):
     k = log_2(size * n)
     log_size = log_2(size)
@@ -218,10 +294,20 @@ def twin_cosets(n, size):
         res += [[x for y in tmp for x in list(y)]]
     return res
 
+# Pop an element from a list
+# Inputs:
+#   v: list with at least one element
+# Returns:
+#   tuple: (first element, remaining list)
 def pop(v):
     assert len(v) > 0, "v is empty"
     return v[0], v[1:]
 
+# Reunite the twin cosets order list into standard position coset order
+# Inputs:
+#   cosets: list of cosets
+# Returns:
+#   list: combined cosets in standard position order
 def combine(cosets):
     cosets = cosets[:]
     n = len(cosets)
@@ -235,7 +321,13 @@ def combine(cosets):
             res += [t]
     return res
 
+# This class is to perform FFT and IFFT on the polynomial
 class CFFT:
+    # The first step, interpolate y
+    # Inputs:
+    #   f: dict mapping domain points to field elements
+    # Returns:
+    #   tuple: (f0, f1) where f0,f1 are dicts mapping x-coordinates to field elements
     @classmethod
     def _ifft_first_step(cls, f):
         f0 = {}
@@ -251,6 +343,11 @@ class CFFT:
 
         return f0, f1
     
+    # The rest steps, interpolate V(x)
+    # Inputs:
+    #   f: dict mapping x-coordinates to field elements
+    # Returns:
+    #   list: coefficients of interpolated polynomial
     @classmethod
     def _ifft_normal_step(cls, f):
         if len(f) == 1:
@@ -264,15 +361,20 @@ class CFFT:
 
         for x in f:
             assert x != 0, "f should be on coset"
-            f0[pi(x)] = (f[x] + f[-x]) / F31(2)
-            f1[pi(x)] = (f[x] - f[-x]) / (F31(2) * x)
+            f0[pie(x)] = (f[x] + f[-x]) / F31(2)
+            f1[pie(x)] = (f[x] - f[-x]) / (F31(2) * x)
 
             # Check that f is divided into 2 parts correctly
-            assert f[x] == f0[pi(x)] + x * f1[pi(x)]
-            assert f[-x] == f0[pi(x)] - x * f1[pi(x)]
+            assert f[x] == f0[pie(x)] + x * f1[pie(x)]
+            assert f[-x] == f0[pie(x)] - x * f1[pie(x)]
 
         return cls._ifft_normal_step(f0) + cls._ifft_normal_step(f1)
     
+    # IFFT
+    # Inputs:
+    #   f: dict mapping domain points to field elements
+    # Returns:
+    #   list: coefficients of interpolated polynomial
     @classmethod
     def ifft(cls, f):
         f0, f1 = cls._ifft_first_step(f)
@@ -281,6 +383,12 @@ class CFFT:
 
         return f0 + f1
     
+    # The first step, fold y
+    # Inputs:
+    #   f: list of polynomial coefficients
+    #   D: list of domain points
+    # Returns:
+    #   tuple: (f0, f1, D_new) where f0,f1 are lists of coefficients and D_new is the new domain
     @classmethod
     def fft_first_step(cls, f, D):
         # Check that the polynomial and the domain have the same length
@@ -299,6 +407,12 @@ class CFFT:
 
         return f0, f1, D_new
     
+    # The rest steps, fold V(x)
+    # Inputs:
+    #   f: list of polynomial coefficients
+    #   D: list of domain points
+    # Returns:
+    #   dict: mapping from domain points to field elements
     @classmethod
     def fft_normal_step(cls, f, D):
         if len(f) == 1:
@@ -316,15 +430,15 @@ class CFFT:
 
         f_new = {}
         for x in D:
-            f_new[x] = f0[pi(x)] + f1[pi(x)] * x
+            f_new[x] = f0[pie(x)] + f1[pie(x)] * x
 
         # Check that f is divided into 2 parts correctly
         for x in D:
             if x != 0:
-                assert f0[pi(x)] == (f_new[x] + f_new[-x]) / C31(2), "f0[pi(x)] = {}".format(f0[pi(x)])
-                assert f1[pi(x)] == (f_new[x] - f_new[-x]) / (C31(2) * x), "f1[pi(x)] = {}".format(f1[pi(x)])
+                assert f0[pie(x)] == (f_new[x] + f_new[-x]) / C31(2), "f0[pi(x)] = {}".format(f0[pie(x)])
+                assert f1[pie(x)] == (f_new[x] - f_new[-x]) / (C31(2) * x), "f1[pi(x)] = {}".format(f1[pie(x)])
             else:
-                assert f0[pi(x)] == f_new[x], "f0[pi(x)] = {}".format(f0[pi(x)])
+                assert f0[pie(x)] == f_new[x], "f0[pi(x)] = {}".format(f0[pie(x)])
 
         # Check that the polynomial and the domain have the same length
         assert len(f) == len(f_new), "len(f) != len(f_new), {} != {}, f={}, f_new={}, D={}".format(len(f), len(f_new), f, f_new, D)
@@ -334,6 +448,12 @@ class CFFT:
             
         return f_new
     
+    # FFT
+    # Inputs:
+    #   f: list of polynomial coefficients
+    #   D: list of domain points
+    # Returns:
+    #   dict: mapping from domain points to field elements
     @classmethod
     def fft(cls, f, D):
         # Check that the polynomial and the domain have the same length
@@ -357,6 +477,12 @@ class CFFT:
 
         return f
     
+    # Convert a vector to the required type by FFT
+    # Inputs:
+    #   vec: list of field elements
+    #   domain: list of domain points
+    # Returns:
+    #   dict: mapping from domain points to field elements
     @classmethod
     def vec_2_poly(cls, vec, domain):
         f = {}
@@ -364,10 +490,23 @@ class CFFT:
             f[t] = vec[i]
         return f
     
+    # Convert the type of polynomial produced by IFFT to vector
+    # Inputs:
+    #   poly: dict mapping domain points to field elements
+    #   domain: list of domain points
+    # Returns:
+    #   list: field elements in domain order
     @classmethod
     def poly_2_vec(cls, poly, domain):
         return [poly[t] for t in domain]
     
+    # Extrapolate the polynomial into a larger domain
+    # Inputs:
+    #   evals: list of field elements
+    #   domain: list of domain points
+    #   blowup_factor: blowup factor
+    # Returns:
+    #   list: field elements evaluated at expanded domain
     @classmethod
     def extrapolate(cls, evals, domain, blowup_factor):
         evals = cls.vec_2_poly(evals, domain)
@@ -379,6 +518,14 @@ class CFFT:
         return combine(res)
     
 class FRI:
+    # Fold y of evals
+    # Inputs:
+    #   evals: list of field elements
+    #   domain: list of domain points
+    #   beta: field element for random linear combination
+    #   debug: bool for debug printing
+    # Returns:
+    #   list: folded field elements
     @classmethod
     def fold_y(cls, evals, domain, beta, debug=False):
         # first step (J mapping)
@@ -401,6 +548,15 @@ class FRI:
 
         return evals
     
+    # Fold y of a single row
+    # Inputs:
+    #   y: field element representing y coordinate
+    #   beta: field element for random linear combination
+    #   left: field element on left side
+    #   right: field element on right side
+    #   debug: bool for debug printing
+    # Returns:
+    #   field element: folded value
     @classmethod
     def fold_y_row(cls, y, beta, left, right, debug=False):
         f0 = (left + right) / 2
@@ -411,13 +567,14 @@ class FRI:
         if debug: print(f"f0 + ({beta}) * f1 = ({f0}) + ({beta}) * ({f1}) = {f0 + group_mul(beta, f1)}")
         return f0 + group_mul(beta, f1)
     
+    # Fold x of evals
     # Inputs:
-    #   f is the polynomial to be folded
-    #   D is the domain of f
-    #   r is the random number for random linear combination
-    # Outputs:
-    #   The first return value is the folded polynomial
-    #   The second return value is the new domain
+    #   f: list of field elements to be folded
+    #   D: list of domain points
+    #   r: field element for random linear combination
+    #   debug: bool for debug printing
+    # Returns:
+    #   tuple: (folded polynomial, new domain)
     @classmethod
     def fold_x(cls, f, D, r, debug=False):
         assert len(f) == len(D), "len(f) != len(D), {} != {}, f={}, D={}".format(len(f), len(D), f, D)
@@ -445,6 +602,15 @@ class FRI:
         # return the folded polynomial and the new domain
         return f[:N//2], f[N//2:]
     
+    # Commit phase of FRI
+    # Inputs:
+    #   input: polynomial to be committed
+    #   blowup_factor: blowup factor
+    #   domain: list of domain points
+    #   transcript: transcript for challenges
+    #   debug: bool for debug printing
+    # Returns:
+    #   dict: containing commits, trees, oracles and final polynomial
     @classmethod
     def commit_phase(cls, input, blowup_factor, domain, transcript, debug=False):
         assert isinstance(transcript, MerlinTranscript), "transcript should be a MerlinTranscript"
@@ -485,6 +651,14 @@ class FRI:
             "final_poly": final_poly
         }
     
+    # Answer query phase of FRI
+    # Inputs:
+    #   trees: trees of committed polynomials
+    #   oracles: original polynomials
+    #   index: index to query
+    #   debug: bool for debug printing
+    # Returns:
+    #   zip: iterator of opening proofs and sibling values
     @classmethod
     def answer_query(cls, trees, oracles, index, debug=False):
         if debug: print('answer_query')
@@ -518,6 +692,17 @@ class FRI:
 
         return zip(opening_proofs, sibling_values)
 
+    # FRI prove of single variate
+    # Inputs:
+    #   input: polynomial to be committed
+    #   blowup_factor: blowup factor
+    #   domain: domain points
+    #   transcript: transcript for challenges
+    #   open_input: function to open input at first layer
+    #   num_queries: number of queries
+    #   debug: bool for debug printing
+    # Returns:
+    #   dict: proof containing commit phase commits, query proofs and final polynomial
     @classmethod
     def prove(cls, input, blowup_factor, domain, transcript, open_input, num_queries, debug=False):
         assert isinstance(transcript, MerlinTranscript), "transcript should be a MerlinTranscript"
@@ -536,7 +721,9 @@ class FRI:
         query_proofs = []
         if debug: print('queries:', queries, ', degree:', degree, ', query >> (32 - log_2(degree)):', [query >> (32 - log_2(degree)) for query in queries])
         for query in queries:
+            # Index for y folding
             index = query >> (32 - log_2(degree) - 1)
+            # This is a little different from the original FRI due to circle domain
             index_sibling = degree * 2 - 1 - index
             query_proofs.append({
                 "input_proof": open_input(index),
@@ -549,6 +736,15 @@ class FRI:
             "final_poly": commit_phase_result["final_poly"]
         }
 
+    # Verify query phase of FRI
+    # Inputs:
+    #   index: index to verify
+    #   steps: list of tuples (beta, commit, opening)
+    #   reduced_opening: field element of reduced opening
+    #   log_max_height: log of max height
+    #   debug: bool for debug printing
+    # Returns:
+    #   field element: folded evaluation
     @classmethod
     def verify_query(cls, index, steps, reduced_opening, log_max_height, debug=False):
         if debug: print('verify_query')
@@ -581,6 +777,15 @@ class FRI:
 
         return folded_eval
 
+    # FRI verify of single variate
+    # Inputs:
+    #   proof: proof containing commit phase commits, query proofs and final polynomial
+    #   blowup_factor: blowup factor
+    #   transcript: transcript for challenges
+    #   open_input: function to open input at first layer
+    #   debug: bool for debug printing
+    # Returns:
+    #   None, raises AssertionError if verification fails
     @classmethod
     def verify(cls, proof, blowup_factor, transcript, open_input, debug=False):
         assert isinstance(transcript, MerlinTranscript), "transcript should be a MerlinTranscript"
@@ -599,7 +804,9 @@ class FRI:
             index = int.from_bytes(transcript.challenge_bytes(b"query", 4), "big")
             if debug: print('query:', index)
 
+            # Index for y folding
             index >>= (32 - log_max_height - 1)
+            # This is a little different from the original FRI due to circle domain
             index_sibling = (1 << log_max_height) * 2 - 1 - index
             if debug: print('log_max_height:', log_max_height, ', index:', index, ', index_sibling:', index_sibling)
 
@@ -611,14 +818,13 @@ class FRI:
         assert folded_eval == proof["final_poly"], "folded_eval != proof['final_poly'], {} != {}".format(folded_eval, proof["final_poly"])
 
 class CirclePCS:
-    G5 = [g_30**k for k in range(32)]
-    G4_standard = [g_30 * t for t in sq(G5)]
-    G3_standard = sq(G4_standard)
-    G2_standard = sq(G3_standard)
-    G1_standard = sq(G2_standard)
-    G0_standard = sq(G1_standard)
-    domains = [G0_standard, G1_standard, G2_standard, G3_standard, G4_standard]
+    domains = [standard_position_cosets[i] for i in range(5)]
 
+    # Get the standard position coset of given degree
+    # Inputs:
+    #   degree: degree of polynomial
+    # Returns:
+    #   list: domain points for given degree
     @classmethod
     def natural_domain_for_degree(cls, degree):
         log_degree = log_2(degree)
@@ -627,6 +833,13 @@ class CirclePCS:
         
         return cls.domains[log_degree]
     
+    # Commit phase of PCS
+    # Inputs:
+    #   eval: list of field elements representing polynomial evaluations
+    #   domain: domain points
+    #   blowup_factor: blowup factor
+    # Returns:
+    #   tuple: (MerkleTree commitment, list of extrapolated evaluations)
     @classmethod
     def commit(cls, eval, domain, blowup_factor):
         log_n = log_2(len(eval))
@@ -636,6 +849,17 @@ class CirclePCS:
         lde = CFFT.extrapolate(eval, domain, blowup_factor)
         return MerkleTree(lde), lde
     
+    # Open phase of PCS
+    # Inputs:
+    #   evals: list of field elements representing polynomial evaluations
+    #   evals_commit: MerkleTree commitment of evaluations
+    #   zeta: evaluation point
+    #   log_blowup: log of blowup factor
+    #   transcript: transcript for challenges
+    #   num_queries: number of queries
+    #   debug: bool for debug printing
+    # Returns:
+    #   dict: proof containing first layer commitment, lambda value and FRI proof
     @classmethod
     def open(cls, evals, evals_commit, zeta, log_blowup, transcript, num_queries, debug=False):
         if debug: print('evals:', evals)
@@ -669,6 +893,7 @@ class CirclePCS:
             print('fri_input:', fri_input)
             print('domain:', domain)
 
+        # Handle the first layer
         def open_input(index):
             if debug: print('open_input')
             # index >>= 32 - log_2(len(evals))
@@ -703,6 +928,18 @@ class CirclePCS:
             "fri_proof": fri_proof
         }
 
+    # Verify phase of PCS
+    # Inputs:
+    #   commitment: MerkleTree root commitment
+    #   domain: domain points
+    #   log_blowup: log of blowup factor
+    #   point: evaluation point
+    #   value: claimed evaluation value
+    #   proof: proof containing first layer commitment, lambda value and FRI proof
+    #   transcript: transcript for challenges
+    #   debug: bool for debug printing
+    # Returns:
+    #   None, raises AssertionError if verification fails
     @classmethod
     def verify(cls, commitment, domain, log_blowup, point, value, proof, transcript, debug=False):
         assert isinstance(transcript, MerlinTranscript), "transcript should be a MerlinTranscript"
@@ -712,6 +949,7 @@ class CirclePCS:
         bivariate_beta = int.from_bytes(transcript.challenge_bytes(b"bivariate_beta x", 4), "big") + int.from_bytes(transcript.challenge_bytes(b"bivariate_beta y", 4), "big") * I
         if debug: print('bivariate_beta:', bivariate_beta)
 
+        # Handle the first layer
         def open_input(index, input_proof):
             if debug: print('open_input')
             if debug: print('index:', index)
