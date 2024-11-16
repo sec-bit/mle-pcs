@@ -1,5 +1,6 @@
 import unittest
 from sage.all import *
+from random import randint
 import sys
 
 sys.path.append('src')
@@ -46,7 +47,7 @@ class TestCircle(unittest.TestCase):
             assert eval_at_point_raw(evals, domain, p) == lde[i], f'evaluate_at_point error, {eval_at_point_raw(evals, domain, p)}, {lde[i]}'
 
     def test_fold(self):
-        evals = [1, 2, 3, 4]
+        evals = [F31(randint(0, 31)) for _ in range(4)]
         domain = standard_position_cosets[log_2(len(evals))]
         blowup_factor = 2
         lde = CFFT.extrapolate(evals, domain, blowup_factor)
@@ -57,8 +58,16 @@ class TestCircle(unittest.TestCase):
         folded_folded = fold(folded, domain_lde, 3, fold_y=False)
         assert folded_folded[0] == folded_folded[1], f'folded_folded[0] != folded_folded[1], {folded_folded[0]}, {folded_folded[1]}'
 
+    def test_fft(self):
+        evals = [F31(randint(0, 31)) for _ in range(4)]
+        domain = standard_position_cosets[log_2(len(evals))]
+        
+        coeffs = CFFT.ifft(CFFT.vec_2_poly(evals, domain))
+        evals_fft = CFFT.poly_2_vec(CFFT.fft(coeffs, domain), domain)
+        assert evals_fft == evals, f'evals_fft != evals, {evals_fft}, {evals}'
+
     def test_fri_prove(self):
-        evals = [1, 2, 3, 4]
+        evals = [F31(randint(0, 31)) for _ in range(4)]
         domain = standard_position_cosets[log_2(len(evals))]
         blowup_factor = 2
         lde = CFFT.extrapolate(evals, domain, blowup_factor)
@@ -84,7 +93,7 @@ class TestCircle(unittest.TestCase):
     #     assert p == expected, f'evaluate_at_point error, {p}, {expected}'
 
     def test_deep_quotient_reduce(self):
-        evals = [F31(1), F31(2), F31(3), F31(4)]
+        evals = [F31(randint(0, 31)) for _ in range(4)]
         domain = standard_position_cosets[log_2(len(evals))]
         alpha = 3
         zeta = g_30 ** 3
@@ -104,7 +113,7 @@ class TestCircle(unittest.TestCase):
                 assert c == F31(0), f'coeffs[{i}] != 0, coeffs: {coeffs}'
 
     def test_extract_lambda(self):
-        evals = [F31(1), F31(2), F31(3), F31(4)]
+        evals = [F31(randint(0, 31)) for _ in range(4)]
         lde = CFFT.extrapolate(evals, standard_position_cosets[2], 2)
         domain = standard_position_cosets[3]
 
@@ -130,7 +139,6 @@ class TestCircle(unittest.TestCase):
                 assert c == F31(0), f'coeffs[{i}] != 0, coeffs: {q_interpolated}'
 
     def test_circle_pcs(self):
-        from random import randint
         evals = [F31(randint(0, 31)) for _ in range(4)]
         domain = CirclePCS.natural_domain_for_degree(len(evals))
         log_blowup = 1
@@ -143,7 +151,7 @@ class TestCircle(unittest.TestCase):
         query_num = 1
 
         domain = CirclePCS.natural_domain_for_degree(len(lde))
-        point = CirclePCS.G5[5]
+        point = CirclePCS.domains[4][5]
         proof = CirclePCS.open(lde, commitment, point, log_blowup, transcript, query_num, True)
 
         transcript = MerlinTranscript(b'circle pcs')
