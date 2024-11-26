@@ -23,9 +23,9 @@ class TestFRI(TestCase):
         coset = Fp.primitive_element() ** (192 // len(evals))
         alpha = Fp(7)
 
-        evals = FRI.fold(evals, alpha, coset, debug=True)
+        evals = FRI.fold(evals, alpha, coset, debug=False)
         coset = coset ** 2
-        evals = FRI.fold(evals, alpha, coset, debug=True)
+        evals = FRI.fold(evals, alpha, coset, debug=False)
 
         assert evals[0] == evals[1] == evals[2] == evals[3]
 
@@ -52,6 +52,7 @@ class TestFRI(TestCase):
         from sage.all import GF
         from field import magic
         from random import randint
+        from merlin.merlin_transcript import MerlinTranscript
 
         Fp = magic(GF(193))
 
@@ -60,11 +61,15 @@ class TestFRI(TestCase):
         rate = 4
         evals_size = 4
         coset = Fp.primitive_element() ** (192 // (evals_size * rate))
-        point = coset ** randint(evals_size * rate, 192) * Fp.primitive_element()
-        evals = [randint(0, 193) for i in range(evals_size)]
+        point = Fp.primitive_element()
+        evals = [i for i in range(evals_size)]
         value = UniPolynomial.uni_eval_from_evals(evals, point, [coset ** i for i in range(len(evals))])
-        proof = FRI.prove(evals, rate, point, coset, [coset ** i for i in range(evals_size * rate)], debug=False)
-        FRI.verify(proof['degree_bound'], evals_size, rate, proof, point, value, [coset ** i for i in range(evals_size * rate)], coset, debug=False)
+        domain = [coset ** i for i in range(evals_size * rate)]
+        code_tree, code = FRI.commit(evals, rate, domain, debug=False)
+        transcript = MerlinTranscript(b'test')
+        transcript.append_message(b"code", code_tree.root.encode('ascii'))
+        proof = FRI.prove(code, code_tree, value, point, domain, rate, evals_size, coset, transcript, debug=False)
+        FRI.verify(evals_size, rate, proof, point, value, domain, coset, MerlinTranscript(b'test'), debug=False)
 
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@ class FRI:
     security_level = 128
 
     @classmethod
-    def prove(cls, evals, rate, point, gen, domain, debug=False):
+    def commit(cls, evals, rate, domain, debug=False):
         if debug: print("evals:", evals)
         N = len(evals)
         assert is_power_of_two(N)
@@ -18,13 +18,14 @@ class FRI:
         code = cls.rs_encode_single(coeffs, domain, rate)
         if debug: print("code:", code)
         assert len(code) == N * rate, f"code: {code}, degree_bound: {degree_bound}, rate: {rate}"
-        val = UniPolynomial.uni_eval_from_evals(evals, point, domain[:N])
-        if debug: print("val:", val)
-        assert len(domain) == N * rate, f"domain: {domain}, N: {N}, rate: {rate}"
         
-        code_tree = MerkleTree(code)
-        transcript = MerlinTranscript(b"FRI")
-        transcript.append_message(b"code", code_tree.root.encode('ascii'))
+        return MerkleTree(code), code
+
+    @classmethod
+    def prove(cls, code, code_tree, val, point, domain, rate, degree_bound, gen, transcript, debug=False):
+        if debug: print("val:", val)
+        assert len(domain) == degree_bound * rate, f"domain: {domain}, degree_bound: {degree_bound}, rate: {rate}"
+        assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
         
         quotient = [(code[i] - val) / (domain[i] - point) for i in range(len(code))]
         
@@ -65,12 +66,12 @@ class FRI:
         }
 
     @classmethod
-    def verify(cls, degree_bound, evals_size, rate, proof, point, value, domain, gen, debug=False):
+    def verify(cls, degree_bound, rate, proof, point, value, domain, gen, transcript, debug=False):
 
         assert degree_bound >= proof['degree_bound']
         degree_bound = proof['degree_bound']
 
-        transcript = MerlinTranscript(b"FRI")
+        assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
 
         code_commitment = proof['code_commitment']
         quotient_commitment = proof['quotient_commitment']
@@ -79,7 +80,7 @@ class FRI:
         transcript.append_message(b"quotient", quotient_commitment.encode('ascii'))
         transcript.append_message(b"value at z", str(value).encode('ascii'))
 
-        z = from_bytes(transcript.challenge_bytes(b"z", 4)) % (evals_size * rate)
+        z = from_bytes(transcript.challenge_bytes(b"z", 4)) % (degree_bound * rate)
         code_at_z_proof = proof['code_at_z_proof']
         quotient_at_z_proof = proof['quotient_at_z_proof']
 
@@ -268,9 +269,9 @@ class FRI:
                 if debug: print("x0:", x0)
                 if debug: print("x1:", x1)
 
+                table = T[i]
+                if debug: print("table:", table)
                 if i != len(mps) - 1:
-                    table = T[i]
-                    if debug: print("table:", table)
                     f_code_folded = cur_path[i + 1][0 if x0 < num_vars_copy / 4 else 1]
                     alpha = fold_challenges[i]
                     if debug: assert x0 < len(table), f"x0: {x0}, table: {table}"

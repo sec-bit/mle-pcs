@@ -644,27 +644,27 @@ class UniPolynomial:
 
     # barycentric interpolation
     @classmethod
-    def barycentric_weights(cls, D):
+    def barycentric_weights(cls, D, one=1):
         n = len(D)
         weights = [1] * n
         for i in range(n):
             # weights[i] = product([(D[i] - D[j]) if i !=j else Fp(1) for j in range(n)])
             for j in range(n):
                 if i==j:
-                    weights[i] *= 1
+                    weights[i] *= one
                     continue
                 weights[i] *= (D[i] - D[j])
-            weights[i] = 1/weights[i]
+            weights[i] = one / weights[i]
         return weights
 
     @classmethod
-    def uni_eval_from_evals(cls, evals, z, D):
+    def uni_eval_from_evals(cls, evals, z, D, one=1):
         n = len(evals)
         if n != len(D):
             raise ValueError("Domain size should be equal to the length of evaluations")
         if z in D:
             return evals[D.index(z)]
-        weights = cls.barycentric_weights(D)
+        weights = cls.barycentric_weights(D, one)
         # print("weights={}".format(weights))
         e_vec = [weights[i] / (z - D[i]) for i in range(n)]
         numerator = sum([e_vec[i] * evals[i] for i in range(n)])
