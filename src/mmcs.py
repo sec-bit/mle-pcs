@@ -33,13 +33,15 @@ class MMCS:
         layers = [[cls.hash(e) for e in vecs[0]]]
 
         for i in range(1, len(vecs)):
+            if debug: print("i:", i)
+            if debug: print("layers[i-1]:", layers[i-1])
             layers.append([cls.compress((layers[i-1][j], layers[i-1][j+1]), debug) for j in range(0, len(layers[i-1]), 2)])
             layers[-1] = [cls.compress((layers[-1][j], cls.hash(vecs[i][j])), debug) for j in range(len(layers[-1]))]
 
         for i in range(len(vecs), len(vecs) + log_2(min_height)):
             layers.append([cls.compress((layers[i-1][j], layers[i-1][j+1]), debug) for j in range(0, len(layers[i-1]), 2)])
             layers[-1] = [cls.compress((layers[-1][j], cls.default_digest), debug) for j in range(len(layers[-1]))]
-            print("layers[-1]:", layers[-1])
+            if debug: print("layers[-1]:", layers[-1])
 
         return {
             'layers': layers,
@@ -60,6 +62,8 @@ class MMCS:
             print("vecs:")
             for vec in vecs:
                 print(vec)
+            
+            print("index:", index >> (32 - log_2(len(vecs[0]))))
 
         openings = [vecs[i][index >> (32 - log_2(len(vecs[i])))] for i in range(len(vecs))]
         proof = [layers[i][(index >> (32 - log_2(len(layers[i])))) ^ 1] for i in range(len(layers) - 1)]

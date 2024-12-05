@@ -15,7 +15,7 @@ class BatchFRI:
         MMCS.configure(lambda x: sha256(str(x).encode('ascii')).digest(), lambda x: sha256(sha256(x[0]).digest() + sha256(x[1]).digest()).digest(), b'default_digest')
         sorted_evals = sorted(evals, key=lambda x: len(x), reverse=True)
         coeffs = [UniPolynomial.compute_coeffs_from_evals_fast(sorted_evals[i], domains[i][:len(sorted_evals[i])]) for i in range(len(sorted_evals))]
-        print("coeffs:", coeffs, ", domains:", domains)
+        if debug: print("coeffs:", coeffs, ", domains:", domains)
         codes = [cls.rs_encode_single(coeffs[i], domains[i], rate) for i in range(len(coeffs))]
         if debug: print("codes:", codes)
         if debug: assert evals == [codes[i][:len(evals[i])] for i in range(len(evals))], f"evals: {evals}, codes: {codes}"
@@ -27,29 +27,22 @@ class BatchFRI:
         assert len(vals) == len(codes), f"len(vals): {len(vals)}, len(codes): {len(codes)}"
         assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
 
-        # quotients = [[(codes[j][i] - vals[j]) / (domains[j][i] - point) for i in range(len(codes[j]))] for j in range(len(codes))]
-        quotients = []
-        for j in range(len(codes)):
-            quotients.append([])
-            for i in range(len(codes[j])):
-                if debug: print("codes[j][i]:", codes[j][i], "vals[j]:", vals[j], "domains[j][i]:", domains[j][i], "point:", point, "quotient:", (codes[j][i] - vals[j]) / (domains[j][i] - point))
-                quotients[-1].append((codes[j][i] - vals[j]) / (domains[j][i] - point))
+        quotients = [[(codes[j][i] - vals[j]) / (domains[j][i] - point) for i in range(len(codes[j]))] for j in range(len(codes))]
+        # quotients = []
+        # for j in range(len(codes)):
+        #     quotients.append([])
+        #     for i in range(len(codes[j])):
+        #         if debug: print("codes[j][i]:", codes[j][i], "vals[j]:", vals[j], "domains[j][i]:", domains[j][i], "point:", point, "quotient:", (codes[j][i] - vals[j]) / (domains[j][i] - point))
+        #         quotients[-1].append((codes[j][i] - vals[j]) / (domains[j][i] - point))
 
         if debug:
-            # print("point:", point)
-            # for i in range(len(quotients)):
-            #     FRI.prove_low_degree(quotients[i], rate, degree_bound >> i, gen ** (1 << i), 1, MerlinTranscript(b'test'), debug=False)
-            #     print("codes:", codes[i])
-            #     print("vals:", vals[i])
-            #     print("domains:", domains[i])
-            #     print("quotients:", quotients[i])
-
             coeffs = UniPolynomial.compute_coeffs_from_evals_fast(quotients[0], domains[0]) + [0]
             print("domain:", domains[0])
             print("coeffs:", coeffs)
             print("quotients[0]:", quotients[0])
-            encoded = cls.rs_encode_single(coeffs[:len(quotients[0]) // rate], domains[0], rate)
+            encoded = cls.rs_encode_single(coeffs, domains[0], rate)
             assert encoded == quotients[0], f"failed to rs encode, encoded: {encoded}, quotients[0]: {quotients[0]}"
+            assert len(coeffs) <= len(quotients[0]) // rate, f"coeffs: {coeffs}, quotients[0]: {quotients[0]}, rate: {rate}"
 
         quotients_commitment = MMCS.commit(quotients, debug=False)
         layers = quotients_commitment['layers']
@@ -60,6 +53,7 @@ class BatchFRI:
         z = from_bytes(transcript.challenge_bytes(b"z", 4))
         code_at_z, commit_proof, commit_root = MMCS.open(z, code_tree, debug=debug)
         quotient_at_z_proof = MMCS.open(z, quotients_commitment, debug=False)
+        if debug: assert quotient_at_z_proof[2] == layers[-1][0], f"failed to open quotient, z: {z}, quotient_at_z_proof: {quotient_at_z_proof}, layers[-1][0]: {layers[-1][0]}"
 
         if debug: print("prover")
         if debug: print("z:", z)
@@ -84,7 +78,7 @@ class BatchFRI:
         }
     
     @classmethod
-    def batch_verify(cls, degree_bound, rate, proof, vals, domains, gen, shift, transcript, debug=False):
+    def batch_verify(cls, degree_bound, rate, proof, point, vals, domains, gen, shift, transcript, debug=False):
         assert degree_bound >= proof['degree_bound']
         degree_bound = proof['degree_bound']
 
@@ -99,9 +93,9 @@ class BatchFRI:
         quotient_commitment = quotient_at_z_proof[2]
         code_at_z = proof['code_at_z']
 
-        transcript.append_message(b"code", code_commitment)
-        point = int.from_bytes(transcript.challenge_bytes(b"point", 4), 'big')
-        point = gen ** point * shift
+        # transcript.append_message(b"code", code_commitment)
+        # point = int.from_bytes(transcript.challenge_bytes(b"point", 4), 'big')
+        # point = gen ** point * shift
         transcript.append_message(b"quotient", quotient_commitment)
 
         for v in vals:
@@ -115,7 +109,6 @@ class BatchFRI:
         if debug: print("code_at_z_proof:", code_at_z_proof)
         if debug: print("code_commitment:", code_commitment)
         if debug: print("quotient_at_z:", quotient_at_z)
-        if debug: print("quotient_at_z_openings:", quotient_at_z)
         if debug: print("quotient_at_z_proof:", quotient_proof)
         if debug: print("quotient_commitment:", quotient_commitment)
         MMCS.verify(z, code_at_z, code_at_z_proof, code_commitment, debug=False)
@@ -139,6 +132,9 @@ class BatchFRI:
         evals_copy = evals
 
         folded = evals[0]
+        if debug:
+            coeffs = UniPolynomial.compute_coeffs_from_evals_fast(folded, [gen ** i for i in range(len(folded))])
+            assert len(coeffs) <= len(folded) // rate, f"coeffs: {coeffs}, folded: {folded}, rate: {rate}"
         first_tree = MerkleTree(folded)
         transcript.append_message(b"first_oracle", first_tree.root.encode('ascii'))
 
@@ -154,6 +150,11 @@ class BatchFRI:
             if debug: print("domain:", [gen ** i for i in range(len(folded) // 2)])
             if debug: print("evals[i + 1]:", evals[i + 1])
             folded = cls.fold(folded, alpha, gen)
+            if debug:
+                coeffs1 = UniPolynomial.compute_coeffs_from_evals_fast(folded, [gen ** (2 * i) for i in range(len(folded))])
+                coeffs2 = UniPolynomial.compute_coeffs_from_evals_fast(evals[i + 1], [gen ** (2 * i) for i in range(len(evals[i + 1]))])
+                assert len(coeffs1) <= len(folded) // rate, f"i: {i}, len(coeffs1): {len(coeffs1)}, len(folded): {len(folded)}, rate: {rate}"
+                assert len(coeffs2) <= len(evals[i + 1]) // rate, f"i: {i}, len(coeffs2): {len(coeffs2)}, len(evals[i + 1]): {len(evals[i + 1])}, rate: {rate}"
             assert len(folded) == len(evals[i + 1]), f"len(folded): {len(folded)}, len(evals[i + 1]): {len(evals[i + 1])}"
             folded = [x + y for x, y in zip(folded, evals[i + 1])]
             if i != log_2(degree_bound) - 1:

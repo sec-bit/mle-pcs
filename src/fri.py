@@ -76,7 +76,7 @@ class FRI:
         code_commitment = proof['code_commitment']
         quotient_commitment = proof['quotient_commitment']
 
-        transcript.append_message(b"code", code_commitment.encode('ascii'))
+        # transcript.append_message(b"code", code_commitment.encode('ascii'))
         transcript.append_message(b"quotient", quotient_commitment.encode('ascii'))
         transcript.append_message(b"value at z", str(value).encode('ascii'))
 
@@ -94,7 +94,7 @@ class FRI:
         assert verify_decommitment(z, proof['code_at_z'], code_at_z_proof, code_commitment), f"failed to check decommitment at code_at_z, z: {z}, code_at_z: {proof['code_at_z']}, code_commitment: {code_commitment}"
         assert verify_decommitment(z, proof['quotient_at_z'], quotient_at_z_proof, quotient_commitment), f"failed to check decommitment at quotient_at_z, z: {z}, quotient_at_z: {proof['quotient_at_z']}, quotient_commitment: {quotient_commitment}"
 
-        assert proof['code_at_z'] - value == proof['quotient_at_z'] * (domain[z] - point)
+        assert proof['code_at_z'] - value == proof['quotient_at_z'] * (domain[z] - point), f"failed to check quotient, code_at_z: {proof['code_at_z']}, value: {value}, quotient_at_z: {proof['quotient_at_z']}, domain[z]: {domain[z]}, point: {point}"
 
         num_verifier_queries = cls.security_level // log_2(rate)
         if cls.security_level % log_2(rate) != 0:

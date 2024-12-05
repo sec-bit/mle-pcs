@@ -6,7 +6,6 @@ sys.path.append('src')
 
 from batch_fri import BatchFRI
 from unipolynomial import UniPolynomial
-from fri import FRI
 
 class TestBatchFRI(TestCase):
     def setUp(self):

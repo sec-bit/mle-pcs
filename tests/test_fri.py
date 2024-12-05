@@ -69,7 +69,9 @@ class TestFRI(TestCase):
         transcript = MerlinTranscript(b'test')
         transcript.append_message(b"code", code_tree.root.encode('ascii'))
         proof = FRI.prove(code, code_tree, value, point, domain, rate, evals_size, coset, transcript, debug=False)
-        FRI.verify(evals_size, rate, proof, point, value, domain, coset, MerlinTranscript(b'test'), debug=False)
+        transcript = MerlinTranscript(b'test')
+        transcript.append_message(b"code", code_tree.root.encode('ascii'))
+        FRI.verify(evals_size, rate, proof, point, value, domain, coset, transcript, debug=False)
 
 
 if __name__ == '__main__':
