@@ -1,3 +1,4 @@
 .DS_Store
 .obsidian
 src/__pycache__/*
+.ipynb_checkpoints
