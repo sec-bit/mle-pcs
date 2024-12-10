@@ -280,9 +280,9 @@ class FRI:
                     if debug: print("code_left:", code_left)
                     if debug: print("code_right:", code_right)
                     if debug: print("alpha:", alpha)
-                    assert f_code_folded == (code_left + code_right)/2 + alpha * (code_left - code_right)/(2*table[x0]), f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, generator: {table}"
+                    assert f_code_folded == (code_left + code_right)/2 + alpha * (code_left - code_right)/(2*table[x0]), f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, table: {table}"
                 else:
-                    assert proof["final_value"] == (code_left + code_right)/2 + alpha * (code_left - code_right)/(2*table[x0]), f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, generator: {table}, final_value: {proof['final_value']}"
+                    assert proof["final_value"] == (code_left + code_right)/2 + alpha * (code_left - code_right)/(2*table[x0]), f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, table: {table}, final_value: {proof['final_value']}"
 
                 if i == 0:
                     assert verify_decommitment(x0, code_left, mp, proof['first_oracle']), "failed to check decommitment at first level"
