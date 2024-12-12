@@ -101,7 +101,7 @@ $$
 Let's denote the root of $f_1(X)$ in $\mathbb{F}_{2^4}$ as $\theta$, then any element $a\in\mathbb{F}_{2^4}$ can be uniquely represented as:
 
 $$
-a = a_0 + a_1\cdot\theta + a_2\cdot\theta^2 + \cdots + a_{n-1}\cdot\theta^{n-1}
+a = a_0 + a_1\cdot\theta + a_2\cdot\theta^2 + a_3\cdot\theta^3
 $$
 
 To add here, $f_1(X)$ is also a Primitive polynomial, and its root $\theta$ is also a Primitive Element of $\mathbb{F}_{2^4}$. Note that not all irreducible polynomials are Primitive polynomials, for example, $f_3(X)$ listed above is not a Primitive polynomial.
@@ -217,7 +217,7 @@ $$
 \begin{array}{ccccccc}
 \hline
 0000 & 0001 & 0010 & 0011 & 0100 & 0101 & 0110 & 0111 \\
-0 & 1 & \eta & \eta+1 & \zeta & \zeta+\eta & \zeta+\eta+1 & \zeta+\eta+1 \\
+0 & 1 & \eta & \eta+1 & \zeta & \zeta+1 & \zeta+\eta & \zeta+\eta+1 \\
 \hline
 1000 & 1001 & 1010 & 1011 & 1100 & 1101 & 1110 & 1111 \\
 \zeta\eta & \zeta\eta + 1 & \zeta\eta + \eta & \zeta\eta + \eta + 1 & \zeta\eta + \zeta & \zeta\eta + \zeta +1 & \zeta\eta+\zeta+\eta & \zeta\eta+\zeta+\eta+1 \\
