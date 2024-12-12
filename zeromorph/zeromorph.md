@@ -218,7 +218,7 @@ $$
 Therefore, we can define a general relation, i.e. 
 
 $$
-[[\tilde{c}]]_h=\Phi_k(X^h)\cdot [[\tilde{c}]]_k
+[[\tilde{c}]]_n=\Phi_{n-k}(X^{2^k})\cdot [[\tilde{c}]]_k
 $$
 
 Consequently, it can be verified that :  $[[\tilde{c}]]_4=\Phi_2(X^4)\cdot [[\tilde{c}]]_2$.
