@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 
 def bits_le_with_width(i, width):
     if i >= 2**width:
@@ -8,21 +10,20 @@ def bits_le_with_width(i, width):
         i //= 2
         width -= 1
     return bits
-    
+
+def bits_le_to_int(bits):
+    return int("".join(map(str, bits[::-1])), 2)
+
+def bit_reverse(x: int, width: int) -> int:
+    bits = bits_le_with_width(x, width)
+    return int("".join(map(str, bits)), 2)
+
 
 def pow_2(n):
     return 1 << n
 
 def is_power_of_two(n):
-    d = n
-    k = 0
-    while d > 0:
-        d >>= 1
-        k += 1
-    if n == 2**(k-1):
-        return True
-    else:
-        return False
+    return (n & (n - 1) == 0)
 
 def next_power_of_two(n):
     assert n >= 0, "No negative integer"
@@ -62,3 +63,14 @@ def from_bytes(bytes):
     for b in bytes:
         res = (res << 8) + b
     return res
+
+if __name__ == "__main__":
+    import random
+    k = random.randint(0, 15)
+    bits = bits_le_with_width(k, 4)
+    print(bits)
+    bits.reverse()
+    k_rev = bits_le_to_int(bits)
+    print(f"k: {k}, k_rev: {k_rev}")
+    assert k == bit_reverse(k_rev, 4)
+    print(f"test passed")

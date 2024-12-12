@@ -2,21 +2,56 @@
 
 from functools import reduce
 from utils import log_2, pow_2, bits_le_with_width
+from curve import Fr as Field
+
 # from sage.all import product, GF
 
 class MLEPolynomial:
     def __init__(self, evals, num_var):
-        self.evals = evals
+        assert len(evals) <= 2**num_var, "Evaluation length must be less than or equal to 2^num_var"
+
+        self.evals = evals + [Field(0)] * (2**num_var - len(evals))
         self.num_var = num_var
 
     def __repr__(self):
         return f"MLEPolynomial({self.evals}, {self.num_var})"
     
+    def __getitem__(self, index):
+        """
+        Retrieve an evaluation using square bracket notation.
+
+        Args:
+            index (int): The index of the evaluation to retrieve.
+
+        Returns:
+            The evaluation at the given index.
+
+        Raises:
+            IndexError: If the index is out of range.
+        """
+        
+        if 0 <= index < len(self.evals):
+            return self.evals[index]
+        else:
+            raise IndexError("Evaluation index out of range")
+
+    @classmethod
+    def compute_monomials(cls, rs):
+        k = len(rs)
+        n = 1 << k
+        evals = [Field(1)] * n
+        half = 1
+        for i in range(k):
+            for j in range(half):
+                evals[j+half] = evals[j] * rs[i]
+            half *= 2
+        return evals
+
     @classmethod
     def eqs_over_hypercube(cls, rs):
         k = len(rs)
         n = 1 << k
-        evals = [1] * n
+        evals = [Field(1)] * n
         half = 1
         for i in range(k):
             for j in range(half):
@@ -59,7 +94,8 @@ class MLEPolynomial:
         Compute the evaluations of the polynomial from the coefficients.
             Time: O(n * log(n))
         """
-        return cls.ntt_core(f_coeffs, 1)
+        coeffs = [f_coeffs[i] for i in range(len(f_coeffs))]
+        return cls.ntt_core(coeffs, Field(1))
 
     @classmethod
     def compute_coeffs_from_evals(cls, f_evals):
@@ -67,7 +103,8 @@ class MLEPolynomial:
         Compute the evaluations of the polynomial from the coefficients.
             Time: O(n * log(n))
         """
-        return cls.ntt_core(f_evals, -1)
+        evals = [f_evals[i] for i in range(len(f_evals))]
+        return cls.ntt_core(evals, Field(-1))
     
     @classmethod
     def evaluate_from_evals(cls, evals, zs):
@@ -127,12 +164,18 @@ class MLEPolynomial:
         """
         Divide an MLE at the point: [X_0, X_1, ..., X_{n-1}] in O(N) (Linear!)
 
+        References:
+            1. Algorithm 8 in Appendix B, [XZZPS18] 
+                "Libra: Succinct Zero-Knowledge Proofs with Optimal Prover Computation"
+            2. Appendix A.2 in [KT23] "ZeroMorph" paper
+                URL: https://eprint.iacr.org/2023/917
         Args:
-            poly (MLEPolynomial): the MLE polynomial to be divided
+            self (MLEPolynomial): the MLE polynomial to be divided
             point (list): the point to divide the polynomial
 
         Returns:
-        list: quotients, the list of MLEs
+            list: quotients, the list of MLEs
+            evaluation: the evaluation of the polynomial at the point
         """
         assert self.num_var == len(point), "Number of variables must match the point"
         e = self.evals.copy()

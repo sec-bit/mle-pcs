@@ -24,3 +24,8 @@ class MerlinTranscript:
         self.strobe.meta_ad(label, False)
         self.strobe.meta_ad(data_len, True)
         return self.strobe.prf(length, False)
+
+    def fork(self, label: bytes) -> 'MerlinTranscript':
+        new_transcript = MerlinTranscript(label)
+        new_transcript.strobe = Strobe128(self.strobe.state.copy(), self.strobe.pos, self.strobe.pos_begin, self.strobe.cur_flags)
+        return new_transcript
