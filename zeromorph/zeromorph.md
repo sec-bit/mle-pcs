@@ -28,8 +28,7 @@ $$
 \tilde{f}(X_0, X_1, X_2) = f_0 + f_1X_0 + f_2X_1 + f_3X_2 + f_4X_0X_1 + f_5X_0X_2 + f_6X_1X_2 + f_7X_0X_1X_2
 $$
 
-where $(f_0, f_1, \ldots, f_7)$ is the coefficient vector of the MLE polynomial. Note that because MLE polynomials belong to multivariate polynomials, any representation needs to determine the ordering of terms in the polynomial in advance. In this article and subsequent discussions, we will base on Lexicographic Order.
-
+where $(f_0, f_1, \ldots, f_7)$ is the coefficient vector of the MLE polynomial. Note that because MLE polynomials belong to multivariate polynomials, any representation requires determining the ordering of terms in the polynomial in advance. In this article and subsequent discussions, we will base our approach on Lexicographic Order.
 For the "point value form" representation of MLE polynomials, we can define it as:
 
 $$
@@ -83,7 +82,7 @@ $$
 \mathsf{cm}(\hat{f}) = 2\cdot [1]_1 + 2\cdot [\tau]_1 + 3\cdot [\tau^2]_1 + 4\cdot [\tau^3]_1
 $$
 
-In the following, we will use the symbol $[[\tilde{f}]]$ to represent the Univariate polynomial corresponding to the mapping of the MLE polynomial $\tilde{f}$.
+In the following sections, we will use the symbol $[[\tilde{f}]]$ to represent the Univariate polynomial corresponding to the mapping of the MLE polynomial $\tilde{f}$.
 
 ### Polynomial Mapping
 
@@ -171,7 +170,7 @@ And $X_2\cdot \tilde{c}(X_0, X_1)$ is also an MLE polynomial, with dimension 3. 
 
 ![alt text](img/image-2.png)
 
-This is easy to explain because when $X_2=0$, the overall polynomial value is zero, so the values at the vertices of the square formed by $X_0, X_1$ are all zero. When $X_2=1$, the polynomial $X_2\cdot \tilde{c}(X_0, X_1)$ equals $\tilde{c}(X_0, X_1)$. Therefore, the values at the vertices of the square plane where $X_2=1$ are equal to $\tilde{c}(X_0, X_1)$. Furthermore, we can have this conclusion:
+This is easy to explain because when $X_2=0$, the overall polynomial value is zero, so the values at the vertices of the square formed by $X_0, X_1$ are all zero. When $X_2=1$, the polynomial $X_2\cdot \tilde{c}(X_0, X_1)$ equals $\tilde{c}(X_0, X_1)$. Therefore, the values at the vertices of the square plane where $X_2=1$ are equal to $\tilde{c}(X_0, X_1)$. Furthermore, we can draw the following conclusion:
 
 $$
 [[X_2\cdot \tilde{c}]]_3 = X^4 \cdot [[\tilde{c}]]_2
@@ -216,8 +215,13 @@ When raising a low-dimensional MLE to a high-dimensional HyperCube, we see the p
 $$
 \Phi_k(X^h) = 1 + X^h + X^{2h} + \ldots + X^{(2^{k}-1)h}
 $$
+Therefore, we can define a general relation, i.e. 
 
-Obviously, $[[\tilde{c}]]_4=\Phi_2(X^4)\cdot [[\tilde{c}]]_2$.
+$$
+[[\tilde{c}]]_h=\Phi_k(X^h)\cdot [[\tilde{c}]]_k
+$$
+
+Consequently, it can be verified that :  $[[\tilde{c}]]_4=\Phi_2(X^4)\cdot [[\tilde{c}]]_2$.
 
 ## MLE Polynomial Remainder Theorem
 
