@@ -2,7 +2,7 @@
 
 Hiding KZG10 是 KZG10 协议的变种，其产生的多项式承诺带有随机的盲化因子（Blinding Factor），从而具备 Perfect Hiding 的性质。即假设攻击者的计算能力无限，并且攻击者不能通过承诺来逆向计算出多项式的任何信息。Hiding KZG10 并不常见，但它是构造具有 Zero-knowledge 性质的 zkSNARK 或者其它安全协议的重要组件。
 
-本文介绍两种不同的 Hinding KZG10，第一种方案出自 [KT23]，其主要的技术是多元多项式承诺一个简化版本 [PST13]，[ZGKPP17]，与 [XZZPS19]。第二种方案出自 [CHMMVW19]，其主要的技术是对原始 KZG10 协议论文 [KZG10] 的改进。
+本文介绍两种不同的 Hiding KZG10，第一种方案出自 [KT23]，其主要的技术是多元多项式承诺一个简化版本 [PST13]，[ZGKPP17]，与 [XZZPS19]。第二种方案出自 [CHMMVW19]，其主要的技术是对原始 KZG10 协议论文 [KZG10] 的改进。
 
 ## None-hiding KZG10
 
