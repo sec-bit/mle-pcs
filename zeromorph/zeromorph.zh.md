@@ -240,7 +240,13 @@ $$
 如果 $f(X_0, X_1, \ldots, X_{n-1})$ 是一个 MLE 多项式，那么它可以被简化为下面的公式：
 
 $$
-\tilde{f}(X_0, X_1, \ldots, X_{n-1}) - \tilde{f}(u_0, u_1, \ldots, u_{n-1})= \sum_{k=0}^{n-1}\tilde{q}_k(X_0, X_1, \ldots, X_{\color{red}k-1}) \cdot (X_k - u_k)
+\begin{split}
+\tilde{f}(X_0, X_1, \ldots, X_{n-1}) - \tilde{f}(u_0, u_1, \ldots, u_{n-1}) & = \tilde{q}_{n-1}(X_0, X_1, \ldots, X_{\color{red}n-1}) \cdot (X_{n-1} - u_{n-1}) \\
+& + \tilde{q}_{n-2}(X_0, X_1, \ldots, X_{\color{red}n-2}) \cdot (X_{n-2} - u_{n-2}) \\
+& + \cdots \\
+& + \tilde{q}_{1}(X_0) \cdot (X_{1} - u_{1}) \\
+& + \tilde{q}_{0} \cdot (X_{0} - u_{0}) \\
+\end{split}
 $$
 
 这是因为 MLE 多项式  $f(X_0, X_1, \ldots, X_{n-1})$ 中每一个未知数的最高次数为 $1$，对于 $f(X_0, X_1, \ldots, X_{k})$，它除以 $(X_k-u_k)$ 因式之后，余数多项式中将不再含有未知数 $X_k$ ，所以当 $f(X_0, X_1, \ldots, X_{n-1})$ 依次除以 $(X_{n-1} - u_{n-1})$ 到 $(X_0 - u_0)$ 这些因式，我们得到的商多项式和余数多项式中的未知数个数一直在逐个减少，直到最后得到一个常数的商多项式 $\tilde{q}_0$，当然还有一个常数的余数多项式，而后者正好是 MLE 多项式在 $(u_0, u_1, \ldots, u_{n-1})$ 处的求值。
