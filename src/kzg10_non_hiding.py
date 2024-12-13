@@ -71,6 +71,12 @@ class Commitment:
 
     def __repr__(self):
         return f"Commitment({self.cm})"
+    
+    def scalar_mul(self, scalar: Field):
+        """Multiply a commitment using * operator."""
+        # if not isinstance(scalar, (int, type(self.scalar))):
+            # raise TypeError("Unsupported operand type for *: '{}' and '{}'".format(type(self).__name__, type(scalar).__name__))
+        return Commitment(self.cm.ec_mul(scalar))
 
 class KZG10_PCS:
     """KZG10 commitment scheme implementation."""

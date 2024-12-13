@@ -23,60 +23,7 @@ from unipoly import UniPolynomial, Domain_FFT_2Radix
 from random import randint
 from utils import next_power_of_two, is_power_of_two, bits_le_with_width, bit_reverse, log_2
 from merlin.merlin_transcript import MerlinTranscript
-
-class Commitment:
-    """Represents a commitment in the KZG scheme."""
-    def __init__(self, cm, oob=None):
-        self.cm = cm
-        self.group = type(cm)
-        self.scalar = Field
-        if oob is not None:
-            self.value = oob
-    
-    # @classmethod
-    # def set_scalar(cls, scalar):
-    #     cls.scalar = scalar
-
-    @staticmethod
-    def zero(self):
-        """Create a zero commitment."""
-        return Commitment(self.group.zero())
-
-    def __add__(self, other):
-        """Add two commitments using + operator."""
-        if not isinstance(other, Commitment) or self.group != other.group:
-            raise TypeError("Can only add commitments from the same group")
-        return Commitment(self.cm + other.cm)
-    
-    def __sub__(self, other):
-        """Subtract two commitments using - operator."""
-        if not isinstance(other, Commitment) or self.group != other.group:
-            raise TypeError("Can only subtract commitments from the same group")
-        return Commitment(self.cm - other.cm)
-    
-    def __mul__(self, other):
-        """
-        Multiply a commitment using * operator.
-
-        Args:
-            other (UniPolynomial or scalar): The polynomial or scalar to multiply with this one.
-
-        Returns:
-            Commitment: 
-        """
-        if not isinstance(other, (int, type(self.scalar))):  # Scalar multiplication
-            raise TypeError("Unsupported operand type for *: '{}' and '{}'".format(type(self).__name__, type(other).__name__))
-        return Commitment(self.cm.ec_mul(other))
-
-    def __rmul__(self, other):
-        """Multiply a commitment using * operator."""
-
-        if not isinstance(other, (int, type(self.scalar))):
-            raise TypeError("Unsupported operand type for *: '{}' and '{}'".format(type(self).__name__, type(other).__name__))
-        return Commitment(self.cm.ec_mul(other))
-
-    def __repr__(self):
-        return f"Commitment({self.cm})"
+from kzg10_non_hiding import Commitment
 
 class KZG10_PCS:
     """KZG10 commitment scheme implementation."""
