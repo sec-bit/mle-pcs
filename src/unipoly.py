@@ -582,7 +582,7 @@ class UniPolynomial(Generic[F]):
         return result
     
     @staticmethod
-    def evaluate_at_point(poly, point):
+    def evaluate_at_point(poly: list[F], point: F) -> F:
         """Evaluate a polynomial at a single point using Horner's method."""
         result = 0
         for coeff in reversed(poly):
