@@ -1,0 +1,12 @@
+[package]
+name = "implementation"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ark-std = "0.4"
+ark-ff = "0.4"
+ark-ec = "0.4"
+ark-bls12-381 = "0.4"
+ark-poly = "0.4"
+ark-serialize = "0.4"
