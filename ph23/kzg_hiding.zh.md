@@ -2,7 +2,7 @@
 
 Hiding KZG10 是 KZG10 协议的变种，其产生的多项式承诺带有随机的盲化因子（Blinding Factor），从而具备 Perfect Hiding 的性质。即假设攻击者的计算能力无限，并且攻击者不能通过承诺来逆向计算出多项式的任何信息。Hiding KZG10 并不常见，但它是构造具有 Zero-knowledge 性质的 zkSNARK 或者其它安全协议的重要组件。
 
-本文介绍两种不同的 Hinding KZG10，第一种方案出自 [KT23]，其主要的技术是多元多项式承诺一个简化版本 [PST13]，[ZGKPP17]，与 [XZZPS19]。第二种方案出自 [CHMMVW19]，其主要的技术是对原始 KZG10 协议论文 [KZG10] 的改进。
+本文介绍两种不同的 Hiding KZG10，第一种方案出自 [KT23]，其主要的技术是多元多项式承诺一个简化版本 [PST13]，[ZGKPP17]，与 [XZZPS19]。第二种方案出自 [CHMMVW19]，其主要的技术是对原始 KZG10 协议论文 [KZG10] 的改进。
 
 ## None-hiding KZG10
 
@@ -92,7 +92,7 @@ KZG10 还支持证明一个多项式 $f(X)\in\mathbb{F}_r[X]$ 的 Degree 小于�
 Prover 证明的方式非常直接，即构造一个新的多项式 $\hat{f}(X)$，
 
 $$
-\hat{f}(X) = X^{D-n}\cdot f(X)
+\hat{f}(X) = X^{D-d}\cdot f(X)
 $$
 
 显然 $\hat{f}(X)$ 的 Degree 小于等于 $D$。而因为 SRS 中所包含的关于 $\tau$ 的最高次幂的 Base 元素是 $[\tau^D]_1$，理论上任何人（不知道 $\tau$ 的值）都不能构造任何一个次数大于等于 $D$ 的多项式的承诺。
@@ -230,7 +230,7 @@ $$
 $$
 e\Big({\color{red}\mathsf{cm}(f)} - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) = e\Big({\color{red}\mathsf{cm}(q)},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big) + e\Big({\color{red}E},\ [\gamma]_2\Big)
 $$
- 
+
 其中红色部分由 Prover 提供，蓝色的部分是公开值。
 
 
@@ -256,61 +256,35 @@ $$
 
 读者可以自行验证下，上面等式为何成立。
 
-<!-- ### Evaluation-with-degree-Bound 证明
-
-假如对于同一个 Polynomial $f(X)$，Prover 需要同时对 $f(X)$ 的 Evaluation 和 Degree Bound 进行证明。如果我们分别使用上面的 Evaluation 和 Degree Bound 证明协议，那么 Prover 需要发送两个 $\mathbb{G}_1$ 的元素，然后 Verifier 需要完成 4 个 Pairing 计算。事实上，我们可以把这两个证明步骤合并为一步：Prover 仅发送两个一个 $\mathbb{G}_1$ 元素，而 Verifier 仅使用两次 Pairing 即可完成验证。
-
-$$
-\pi = [\tau^{D-d}\cdot q(\tau)]_1
-$$
-
-而 Verifier 只需要验证下面的一个等式即可：
-
-$$
-e\Big(\mathsf{cm}(f) - f(z)\cdot[1]_1,\ [\tau^{D-d}]_2\Big) = e\Big(\pi,\ [\tau] - z\cdot[1]_2\Big)
-$$ -->
-
-
 ### Hiding KZG10 的 Evaluation-and-degree-bound 证明
 
 假如对于同一个 Polynomial $f(X)$，Prover 需要同时对 $f(X)$ 的 Evaluation 和 Degree Bound 进行证明。如果我们分别使用上面的 Evaluation 和 Degree Bound 证明协议，那么 Prover 需要发送两个 $\mathbb{G}_1$ 的元素，然后 Verifier 需要完成 4 个 Pairing 计算。事实上，我们可以把这两个证明步骤合并为一步：Prover 仅发送两个一个 $\mathbb{G}_1$ 元素，而 Verifier 仅使用两次 Pairing 即可完成验证。
 
 Prover 需要构造两个 $\mathbb{G}_1$ 的元素，
-
 $$
 \mathsf{cm}(q) = [\tau^{D-d}\cdot q(\tau)]_1 + \eta\cdot[\gamma]_1
 $$
-
 另一个元素 $E$ 定义为：
-
 $$
 E = \rho\cdot[\tau^{D-d}]_1 - \eta\cdot[\tau]_1 + (\eta\cdot z)\cdot[1]_1
 $$
-
 Prover 发送证明 
-
 $$
 \pi = (\mathsf{cm}(q), E)
 $$
-
 而 Verifier 需要验证下面的等式：
-
 $$
 e\Big({\color{red}\mathsf{cm}(f)} - {\color{blue}f(z)}\cdot[1]_1,\ [\tau^{D-d}]_2\Big) = e\Big({\color{red}\mathsf{cm}(q)},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big) + e\Big({\color{red}E},\ [\gamma]_2\Big)
 $$
-
 ## 另一种 Hiding KZG10 的构造
 
 在原始的 [KZG10] 论文中，也提供了实现 Perfect Hiding 的构造方案。我们可以对比下两种不同风格的 Hiding KZG10 变种。
 
 这种方案的想法是在 Commit $f(X)$ 的时候，补上一个随机的多项式 $r(X)$，而不仅仅是单个的随机盲化因子。这里 $f(X)$ 与 $r(X)$ 的定义如下：
-
 $$
 f(X)=\sum_{i=0}^{d}f_i\cdot X^i\qquad r(X)=\sum_{i=0}^{d}r_i\cdot X^i
 $$
-
 注意这里，盲化多项式 $r(X)$的 Degree 与 $f(X)$ 的 Degree 一致。为了支持盲化多项式（Blinding Polynomial），最初 Setup 阶段产生的 SRS 需要引入一个随机数 $\gamma$ 来隔离盲化因子与正常要 Commit 的消息。于是 SRS 被扩充为：
-
 $$
 SRS = \left(
     \begin{array}{ccccccc}
@@ -319,40 +293,29 @@ SRS = \left(
     [1]_2, &[\tau]_2, &[\tau^2]_2, &[\tau^3]_2, &\ldots, &[\tau^D]_2\\
 \end{array}\right)
 $$
-
 下面我们定义下 $\mathsf{cm}(f)$ 的计算公式：
-
 $$
 \begin{split}
 \mathsf{KZG10.Commit}(f(X), r(X)) & = \sum_{i=0}^{d}f_i\cdot[\tau^i]_1 + \sum_{i=0}^{d}r_i\cdot[{\color{red}\gamma}\tau^i]_1 \\
 & = [f(\tau) + {\color{red}\gamma}\cdot r(\tau)]_1
 \end{split}
 $$
-
 本质上，对 $f(X)$ 多项式的承诺实际上是对 $\bar{f}(X) = f(X) + {\color{red}\gamma}\cdot r(X)$ 的承诺。
-
 $$
 \mathsf{cm}(f) = [f(\tau) + {\color{red}\gamma}\cdot r(\tau)]_1 = [\bar{f}(\tau)]_1
 $$
-
 当 Prover 要证明 $f(z)=v$ 时，他不仅需要发送商多项式的 $q(X)$ 的承诺，还需要计算 $r(X)$ 在 $X=z$ 处的取值。 
-
 $$
 \pi = (\mathsf{cm}(q), r(z))
 $$
-
 其中多项式 $\bar{q}(X)$ 是带有盲化多项式的 $\bar{f}(X)$ 除以 $(X-z)$ 后的商多项式：
-
 $$
 \bar{q}(X) = q(X) + \gamma\cdot q'(X) = \frac{f(X)-f(z)}{X-z} + \gamma\cdot \frac{r(X)-r(z)}{X-z}
 $$
-
 当 Verifier 接收到 $\pi_{eval}=(\mathsf{cm}(\bar{q}), r(z))$ 后，他可以验证下面的等式：
-
 $$
 e\Big({\color{red}\mathsf{cm}(\bar{f})} - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) = e\Big({\color{red}\mathsf{cm}(\bar{q})},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
 $$
-
 直觉上，虽然 Prover 发送了 $r(X)$ 在 $r(z)$ 处的取值，只要 $r(X)$ 的 Degree 大于等于 1，那么仅通过 $r(z)$ 的取值，攻击者并不能逆向计算出 $r(X)$，因而至少还有一个随机因子在保护 $f(X)$。
 
 实际上如果我们知道 $f(X)$ 在整个生命周期内最多只会被打开 $k<d$ 次，那么我们就没必要强制 $r(X)$ 的 Degree 为 d，而可以是一个 Degree 为 $k$ 的多项式。因为 $k$ 次盲化因子多项式由 $k+1$ 个随机因子构成，当 $r(X)$ 被计算 $k$ 后，仍然还有一个随机因子在保护 $f(X)$ 的承诺。
@@ -368,29 +331,23 @@ $$
 
 假设 $f(X)$ 最多只被打开 $e$ 次，那么盲化多项式 $r(X)$ 的 Degree 只需要等于 $e$ 即可。
 
-
 $$
 \begin{aligned}
 C_{f}=\mathsf{Commit}(f(X),r(X)) & = \Big(\sum_{i=0}^{d}f_i\cdot[\tau^i]_1\Big) + \Big(\sum_{i=0}^{e}r_i\cdot[{\color{red}\gamma}\tau^i]_1\Big) \\
 & = [f(\tau) + {\color{red}\gamma}\cdot r(\tau)]_1
 \end{aligned}
 $$
-
 为了证明 Degree Bound, 我们还需要承诺 $X^{D-d}\cdot f(X)$ ：
-
 $$
 \begin{aligned}
 C_{xf}=\mathsf{Commit}(X^{D-d}\cdot f(X),s(X)) & = \Big(\sum_{i=0}^{d}f_i\cdot[\tau^{D-d+i}]_1\Big) + \Big(\sum_{i=0}^{d}s_i\cdot[{\color{red}\gamma}\cdot \tau^{i}]_1\Big) \\
 & = [\tau^{D-d}\cdot f(\tau) + {\color{red}\gamma}\cdot s(\tau)]_1
 \end{aligned}
 $$
-
 所以整体上，$f(X)$ 的承诺 $\mathsf{cm}(f)$ 定义为：
-
 $$
 \mathsf{cm}(f) = (C_{f}, C_{xf})
 $$
-
 #### Evaluation with degree bound 协议
 
 **公共输入**：
@@ -408,31 +365,22 @@ $$
 **第二步**：Prover 按照下面的步骤
 
 1. Prover 计算商多项式 $q(X)$:
-
 $$
 q(X) = \frac{f(X) - f(z)}{X-z}
 $$
-
 3. Prover 计算聚合的盲化多项式 $t(X)$，显然 $\deg(t)\leq d$
-
 $$
 t(X) = r(X)  + \alpha\cdot s(X) 
 $$
-
 4. Prover 计算商多项式 $q_t(X)$
-
 $$
 q_t(X) = \frac{t(X) - t(z)}{X-z}
 $$
-
 5. Prover 引入一个辅助多项式 $f^*(X)$，它在 $X=z$ 处取值为 $0$，即 $f^*(z)=0$
-
 $$
 f^*(X)=X^{D-d}\cdot f(X)-X^{D-d}\cdot f(z)
 $$
-
 6. Prover 计算 $f^*(X)$ 除以 $(X-z)$ 的商多项式 $q^*(X)$，
-
 $$
 \begin{aligned}
 q^*(X) & = \frac{f^*(X) - f^*(z)}{X-z} \\
@@ -440,51 +388,38 @@ q^*(X) & = \frac{f^*(X) - f^*(z)}{X-z} \\
 & = X^{D-d}\cdot q(X)
 \end{aligned}
 $$
-
 6. Prover 承诺商多项式 $q(X)$，不加任何盲化因子
-
 $$
 Q = \sum_{i=0}^{d-1}q_i\cdot[\tau^{i}]_1 = [q(\tau)]_1
 $$
-
 7. Prover 承诺商多项式 $q^*(X)$，不加任何盲化因子
-
 $$
 Q^* = \sum_{i=0}^{d-1}q_i\cdot[\tau^{D-d+i}]_1 = [q^*(\tau)]_1
 $$
-
 8. Prover 承诺盲化多项式的商多项式 $q_t(X)$
-
 $$
 \begin{aligned}
 Q_{t} & = \sum_{i=0}^{d-1}q_{t,i}\cdot[{\color{red}\gamma}\tau^{i}]_1 \\
 & = [{\color{red}\gamma}\cdot q_t(\tau)]_1
 \end{aligned}
 $$
-
 9. Prover 计算合并的承诺 $Q$ 
-
 $$
 \begin{aligned}
 Q & = Q + \alpha\cdot {Q^*} + Q_{t} \\
 & = [q(\tau)]_1 + \alpha\cdot [q^*(\tau)]_1 + [{\color{red}\gamma}\cdot q_t(\tau)]_1
 \end{aligned}
 $$
-
 10. Prover 输出证明 $\pi = \big(Q, t(z)\big)$
 
 实际上这个协议原理可以换个角度来理解。构造过程可以分解为：两个多项式在同一个点的求值的 Batch（利用 $\alpha$ 随机数）。其中一个是证明多项式 $f(X)$ 在 $X=z$ 处取值为 $f(z)$, 另一个是证明 $f^*(X)$ 在 $X=z$ 处取值为 $0$。我们可以引入一个辅助理解的多项式 $g(X)$ 来表示这两个多项式的关于 $\alpha$ 的随机线性组合：
-
 $$
 g(X) = f(X) + \alpha\cdot (X^{D-d}\cdot f(X) - X^{D-d}\cdot f(z))
 $$
-
 而这个聚合后的多项式 $g(X)$ 除以 $(X-z)$ 的商多项式 $q_g(X)$ 可以表示为：
-
 $$
 q_g(X) = \frac{g(X) - g(z)}{X-z} = q(X) + \alpha\cdot q^*(X)
 $$
-
 最后 Prover 计算的承诺 $Q$ 恰好等于是商多项式的承诺 $[q_g(\tau)]$ 附加上随机的多项式 $[{\color{red}\gamma}\cdot q_t(\tau)]$ 的承诺。
 
 因此这个证明思路其实和 Evaluation 的证明思路基本一致。
@@ -494,19 +429,14 @@ $$
 Verifier 接收到的证明为 $\pi = \big(Q, t(z)\big)$，然后按下面的步骤验证：
 
 1. 计算 $g(X)+t(X)$ 的承诺，记为 $C_{g+t}$ ：
-
 $$
 C_{g+t} = {\color{red}C_{f}} + \alpha\cdot ({\color{red}C_{xf}} - {\color{blue}f(z)}\cdot[\tau^{D-d}]_1)
 $$
-
 2. 计算 $g(X)+t(X)$ 在 $X=z$ 处的取值的承诺，记为 $V_{g+t}$ ：
-
 $$
 V_{g+t} = f(z)\cdot[1]_1 + {\color{red}t(z)}\cdot[\gamma]_1
 $$
-
 3. 验证 $C_{g+t}$ 的正确性：
-
 $$
 e\Big(C_{g+t} - V_{g+t},\ [1]_2\Big) = e\Big({\color{red}Q},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big) 
 $$

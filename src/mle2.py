@@ -76,6 +76,9 @@ class MLEPolynomial:
     def from_coeffs(cls, coeffs, num_var):
         return cls(cls.compute_evals_from_coeffs(coeffs), num_var)
     
+    def to_coeffs(self) -> list[Field]:
+        return self.compute_coeffs_from_evals(self.evals)
+    
     @classmethod
     def ntt_core(cls, vs, twiddle):
         n = len(vs)

@@ -244,7 +244,13 @@ $$
 If $f(X_0, X_1, \ldots, X_{n-1})$ is an MLE polynomial, it can be simplified to the following formula:
 
 $$
-\tilde{f}(X_0, X_1, \ldots, X_{n-1}) - \tilde{f}(u_0, u_1, \ldots, u_{n-1})= \sum_{k=0}^{n-1}\tilde{q}_k(X_0, X_1, \ldots, X_{\color{red}k-1}) \cdot (X_k - u_k)
+\begin{split}
+\tilde{f}(X_0, X_1, \ldots, X_{n-1}) - \tilde{f}(u_0, u_1, \ldots, u_{n-1}) & = \tilde{q}_{n-1}(X_0, X_1, \ldots, X_{\color{red}n-1}) \cdot (X_{n-1} - u_{n-1}) \\
+& + \tilde{q}_{n-2}(X_0, X_1, \ldots, X_{\color{red}n-2}) \cdot (X_{n-2} - u_{n-2}) \\
+& + \cdots \\
+& + \tilde{q}_{1}(X_{\color{red}0}) \cdot (X_{1} - u_{1}) \\
+& + \tilde{q}_{0} \cdot (X_{0} - u_{0}) \\
+\end{split}
 $$
 
 This is because in the MLE polynomial $f(X_0, X_1, \ldots, X_{n-1})$, the highest degree of each variable is 1. For $f(X_0, X_1, \ldots, X_{k})$, after dividing by the factor $(X_k-u_k)$, the remainder polynomial will no longer contain the variable $X_k$. So when $f(X_0, X_1, \ldots, X_{n-1})$ is divided by factors $(X_{n-1} - u_{n-1})$ to $(X_0 - u_0)$ in sequence, the number of variables in the quotient polynomials and remainder polynomials keeps decreasing one by one, until we finally get a constant quotient polynomial $\tilde{q}_0$, and of course a constant remainder polynomial, which is exactly the evaluation of the MLE polynomial at $(u_0, u_1, \ldots, u_{n-1})$.
