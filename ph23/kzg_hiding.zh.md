@@ -165,7 +165,7 @@ $$
 
 $$
 \begin{aligned}
-\mathsf{KZG.Commit}(q(X), {\color{green}s}) & = q_0 \cdot [1]_1 + q_1 \cdot [\tau]_1 + \cdots + q_d \cdot [\tau^d]_1 + {\color{green}s} \cdot {\color{red}[\gamma]_1} \\
+\mathsf{KZG.Commit}(q(X), {\color{green}s}) & = q_0 \cdot [1]_1 + q_1 \cdot [\tau]_1 + \cdots + q_d \cdot [\tau^{d-1}]_1 + {\color{green}s} \cdot {\color{red}[\gamma]_1} \\
 & = [q(\tau) + {\color{green}s}\cdot{\color{red}\gamma}]_1
 \end{aligned}
 $$
@@ -239,13 +239,13 @@ $$
 为了证明 $f(X)$ 的 Degree Bound，我们需要给多项式 $\hat{f}(X)$ 也加上 Blinding Factor，然后计算其承诺，作为 $f(X)$ 的 Degree Bound 证明：
 
 $$
-\mathsf{cm}(\hat{f}) = [\tau^{D-d}\cdot \hat{f}(\tau)]_1 + {\color{red}\eta}\cdot[\gamma]_1
+\mathsf{cm}(\hat{f}) = [\tau^{D-d}\cdot f(\tau)]_1 + {\color{red}\eta}\cdot[\gamma]_1
 $$
 
-同时还要附加上一个用来配平的 元素 $C'\in\mathbb{G}_1$，
+同时还要附加上一个用来配平的元素 $E\in\mathbb{G}_1$，
 
 $$
-C' = \rho\cdot[\tau^{D-d}]_1 - {\color{red}\eta}\cdot[1]_1
+E = \rho\cdot[\tau^{D-d}]_1 - {\color{red}\eta}\cdot[1]_1
 $$
 
 这样 Verifier 可以用过下面的等式来验证 $f(X)$ 的 Degree Bound 证明：

@@ -165,7 +165,7 @@ Therefore, we also need to add another different blinding factor to $[q(\tau)]_1
 
 $$
 \begin{aligned}
-\mathsf{KZG.Commit}(q(X), {\color{green}s}) & = q_0 \cdot [1]_1 + q_1 \cdot [\tau]_1 + \cdots + q_d \cdot [\tau^d]_1 + {\color{green}s} \cdot {\color{red}[\gamma]_1} \\
+\mathsf{KZG.Commit}(q(X), {\color{green}s}) & = q_0 \cdot [1]_1 + q_1 \cdot [\tau]_1 + \cdots + q_d \cdot [\tau^{d-1}]_1 + {\color{green}s} \cdot {\color{red}[\gamma]_1} \\
 & = [q(\tau) + {\color{green}s}\cdot{\color{red}\gamma}]_1
 \end{aligned}
 $$
@@ -239,13 +239,13 @@ Where the red parts are provided by the Prover, and the blue parts are public va
 To prove the Degree Bound of $f(X)$, we also need to add a Blinding Factor to the polynomial $\hat{f}(X)$, then calculate its commitment as the Degree Bound proof of $f(X)$:
 
 $$
-\mathsf{cm}(\hat{f}) = [\tau^{D-d}\cdot \hat{f}(\tau)]_1 + {\color{red}\eta}\cdot[\gamma]_1
+\mathsf{cm}(\hat{f}) = [\tau^{D-d}\cdot f(\tau)]_1 + {\color{red}\eta}\cdot[\gamma]_1
 $$
 
-At the same time, an additional element $C'\in\mathbb{G}_1$ is needed for balancing,
+At the same time, an additional element $E \in\mathbb{G}_1$ is needed for balancing,
 
 $$
-C' = \rho\cdot[\tau^{D-d}]_1 - {\color{red}\eta}\cdot[1]_1
+E = \rho\cdot[\tau^{D-d}]_1 - {\color{red}\eta}\cdot[1]_1
 $$
 
 This way, the Verifier can verify the Degree Bound proof of $f(X)$ through the following equation:
