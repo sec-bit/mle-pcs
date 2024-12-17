@@ -1,0 +1,12 @@
+[package]
+name = "kzg10"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ark-std = "0.4"
+ark-bls12-381 = "0.4"
+ark-ec = "0.4"
+ark-ff = "0.4"
+# ark-poly = { version = "0.3.0", features = ["bls12_381"] }
+rand = "0.8"
