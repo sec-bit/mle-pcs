@@ -62,7 +62,7 @@ class Mersenne31:
         return self * self
 
 class Complex:
-    """ 复数扩张 i^2 + 1 = 0 """
+    """ Irriducible polynomial: i^2 + 1 = 0 """
     def __init__(self, real: Mersenne31, imag: Mersenne31):
         self.real: Mersenne31 = real
         self.imag: Mersenne31 = imag
@@ -120,7 +120,7 @@ class Complex:
         return self.real.square() + self.imag.square()
 
 class Mersenne31QuadExtension:
-    """第二次复数扩张: w^2 + 1 + 2i = 0"""
+    """ Irriducible polynomial: w^2 + 1 + 2i = 0"""
     def __init__(self, c0: Complex, c1: Complex):
         self.c0: Complex = c0  # 常数项
         self.c1: Complex = c1  # w 的系数
