@@ -122,8 +122,8 @@ class Complex:
 class Mersenne31QuadExtension:
     """ Irriducible polynomial: w^2 + 1 + 2i = 0"""
     def __init__(self, c0: Complex, c1: Complex):
-        self.c0: Complex = c0  # 常数项
-        self.c1: Complex = c1  # w 的系数
+        self.c0: Complex = c0
+        self.c1: Complex = c1
 
     @classmethod
     def zero(cls):
@@ -173,17 +173,19 @@ class Mersenne31QuadExtension:
         return Mersenne31QuadExtension(self.c0, -self.c1)
 
     def norm(self):
-        # 计算 x * x.conjugate()
+        # compute x * x.conjugate()
         return self * self.conjugate()
 
     def inv(self):
-        # 计算逆元：x.conjugate() / norm
-        norm = self.norm().c0  # norm 的 c1 应该为 0
+        # compute inverse: norm = multiply all conjugates together
+        # for example: a.norm() = a * a.conj1 * a.conj2 * ... * a.conjn
+        # so a.inv() =  a * a.conj1 * a.conj2 * ... * a.conjn / norm
+        norm = self.norm().c0
         norm_inv = norm.inv()
         conj = self.conjugate()
         return Mersenne31QuadExtension(conj.c0 * norm_inv, conj.c1 * norm_inv)
 
-# 测试代码
+# Example usage:
 if __name__ == "__main__":
     print("Testing Mersenne31Complex:")
     a = Complex(Mersenne31(5), Mersenne31(7))
@@ -194,7 +196,7 @@ if __name__ == "__main__":
     print(f"a - b + b = {a - b + b}")
     print(f"a * b = {a * b}")
     print(f"a.inv() = {a.inv()}")
-    print(f"a * a.inv() = {a * a.inv()}")  # Should be close to 1 + 0i
+    print(f"a * a.inv() = {a * a.inv()}")
 
     print("\nTesting Mersenne31QuadExtension:")
     x = Mersenne31QuadExtension.random()
@@ -205,4 +207,4 @@ if __name__ == "__main__":
     print(f"x * y = {x * y}")
     print(f"x * y * y.inv() = {x * y * y.inv()}")
     print(f"x.inv() = {x.inv()}")
-    print(f"x * x.inv() = {x * x.inv()}")  # Should be close to 1
+    print(f"x * x.inv() = {x * x.inv()}")
