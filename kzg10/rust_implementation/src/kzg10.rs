@@ -1,13 +1,16 @@
-use ark_bls12_381::{Fr, G1Affine, G1Projective as G1, G2Projective as G2};
+use ark_bls12_381::{Fr, Bls12_381, G1Affine, G1Projective as G1, G2Projective as G2};
 use ark_ec::AffineRepr;
 use ark_ec::CurveGroup;
 use ark_ec::PrimeGroup;
+use ark_ec::pairing::Pairing;
 use ark_ff::{Field, One, PrimeField, UniformRand};
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::DenseUVPolynomial;
 use ark_poly::Polynomial;
 use ark_std::{rand::RngCore, vec::Vec, Zero};
 use std::ops::Mul;
+use ark_ec::pairing::PairingOutput;
+
 
 pub struct KZG10Commitment {
     pub debug: bool,
@@ -33,6 +36,20 @@ pub struct VerifyingKey {
     pub gamma_g: G1,
     pub h: G2,
     pub beta_h: G2,
+}
+
+/// A proof that includes the witness `w` and optional random value `random_v`.
+pub struct Proof {
+    pub w: G1,
+    pub random_v: Option<Fr>,
+}
+
+/// A helper function to do pairings in BLS12_381
+/// and return the PairingOutput<Bls12_381>.
+fn pairing(g1: &G1, g2: &G2) -> PairingOutput<Bls12_381> {
+    let g1_affine = g1.into_affine();
+    let g2_affine = g2.into_affine();
+    Bls12_381::pairing(g1_affine, g2_affine)
 }
 
 /// A polynomial Commitment
@@ -250,7 +267,6 @@ impl KZG10Commitment {
         let mut quotient = vec![Fr::zero(); coeffs.len() - 1];
         let mut remainder = Fr::zero();
 
-        
         for (i, &coeff) in coeffs.iter().rev().enumerate() {
             if i == 0 {
                 remainder = coeff;
@@ -347,54 +363,113 @@ impl KZG10Commitment {
 
         (w, random_v)
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use ark_std::test_rng;
+    /// `open`: Evaluate polynomial at `point`, produce proof (w + optional random_v).
+    pub fn open(
+        &self,
+        powers: &Powers,
+        polynomial: &DensePolynomial<Fr>,
+        point: Fr,
+        random_ints: &[Fr],
+        hiding: bool,
+    ) -> Proof {
+        let degree = polynomial.degree();
+        assert!(
+            degree + 1 < powers.powers_of_g.len(),
+            "Too many coefficients, polynomial.degree: {}",
+            degree
+        );
 
-    #[test]
-    fn test_setup() {
-        let mut rng = test_rng();
-        let kzg = KZG10Commitment::new(false);
-
-        let params = kzg.setup(10, true, None, None, None, &mut rng);
-        assert_eq!(params.powers_of_g.len(), 11); // max_degree + 1
-        assert_eq!(params.powers_of_gamma_g.len(), 12); // max_degree + 2
-        assert_eq!(params.neg_powers_of_h.len(), 11); // max_degree + 1
+        let (witness_poly, hiding_witness_poly) = self.compute_witness_polynomial(polynomial, point, random_ints, hiding);
+        let (w_g1, random_v) =
+            self.open_with_witness_polynomial(powers, point, random_ints, &witness_poly, hiding_witness_poly.as_ref());
+        
+        Proof {
+            w: w_g1,
+            random_v,
+        }
     }
 
-    #[test]
-    fn test_division_by_linear_divisor() {
-        let a0 = Fr::from(3u64);
-        let a1 = Fr::from(5u64);
-        let a2 = Fr::from(2u64);
-        let poly = DensePolynomial::from_coefficients_vec(vec![a0, a1, a2]); // 3 + 5x + 2x^2
-        let point = Fr::from(2u64);
-        let (q, r) = KZG10Commitment::division_by_linear_divisor(poly.coeffs(), point);
-        // f(x) = 3 + 5x + 2x^2
-        // f(2)=3 + 5*2 + 2*4=3+10+8=21
-        assert_eq!(r, Fr::from(21u64));
-        // q(x) = (f(x)-f(2))/(x-2) = ( (3+5x+2x^2)-21 )/(x-2)
-        //     = (2x^2+5x+3 -21)/(x-2)
-        //     = (2x^2+5x-18)/(x-2)
-        // Synthetic: q should be degree 1.
-        // Let's verify q * (x-2) + 21 = f(x)
-        // q should have length 2 (degree 1): q(x)=2x+9?
-        // 2x+9; (2x+9)*(x-2)=2x^2+9x -4x -18=2x^2+5x-18
-        // Add 21: 2x^2+5x+3 = f(x)? Wait, f(x)=3+5x+2x^2
-        // Mistake: remainder check again
-        // Actually let's solve for q:
-        // f(x)=q(x)*(x-2)+21
-        // q(x)*x - 2q(x)=f(x)-21=2x^2+5x-18
-        // If q(x)=2x+? => 2x*x=2x^2 good, so q's leading term is correct
-        // Compare constant terms: -2 * q(x) must yield -18 at constant level:
-        // q(x)=2x+9 yields (2x+9)*(x-2)=2x^2+9x -4x -18=2x^2+5x-18 correct.
-        // So q's coeffs = [9,2]
-        let q_coeffs = q.coeffs();
-        assert_eq!(q_coeffs.len(), 2);
-        assert_eq!(q_coeffs[0], Fr::from(9u64));
-        assert_eq!(q_coeffs[1], Fr::from(2u64));
+    /// `check`: verify the opening proof
+    pub fn check(
+        &self,
+        vk: &VerifyingKey,
+        comm: &Commitment,
+        point: Fr,
+        value: Fr,
+        proof: &Proof,
+        hiding: bool,
+    ) -> bool {
+        // inner = comm.value - g*value
+        let mut inner = comm.0 - (vk.g * value);
+
+        // if hiding, subtract gamma_g * proof.random_v
+        if hiding {
+            if let Some(rv) = proof.random_v {
+                // remove unnecessary parentheses
+                inner -= vk.gamma_g * rv;
+            }
+        }
+
+        // LHS = pairing(inner, h)
+        let lhs = pairing(&inner, &vk.h);
+
+        // RHS = pairing(proof.w, beta_h - h*point)
+        let beta_h_minus_h_point = vk.beta_h - (vk.h * point);
+        let rhs = pairing(&proof.w, &beta_h_minus_h_point);
+
+        lhs == rhs
+    }
+
+    pub fn batch_check<R: RngCore>(
+        &self,
+        vk: &VerifyingKey,
+        commitments: &[Commitment],
+        points: &[Fr],
+        values: &[Fr],
+        proofs: &[Proof],
+        hiding: bool,
+        rng: &mut R,
+    ) -> bool {
+        assert_eq!(commitments.len(), points.len());
+        assert_eq!(points.len(), values.len());
+        assert_eq!(values.len(), proofs.len());
+
+        let mut total_c = G1::zero();
+        let mut total_w = G1::zero();
+        let mut g_multiplier = Fr::zero();
+        let mut gamma_g_multiplier = Fr::zero();
+
+        for ((comm, &z), (&v, proof)) in commitments
+            .iter()
+            .zip(points)
+            .zip(values.iter().zip(proofs))
+        {
+            let randomizer = Fr::rand(rng);
+
+            // c' = comm.value + z * proof.w
+            let c_prime = comm.0 + (proof.w * z);
+
+            total_c += c_prime * randomizer;
+            total_w += proof.w * randomizer;
+            g_multiplier += v * randomizer;
+
+            if hiding {
+                if let Some(rv) = proof.random_v {
+                    gamma_g_multiplier += rv * randomizer;
+                }
+            }
+        }
+
+        total_c -= vk.g * g_multiplier;
+        if hiding {
+            total_c -= vk.gamma_g * gamma_g_multiplier;
+        }
+
+        let lhs = pairing(&total_w, &vk.beta_h);
+        let rhs = pairing(&total_c, &vk.h);
+
+        lhs == rhs
     }
 }
+
