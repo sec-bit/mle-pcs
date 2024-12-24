@@ -47,14 +47,14 @@ CnstPoly = UniPolynomial.const
 
 class PH23_PCS:
 
-    def __init__(self, kzg_pcs: KZG10_PCS):
+    def __init__(self, kzg_pcs: KZG10_PCS, debug: int = 0):
         """
         Args:
             pcs: the PedersenCommitment instance to use for the proof
         """
         self.kzg_pcs = kzg_pcs
         self.rng = random.Random("ipa-pcs")
-        self.debug = False
+        self.debug = debug
 
     def commit(self, polynomial: MLEPolynomial) -> tuple[list[G1Point], list[Field]]:
         """
@@ -99,28 +99,27 @@ class PH23_PCS:
         # > Round 0
     
         # Update transcript with the context
-        tr.append_message(b"magic_number", b"ph23_pcs")
-        tr.append_message(b"f_commitment", str(f_cm.cm).encode())
-        tr.append_message(b"us", str(us).encode())
-        tr.append_message(b"v", str(v).encode())
+        tr.absorb(b"commitment", f_cm.cm)
+        tr.absorb(b"point", us)
+        tr.absorb(b"value", v)
         
         # Convert f_mle to univariate polynomial
         f_poly = UniPolynomial.from_evals(f_vec)
         
         # > Round 1.
 
-        # Generate c polynomial (eq polynomial evaluations)
+        # Construct c(X) (whose evaluations are the eq polynomial evaluations)
         c_vec = MLEPolynomial.eqs_over_hypercube(us)
         c_poly = UniPolynomial.from_evals(c_vec)
-        ipa_c_f = ipa(c_vec, f_vec)
 
-        if self.debug:
-            print(f"check v")
-            assert v == ipa_c_f, f"v={v}, sum_c_f={ipa_c_f}"
-            print(f"check v passed")
+        if self.debug > 1:
+            print(f"P> check v")
+            inner_prod_c_f = sum([ai * bi for ai, bi in zip(c_vec, f_vec)])
+            assert v == inner_prod_c_f, f"v={v}, sum_c_f={inner_prod_c_f}"
+            print(f"P> check v passed")
 
-        if self.debug:
-            print(f"check c_vec")
+        if self.debug > 1:
+            print(f"P> check c_vec")
             for i in range(len(c_vec)):
                 i_bits = bits_le_with_width(i, log_n)
                 prod = Field.one()
@@ -130,134 +129,143 @@ class PH23_PCS:
                     else:
                         prod *= (Field(1) - us[j])
                 assert prod == c_vec[i]
-            print(f"check c_vec passed")
+            print(f"P> check c_vec passed")
         
-        if self.debug:
-            print(f"check c_poly...")
+        if self.debug > 1:
+            print(f"P> check c_poly...")
             for i in range(len(c_vec)):
                 assert c_poly.evaluate(omega**i) == c_vec[i]
             print(f"check c_poly passed")
 
         # Commit to c(X) polynomial
         c_cm = self.kzg_pcs.commit(c_poly)
-        tr.append_message(b"c_commitment", str(c_cm.cm).encode())
+        tr.absorb(b"c_commitment", c_cm.cm)
         
         # > Round 2.
 
-        # Generate challenge alpha, for poaggregation
-        alpha = Field.from_bytes(tr.challenge_bytes(b"alpha", 1))
+        # Receive challenge alpha, for polynomial aggregation
+        alpha = tr.squeeze(Field, b"alpha", 1)
+        if self.debug > 0:
+            print(f"P> alpha = {alpha}")
+
+        # Construct vH(X), the vanishing polynomial for domain H
+        vH_poly = UniPolynomial.vanishing_polynomial_fft(domain_size)
         
-        # Generate vanishing polynomial for domain H
-        zH_poly = UniPolynomial.vanishing_polynomial_fft(domain_size)
-        
-        # Generate selector polynomials
+        # Construct selector polynomials
         s_poly_vec = []
         for k in range(log_n):
-            zH_k = UniPolynomial.vanishing_polynomial_fft(2**k)
-            s_poly, r_poly = divmod(zH_poly, zH_k)
+            vH_k = UniPolynomial.vanishing_polynomial_fft(2**k)
+            s_poly, r_poly = divmod(vH_poly, vH_k)
             assert r_poly.is_zero()
             s_poly_vec.append(s_poly)
             
-        # Generate the overall constrait polynomial, denoted as h(X)
-        # h(X) = p_0(X) + alpha * p_1(X) + ... + alpha^logn * p_{logn-1}(X)
-        #       + alpha^{logn+1} * h_1(X) 
-        #       + alpha^{logn+2} * h_2(X) 
-        #       + alpha^{logn+3} * h_3(X)
+        # Construct h(X), the overall constraint polynomial
+        #
+        #    h(X) = p_0(X) + alpha * p_1(X) + ... + alpha^logn * p_{logn-1}(X)
+        #          + alpha^{logn+1} * h_1(X) 
+        #          + alpha^{logn+2} * h_2(X) 
+        #          + alpha^{logn+3} * h_3(X)
 
         # Define p_0(X) polynomial
         p0_poly = s_poly_vec[0] * (c_poly - CnstPoly(c_vec[0]))
         h_poly = p0_poly
-        if self.debug:
-            print(f"check p0_poly")
-            _, r_x = divmod(p0_poly, zH_poly)
-            assert r_x.is_zero(), f"p0_poly is not divisible by zH_poly"
-            print(f"check p0_poly passed")
+        if self.debug > 1:
+            print(f"P> check p0_poly")
+            _, r_x = divmod(p0_poly, vH_poly)
+            assert r_x.is_zero(), f"p0_poly is not divisible by vH_poly"
+            print(f"P> check p0_poly passed")
 
         # Define p_k(X) polynomials for k=1..logn
         for k in range(1, log_n+1):
             lambda_k = Field.nth_root_of_unity(2**k)
             c_poly_shifted = c_poly.shift(lambda_k)
 
-            if self.debug:
-                print(f"check c_poly_shifted")
+            if self.debug > 1:
+                print(f"P> check c_poly_shifted")
                 assert c_poly_shifted.evaluate(omega) == c_poly.evaluate(omega * lambda_k)
-                print(f"check c_poly_shifted passed")
+                print(f"P> check c_poly_shifted passed")
 
             g_poly = c_poly * CnstPoly(us[log_n-k]) - (c_poly.shift(lambda_k) * CnstPoly(Field(1) - us[log_n - k]))
             p_poly = s_poly_vec[k-1] * g_poly * CnstPoly(alpha**k)
 
-            if self.debug:
-                print(f"check divisibility of p_{k}")
-                _, r_x = divmod(p_poly, zH_poly)
-                assert r_x.is_zero(), f"p_{k} is not divisible by zH"
-                print(f"check divisibility of p_{k} passed")
+            if self.debug > 1:
+                print(f"P> check divisibility of p_{k}")
+                _, r_x = divmod(p_poly, vH_poly)
+                assert r_x.is_zero(), f"p_{k} is not divisible by vH"
+                print(f"P> check divisibility of p_{k} passed")
             h_poly += p_poly
         
-        # Define z(X) polynomial, which encodes the sum-accumulator of f[i] * c[i]
+        # Construct z(X), which encodes the sum-accumulators of f[i] * c[i]
         z_vec = []
         z_acc = Field.zero()
         for i in range(domain_size): 
             z_acc += f_vec[i] * c_vec[i]
             z_vec.append(z_acc)
 
-        if self.debug:
+        if self.debug > 1:
             assert z_acc == v, f"z_acc={z_acc}, v={v}"
-            print(f"check z_acc passed")
+            print(f"P> check z_acc passed")
 
         z_poly = UniPolynomial.from_evals(z_vec)
 
-        # Generate l0(X) and ln_1(X) lagrange polynomials
+        # Construct l0(X) and ln_1(X) lagrange polynomials
         l0_poly = UniPolynomial.lagrange_polynomial_fft(0, domain_size)
         ln_1_poly = UniPolynomial.lagrange_polynomial_fft(domain_size-1, domain_size)
 
+        # Construct h0(X), h1(X), h2(X) constraint polynomials
         h0_poly = l0_poly * (z_poly - CnstPoly(c_vec[0])*f_poly)
         h1_poly = UniPolynomial([-Field.one(), Field.one()]) * (z_poly - UniPolynomial.shift(z_poly, omega.inv()) - f_poly * c_poly)
         h2_poly = ln_1_poly * (z_poly - CnstPoly(v))
         
+        # Finalize h(X)
         h_poly += CnstPoly(alpha**(log_n + 1)) * h0_poly 
         h_poly += CnstPoly(alpha**(log_n + 2)) * h1_poly 
         h_poly += CnstPoly(alpha**(log_n + 3)) * h2_poly
 
-        # Compute the quotient polynomial of h(X) / zH(X), denoted as t(X)
-        t_poly, r_poly = divmod(h_poly, zH_poly)
-        if self.debug:
-            print(f"check divisibility of h_poly")
+        # Compute t(X), the quotient polynomial of h(X) / vH(X)
+        t_poly, r_poly = divmod(h_poly, vH_poly)
+        if self.debug > 1:
+            print(f"P> check divisibility of h_poly")
             assert r_poly.is_zero()
-            print(f"check divisibility of h_poly passed")
+            print(f"P> check divisibility of h_poly passed")
         
-        # Commit to quotient polynomial z(X)
+        # Commit to the accumulator polynomial z(X)
         z_cm = self.kzg_pcs.commit(z_poly)
 
-        # Commit to quotient polynomial t(X)
+        # Commit to the quotient polynomial t(X)
         t_cm = self.kzg_pcs.commit(t_poly)
 
         # Send `[z(X)]` and `[t(X)]` to the verifier
-        tr.append_message(b"z_commitment", str(z_cm.cm).encode())
-        tr.append_message(b"t_commitment", str(t_cm.cm).encode())
+        tr.absorb(b"z_commitment", z_cm.cm)
+        tr.absorb(b"t_commitment", t_cm.cm)
 
         # > Round 3.
 
         # Get evaluation challenge
         zeta = Field.from_bytes(tr.challenge_bytes(b"zeta", 1))
-        
+        if self.debug > 0:
+            print(f"P> zeta = {zeta}")
+
         # Evaluate selector polynomials at zeta
         s_evals = [s.evaluate(zeta) for s in s_poly_vec]
 
-        if self.debug:
-            print(f"check s_evals")
-            zH_poly_at_zeta = zeta**domain_size - Field.one()
+        if self.debug > 1:
+            print(f"P> check s_evals")
+            vH_poly_at_zeta = zeta**domain_size - Field.one()
             x = zeta
             for k in range(log_n):
-                zH = x - Field.one()
-                s_poly_at_zeta = zH_poly_at_zeta / zH
+                vH = x - Field.one()
+                s_poly_at_zeta = vH_poly_at_zeta / vH
                 x = x**2
                 assert s_evals[k] == s_poly_at_zeta, \
                     f"s_evals[{k}]={s_evals[k]},s_poly_at_zeta={s_poly_at_zeta}"
-            print(f"check s_evals passed")
+            print(f"P> check s_evals passed")
 
-        # Construct c^*(X) polynomial evaluations
+        # Construct c*(X) polynomial evaluations
+        #
         # c_evals = [c(zeta), c(zeta*omega^{2^{n-1}}), ..., c(zeta*omega^2), c(zeta*omega)]
-        # TODO: optimize this, c(x) -> c(x^2)
+        #
+        #  TODO: optimize this, c(x) -> c(x^2)
         c_star_evals = []
         for k in range(log_n+1):
             omega_k = Field.nth_root_of_unity(2**k)
@@ -265,8 +273,8 @@ class PH23_PCS:
             eval_val = c_poly.evaluate(eval_point)
             c_star_evals.append(eval_val)
 
-        # Debug assertion
-        if self.debug:
+        if self.debug > 1:
+            print(f"P> check c_star_evals")
             h = s_poly_vec[0].evaluate(zeta) * (c_star_evals[0] - c_vec[0])
             for k in range(1, log_n + 1):
                 g = c_star_evals[0] * us[log_n - k] - c_star_evals[k] * (Field(1) - us[log_n - k])
@@ -275,19 +283,20 @@ class PH23_PCS:
             h += (alpha ** (log_n + 1)) * h0_poly.evaluate(zeta) 
             h += (alpha ** (log_n + 2)) * h1_poly.evaluate(zeta) 
             h += (alpha ** (log_n + 3)) * h2_poly.evaluate(zeta)
-            assert h == t_poly.evaluate(zeta) * zH_poly.evaluate(zeta)
+            assert h == t_poly.evaluate(zeta) * vH_poly.evaluate(zeta)
+            print(f"P> check c_star_evals passed")
 
-        if self.debug:
-            print(f"debug={self.debug}")
+        if self.debug > 1:
+            print(f"P> debug={self.debug}")
             self.kzg_pcs.debug_check_commitment(f_cm, f_poly.coeffs)
             self.kzg_pcs.debug_check_commitment(t_cm, t_poly.coeffs)
             self.kzg_pcs.debug_check_commitment(c_cm, c_poly.coeffs)
 
-        # Compute z(X/omega)
+        # Compute z(zeta/omega)
         z_shifted_eval = z_poly.evaluate(zeta * omega.inv())
 
-        # Compute zH(zeta), l0(zeta), ln_1(zeta)
-        zH_poly_at_zeta = zH_poly.evaluate(zeta)
+        # Compute vH(zeta), l0(zeta), ln_1(zeta)
+        vH_poly_at_zeta = vH_poly.evaluate(zeta)
         l0_poly_at_zeta = l0_poly.evaluate(zeta)
         ln_1_poly_at_zeta = ln_1_poly.evaluate(zeta)
 
@@ -299,74 +308,86 @@ class PH23_PCS:
         r_poly += CnstPoly(alpha**(log_n + 1) * l0_poly_at_zeta) * (z_poly - CnstPoly(c_vec[0]) * f_poly)
         r_poly += CnstPoly(alpha**(log_n + 2) * (zeta - Field.one())) * (z_poly - CnstPoly(z_shifted_eval) - CnstPoly(c_star_evals[0]) * f_poly)
         r_poly += CnstPoly(alpha**(log_n + 3) * ln_1_poly_at_zeta) * (z_poly - CnstPoly(v))
-        r_poly -= CnstPoly(zH_poly_at_zeta) * t_poly
+        r_poly -= CnstPoly(vH_poly_at_zeta) * t_poly
 
-        if self.debug:
-            print(f"check r_poly")
+        if self.debug > 1:
+            print(f"P> check r_poly")
             assert r_poly.evaluate(zeta) == Field.zero()
-            print(f"check r_poly passed")
+            print(f"P> check r_poly passed")
 
         q_poly, rem = r_poly.division_by_linear_divisor(zeta)
-        if self.debug:
-            print(f"check divisibility of r_poly")
+        if self.debug > 1:
+            print(f"P> check divisibility of r_poly")
             assert rem == Field.zero()
-            print(f"check divisibility of r_poly passed")
+            print(f"P> check divisibility of r_poly passed")
 
 
         # D = [zeta, zeta*omega^{2^{n-1}}, ..., zeta*omega^2, zeta*omega]
         # TODO: optimize off Fr.nth_root_of_unity * n
         domain_D = []
-        
         for k in range(0, log_n+1):
             lambda_k = Field.nth_root_of_unity(2**k)
             domain_D.append(zeta * lambda_k)
+        
+        # Construct c*(X) polynomial
         c_star_poly = UniPolynomial.interpolate(c_star_evals, domain_D)
+
+        # Construct zD(X) polynomial
         zD_poly = UniPolynomial.vanishing_polynomial(domain_D)
 
+        # Construct qc(X) polynomial, which is the quotient of (c(X) - c*(X)) / zD(X)
         qc_poly, rem_c_poly = divmod(c_poly - c_star_poly, zD_poly)
 
-        if self.debug:
-            print(f"check divisibility of qc_poly")
+        if self.debug > 0:
+            print(f"P> check divisibility of qc_poly")
             assert rem_c_poly.is_zero()
-            print(f"check divisibility of qc_poly passed")
+            print(f"P> check divisibility of qc_poly passed")
 
+        # Construct q_omega(X), which is the quotient of (z(X) - z(zeta/omega)) / (X - zeta/omega)
         q_omega_poly, rem_q_omega = (z_poly - CnstPoly(z_shifted_eval)).division_by_linear_divisor(zeta * omega.inv())
 
-        if self.debug:
-            print(f"check divisibility of q_omega_poly")
+        if self.debug > 0:
+            print(f"P> check divisibility of q_omega_poly")
             assert rem_q_omega == Field.zero()
-            print(f"check divisibility of q_omega_poly passed")
+            print(f"P> check divisibility of q_omega_poly passed")
 
+        # Commit to q(X)
         q_cm = self.kzg_pcs.commit(q_poly)
-        tr.append_message(b"q_commitment", str(q_cm.cm).encode())
-        
-        qc_cm = self.kzg_pcs.commit(qc_poly)
-        tr.append_message(b"qc_commitment", str(qc_cm.cm).encode())
+        tr.absorb(b"q_commitment", q_cm.cm)
 
+        # Commit to qc(X)
+        qc_cm = self.kzg_pcs.commit(qc_poly)
+        tr.absorb(b"qc_commitment", qc_cm.cm)
+
+        # Commit to q_omega(X)
         q_omega_cm = self.kzg_pcs.commit(q_omega_poly)
-        tr.append_message(b"q_omega_commitment", str(q_omega_cm.cm).encode())
+        tr.absorb(b"q_omega_commitment", q_omega_cm.cm)
 
         for i in range(len(c_star_evals)):
-            tr.append_message(b"c_star_evals", str(c_star_evals[i]).encode())
-        tr.append_message(b"z_shifted_eval", str(z_shifted_eval).encode())
+            tr.absorb(b"c_star_evals", c_star_evals[i])
+        tr.absorb(b"z_shifted_eval", z_shifted_eval)
 
         ## Round 4.
 
-        xi = Field.from_bytes(tr.challenge_bytes(b"xi", 1))
+        # Get evaluation challenge
+        xi = tr.squeeze(Field, b"xi", 1)
+        if self.debug > 0:
+            print(f"P> xi = {xi}")
 
         c_final_poly = c_poly
         c_final_poly -= CnstPoly(c_star_poly.evaluate(xi)) 
         c_final_poly -= qc_poly * CnstPoly(zD_poly.evaluate(xi))
 
+        # Construct q_xi(X), which is the quotient of (c(X) - c*(xi) -  zD(xi) * qc(X)) / (X - xi)
         q_xi_poly, rem_q_xi = c_final_poly.division_by_linear_divisor(xi)
 
         q_xi_cm = self.kzg_pcs.commit(q_xi_poly)
-        tr.append_message(b"q_xi_commitment", str(q_xi_cm.cm).encode())
+        tr.absorb(b"q_xi_commitment", q_xi_cm.cm)
 
-        if self.debug:
-            print(f"check divisibility of c_final_poly")
+        if self.debug > 0:
+            print(f"P> check divisibility of c_final_poly")
             assert rem_q_xi == Field.zero()
-            print(f"check divisibility of c_final_poly passed")
+            print(f"P> check divisibility of c_final_poly passed")
 
             bc_weights = UniPolynomial.barycentric_weights(domain_D)
             numerator = Field.zero()
@@ -377,68 +398,69 @@ class PH23_PCS:
                 numerator += c_star_evals[i] * factor
             c_star_poly_at_xi = numerator * denominator.inv()
             assert c_star_poly_at_xi == c_star_poly.evaluate(xi)
-            print(f"check c_star_poly_at_xi passed")
+            print(f"P> check c_star_poly_at_xi passed")
 
             H_weights = UniPolynomial.barycentric_weights_fft(domain_size)
-            zH_poly_at_zeta = zeta**domain_size - Field.one()
-            assert zH_poly_at_zeta == UniPolynomial.vanishing_polynomial_fft(domain_size).evaluate(zeta)
-            print(f"check zH_poly_at_zeta passed")
+            vH_poly_at_zeta = zeta**domain_size - Field.one()
+            assert vH_poly_at_zeta == UniPolynomial.vanishing_polynomial_fft(domain_size).evaluate(zeta)
+            print(f"P> check vH_poly_at_zeta passed")
 
-            l0_poly_at_zeta = H_weights[0] * zH_poly_at_zeta * (zeta - Field.one()).inv()
+            l0_poly_at_zeta = H_weights[0] * vH_poly_at_zeta * (zeta - Field.one()).inv()
             assert l0_poly_at_zeta == UniPolynomial.lagrange_polynomial_fft(0, domain_size).evaluate(zeta)
             assert l0_poly_at_zeta == l0_poly.evaluate(zeta)
-            print(f"check l0_poly_at_zeta passed")
+            print(f"P> check l0_poly_at_zeta passed")
 
-            ln_1_poly_at_zeta = H_weights[-1] * zH_poly_at_zeta * (zeta - omega.inv()).inv()
+            ln_1_poly_at_zeta = H_weights[-1] * vH_poly_at_zeta * (zeta - omega.inv()).inv()
             assert ln_1_poly_at_zeta == UniPolynomial.lagrange_polynomial_fft(domain_size-1, domain_size).evaluate(zeta)
-            print(f"check ln_1_poly_at_zeta passed")
+            print(f"P> check ln_1_poly_at_zeta passed")
         
-        if self.debug:
-            print(f"check s_poly_vec")
-            zH_poly_at_zeta = zeta**domain_size - Field.one()
+        if self.debug > 1:
+            print(f"P> check s_poly_vec")
+            vH_poly_at_zeta = zeta**domain_size - Field.one()
             x = zeta
             for k in range(log_n):
-                zH = x - Field.one()
-                s_poly_at_zeta = zH_poly_at_zeta / zH
+                vH = x - Field.one()
+                s_poly_at_zeta = vH_poly_at_zeta / vH
                 x = x**2
-                print(f"prover> s_poly_at_zeta={s_poly_at_zeta}")
+                print(f"P> prover> s_poly_at_zeta={s_poly_at_zeta}")
                 assert s_poly_vec[k].evaluate(zeta) == s_poly_at_zeta, \
                     f"s_poly_vec[{k}]={s_poly_vec[k].evaluate(zeta)},s_poly_at_zeta={s_poly_at_zeta}"
+            print(f"P> check s_poly_vec passed")    
 
         g = self.kzg_pcs.params['g']
         tau_h = self.kzg_pcs.params['tau_h']
         h = self.kzg_pcs.params['h']
-        if self.debug:
-            print(f"check C_r")
+        if self.debug > 1:
+            print(f"P> check C_r")
             C_r = self.kzg_pcs.params['g'].ec_mul(r_const)
             C_r += (z_cm.cm - f_cm.cm.ec_mul(c_vec[0])).ec_mul(alpha**(log_n+1)*l0_poly_at_zeta)
             C_r += (z_cm.cm - g.ec_mul(z_shifted_eval) - f_cm.cm.ec_mul(c_star_evals[0])).ec_mul(alpha**(log_n+2)*(zeta - Field.one()))
             C_r += (z_cm.cm - g.ec_mul(v)).ec_mul(alpha**(log_n+3)*ln_1_poly_at_zeta)
-            C_r -= t_cm.cm.ec_mul(zH_poly_at_zeta)
+            C_r -= t_cm.cm.ec_mul(vH_poly_at_zeta)
             lhs = (C_r + q_cm.cm.ec_mul(zeta), h)
             rhs = (q_cm.cm, tau_h)
             checked = ec_pairing_check([lhs[0], rhs[0]], [-lhs[1], rhs[1]])
             assert checked, "C_r is not valid"
-            print(f"check C_r passed")
+            print(f"P> check C_r passed")
 
-        if self.debug:
+        if self.debug > 1:
             zD_poly_at_xi = zD_poly.evaluate(xi)
-            print(f"check q_xi_cm")
+            print(f"P> check q_xi_cm")
             C = c_cm.cm - g.ec_mul(c_star_poly_at_xi) - qc_cm.cm.ec_mul(zD_poly_at_xi) + q_xi_cm.cm.ec_mul(xi)
             lhs = (C, h)
             rhs = (q_xi_cm.cm, tau_h)
             checked = ec_pairing_check([lhs[0], rhs[0]], [-lhs[1], rhs[1]])
             assert checked, "q_xi_cm is not valid"
-            print(f"check q_xi_cm passed")
+            print(f"P> check q_xi_cm passed")
 
-        if self.debug:
-            print(f"check q_omega_cm")
+        if self.debug > 1:
+            print(f"P> check q_omega_cm")
             C = z_cm.cm - g.ec_mul(z_shifted_eval) + q_omega_cm.cm.ec_mul(zeta * omega.inv())
             lhs = (C, h)
             rhs = (q_omega_cm.cm, tau_h)
             checked = ec_pairing_check([lhs[0], rhs[0]], [-lhs[1], rhs[1]])
             assert checked, "q_omega_cm is not valid"
-            print(f"check q_omega_cm passed")
+            print(f"P> check q_omega_cm passed")
             
         return v, {
             'c_commitment': c_cm,  # Round 1
@@ -451,7 +473,6 @@ class PH23_PCS:
             'z_shifted_eval': z_shifted_eval,       # Round 3
             'q_xi_commitment': q_xi_cm  # Round 4
         }
-
     
     def verify_eval(self, 
                     f_cm: Commitment, 
@@ -497,39 +518,49 @@ class PH23_PCS:
         q_xi_cm = arg['q_xi_commitment']  
 
         # > Round 0
-        tr.append_message(b"magic_number", b"ph23_pcs")
-        tr.append_message(b"f_commitment", str(f_cm.cm).encode())
-        tr.append_message(b"us", str(us).encode())
-        tr.append_message(b"v", str(v).encode())
+        # tr.append_message(b"magic_number", b"ph23_pcs")
+        tr.absorb(b"commitment", f_cm.cm)
+        tr.absorb(b"point", us)
+        tr.absorb(b"value", v)
 
         # > Round 1
         
-        tr.append_message(b"c_commitment", str(c_cm.cm).encode())
+        tr.absorb(b"c_commitment", c_cm.cm)
 
         # > Round 2
-        alpha = Field.from_bytes(tr.challenge_bytes(b"alpha", 1))
-        tr.append_message(b"z_commitment", str(z_cm.cm).encode())
-        tr.append_message(b"t_commitment", str(t_cm.cm).encode())
+        alpha = tr.squeeze(Field, b"alpha", 1)
+        if self.debug > 0:
+            print(f"V> alpha = {alpha}")
+
+        tr.absorb(b"z_commitment", z_cm.cm)
+        tr.absorb(b"t_commitment", t_cm.cm)
 
         # > Round 3
-        zeta = Field.from_bytes(tr.challenge_bytes(b"zeta", 1))
+        zeta = tr.squeeze(Field, b"zeta", 1)
+        if self.debug > 0:
+            print(f"V> zeta = {zeta}")
 
-        tr.append_message(b"q_commitment", str(q_zeta_cm.cm).encode())
-        tr.append_message(b"qc_commitment", str(q_c_cm.cm).encode())
-        tr.append_message(b"q_omega_commitment", str(q_zeta_omega_cm.cm).encode())
+        tr.absorb(b"q_commitment", q_zeta_cm.cm)
+        tr.absorb(b"qc_commitment", q_c_cm.cm)
+        tr.absorb(b"q_omega_commitment", q_zeta_omega_cm.cm)
 
         for i in range(len(c_star_evals)):
-            tr.append_message(b"c_star_evals", str(c_star_evals[i]).encode())
-        tr.append_message(b"z_shifted_eval", str(z_shifted_eval).encode())
+            tr.absorb(b"c_star_evals", c_star_evals[i])
+        tr.absorb(b"z_shifted_eval", z_shifted_eval)
 
         # > Round 4.
 
-        xi = Field.from_bytes(tr.challenge_bytes(b"xi", 1))
-        tr.append_message(b"q_xi_commitment", str(q_xi_cm.cm).encode())
+        xi = tr.squeeze(Field, b"xi", 1)
+        if self.debug > 0:
+            print(f"V> xi = {xi}")
+
+        tr.absorb(b"q_xi_commitment", q_xi_cm.cm)
 
         # > Round of verification
 
-        gamma = Field.from_bytes(tr.challenge_bytes(b"gamma", 1))
+        gamma = tr.squeeze(Field, b"gamma", 1)
+        if self.debug > 0:
+            print(f"V> gamma = {gamma}")
 
         # TODO: Optimize 
         domain_D = []
@@ -537,7 +568,7 @@ class PH23_PCS:
             lambda_k = Field.nth_root_of_unity(2**k)
             domain_D.append(zeta * lambda_k)
 
-        # compute c(xi) 
+        # Construct c(xi) polynomial
         bc_weights = UniPolynomial.barycentric_weights(domain_D) # TODO: to be precomputed
         numerator = Field.zero()
         denominator = Field.zero()
@@ -547,28 +578,26 @@ class PH23_PCS:
             numerator += c_star_evals[i] * factor
         c_star_poly_at_xi = numerator * denominator.inv()
 
-        # compute zH(zeta), l_0(zeta), l_{n-1}(zeta)
-        zH_poly_at_zeta = zeta**domain_size - Field.one()
+        # Construct vH(zeta), l_0(zeta), l_{n-1}(zeta)
+        vH_poly_at_zeta = zeta**domain_size - Field.one()
 
         H_weights = UniPolynomial.barycentric_weights_fft(domain_size) # TODO: to be precomputed
-        l0_poly_at_zeta = H_weights[0] * zH_poly_at_zeta * (zeta - Field.one()).inv()
-        ln_1_poly_at_zeta = H_weights[-1] * zH_poly_at_zeta * (zeta - omega.inv()).inv()
+        l0_poly_at_zeta = H_weights[0] * vH_poly_at_zeta * (zeta - Field.one()).inv()
+        ln_1_poly_at_zeta = H_weights[-1] * vH_poly_at_zeta * (zeta - omega.inv()).inv()
 
         # evaluate selector polynomials at zeta
         x = zeta
         s_evals = []
         for k in range(log_n):
-            zH = x - Field.one()
-            s_poly_at_zeta = zH_poly_at_zeta / zH
+            vH = x - Field.one()
+            s_poly_at_zeta = vH_poly_at_zeta / vH
             x = x**2
             s_evals.append(s_poly_at_zeta)
-            print(f"verifier> s_poly_at_zeta={s_poly_at_zeta}")
-
 
         P = G1Point.zero()
         Q = G1Point.zero()
 
-        # compute commitment of r(X) -- linearized polynomial
+        # Construct commitment of r(X) -- linearized polynomial
 
         r_const = s_evals[0] * (c_star_evals[0] - c0)
         for i in range(1, log_n + 1):
@@ -578,18 +607,18 @@ class PH23_PCS:
         C_r += (z_cm.cm - f_cm.cm.ec_mul(c0)).ec_mul(alpha**(log_n+1)*l0_poly_at_zeta)
         C_r += (z_cm.cm - g.ec_mul(z_shifted_eval) - f_cm.cm.ec_mul(c_star_evals[0])).ec_mul(alpha**(log_n+2)*(zeta - Field.one()))
         C_r += (z_cm.cm - g.ec_mul(v)).ec_mul(alpha**(log_n+3)*ln_1_poly_at_zeta)
-        C_r -= t_cm.cm.ec_mul(zH_poly_at_zeta)
+        C_r -= t_cm.cm.ec_mul(vH_poly_at_zeta)
 
         # check q_zeta_commitment
         C_0 = C_r + q_zeta_cm.cm.ec_mul(zeta)
         P += C_0
         Q += q_zeta_cm.cm
 
-        if self.debug:
-            print(f"verifier> check C_0")
+        if self.debug > 1:
+            print(f"V> check C_0")
             checked = ec_pairing_check([C_0, q_zeta_cm.cm], [-h, tau_h])
             assert checked, "C_0 is not valid"
-            print(f"verifier> check C_0 passed")
+            print(f"V> check C_0 passed")
 
         # compute zD(xi)
         zD_poly_at_xi = reduce(lambda x, y: x*y, [xi - domain_D[i] for i in range(len(domain_D))])
@@ -598,32 +627,30 @@ class PH23_PCS:
         P += C_1.ec_mul(gamma)
         Q += q_xi_cm.cm.ec_mul(gamma)
 
-        if self.debug:
-            print(f"verifier> check C_1")
+        if self.debug > 1:
+            print(f"V> check C_1")
             checked = ec_pairing_check([C_1, q_xi_cm.cm], [-h, tau_h])
             assert checked, "C_1 is not valid"
-            print(f"verifier> check C_1 passed")
+            print(f"V> check C_1 passed")
 
         # check q_zeta_omega_cm
         C_2 = z_cm.cm - g.ec_mul(z_shifted_eval) + q_zeta_omega_cm.cm.ec_mul(zeta * omega.inv())
         P += C_2.ec_mul(gamma*gamma)
         Q += q_zeta_omega_cm.cm.ec_mul(gamma*gamma)
 
-        if self.debug:
-            print(f"verifier> check C_2")
+        if self.debug > 1:
+            print(f"V> check C_2")
             checked = ec_pairing_check([C_2, q_zeta_omega_cm.cm], [-h, tau_h])
             assert checked, "C_2 is not valid"
-            print(f"verifier> check C_2 passed")
+            print(f"V> check C_2 passed")
 
         checked = ec_pairing_check([P, Q], [-h, tau_h])
-        # assert checked, "q_zeta_omega_cm is not valid"
+        if self.debug > 1:
+            print(f"V> check P, Q")
+            assert checked, "P or Q is not valid"
+            print(f"V> check P, Q passed")
 
         return checked
-        
-def ipa(vec_a: list[Field], vec_b: list[Field]) -> Field:
-    n = len(vec_a)
-    assert len(vec_b) == n
-    return sum(a * b for a, b in zip(vec_a, vec_b))
 
 def test_ph23_uni_pcs():
 
@@ -631,8 +658,7 @@ def test_ph23_uni_pcs():
     kzg = KZG10_PCS(G1Point, G2Point, Field, 20)
     kzg.debug = True
 
-    ph23 = PH23_PCS(kzg)
-    ph23.debug = True
+    ph23 = PH23_PCS(kzg, debug = 2)
 
     tr = MerlinTranscript(b"ph23-pcs")
 
@@ -642,31 +668,15 @@ def test_ph23_uni_pcs():
     us = [Field(4), Field(2), Field(3), Field(0)]
     eqs = MLEPolynomial.eqs_over_hypercube(us)
 
-    y = ipa(coeffs, eqs)
+    y = sum([a * b for a, b in zip(coeffs, eqs)])
     f = MLEPolynomial(coeffs, 4)
     assert f.evaluate(us) == y
 
     f_cm = ph23.commit(f)
 
-    v, arg = ph23.prove_eval(f_cm, f, us, tr.fork(b"test-2024-12-08"))
+    v, arg = ph23.prove_eval(f_cm, f, us, tr.fork(b"ph23_pcs"))
     assert v == y
-    ph23.verify_eval(f_cm, us, v, arg, tr.fork(b"test-2024-12-08"))
-
-    # # commit to the polynomial
-    # cm_f, blinders_f = ipa_pcs.commit(coeffs)
-
-    # # fork the transcript for both prover and verifier
-    # tr_prover = tr.fork(b"prover")
-    # tr_verifier = tr.fork(b"verifier")
-
-    # # prover proves f(x) = y and sends an argument to the verifier
-    # arg = ipa_pcs.univariate_poly_eval_prove(cm_f, x, y, coeffs, blinders_f, tr_prover)
-    # print(f"arg: {arg}")
-
-    # # verifier verifies the argument
-    # verified = ipa_pcs.univariate_poly_eval_verify(cm_f, x, y, arg, tr_verifier)
-    # print(f"uni_polycom verified: {verified}")
-    # assert verified, "univariate polynomial evaluation verification failed"
+    ph23.verify_eval(f_cm, us, v, arg, tr.fork(b"ph23_pcs"))
 
 if __name__ == "__main__":
     test_ph23_uni_pcs()
