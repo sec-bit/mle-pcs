@@ -198,7 +198,6 @@ The right side of the equation is equivalent to calculating
 $$
 \begin{aligned}
 rhs & = (q(\tau) + s\cdot\gamma) \cdot (\tau - z) \\
-& = q(\tau)\cdot\tau - q(\tau)\cdot z + s\cdot\gamma\cdot\tau - s\cdot\gamma\cdot z \\
 & = q(\tau)\cdot(\tau - z) + s\cdot(\tau - z)\cdot\gamma\\
 & = f(\tau) - f(z) + s\cdot(\tau - z)\cdot\gamma\\
 \end{aligned}
@@ -230,7 +229,7 @@ Or written as:
 $$
 e\Big({\color{red}\mathsf{cm}(f)} - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) = e\Big({\color{red}\mathsf{cm}(q)},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big) + e\Big({\color{red}E},\ [\gamma]_2\Big)
 $$
- 
+
 Where the red parts are provided by the Prover, and the blue parts are public values.
 
 
@@ -350,7 +349,7 @@ $$
 When the Verifier receives $\pi_{eval}=(\mathsf{cm}(\bar{q}), r(z))$, he can verify the following equation:
 
 $$
-e\Big({\color{red}\mathsf{cm}(\bar{f})} - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) = e\Big({\color{red}\mathsf{cm}(\bar{q})},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
+e\Big({\color{red}\mathsf{cm}(\bar{f})} - {\color{blue}f(z)}\cdot[1]_1 - {\color{red}r(z)}\cdot[\gamma]_1,\ [1]_2\Big) = e\Big({\color{red}\mathsf{cm}(\bar{q})},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
 $$
 
 Intuitively, although the Prover sent the value of $r(X)$ at $r(z)$, as long as the Degree of $r(X)$ is greater than or equal to 1, the attacker cannot reverse-engineer $r(X)$ through the value of $r(z)$ alone, so there is at least one random factor still protecting $f(X)$.

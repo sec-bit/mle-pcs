@@ -198,7 +198,6 @@ $$
 $$
 \begin{aligned}
 rhs & = (q(\tau) + s\cdot\gamma) \cdot (\tau - z) \\
-& = q(\tau)\cdot\tau - q(\tau)\cdot z + s\cdot\gamma\cdot\tau - s\cdot\gamma\cdot z \\
 & = q(\tau)\cdot(\tau - z) + s\cdot(\tau - z)\cdot\gamma\\
 & = f(\tau) - f(z) + s\cdot(\tau - z)\cdot\gamma\\
 \end{aligned}
@@ -314,7 +313,7 @@ $$
 $$
 当 Verifier 接收到 $\pi_{eval}=(\mathsf{cm}(\bar{q}), r(z))$ 后，他可以验证下面的等式：
 $$
-e\Big({\color{red}\mathsf{cm}(\bar{f})} - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) = e\Big({\color{red}\mathsf{cm}(\bar{q})},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
+e\Big({\color{red}\mathsf{cm}(\bar{f})} - {\color{blue}f(z)}\cdot[1]_1 - {\color{red}r(z)}\cdot[\gamma]_1,\ [1]_2\Big) = e\Big({\color{red}\mathsf{cm}(\bar{q})},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
 $$
 直觉上，虽然 Prover 发送了 $r(X)$ 在 $r(z)$ 处的取值，只要 $r(X)$ 的 Degree 大于等于 1，那么仅通过 $r(z)$ 的取值，攻击者并不能逆向计算出 $r(X)$，因而至少还有一个随机因子在保护 $f(X)$。
 
