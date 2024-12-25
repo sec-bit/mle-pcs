@@ -245,8 +245,8 @@ If $f(X_0, X_1, \ldots, X_{n-1})$ is an MLE polynomial, it can be simplified to 
 
 $$
 \begin{split}
-\tilde{f}(X_0, X_1, \ldots, X_{n-1}) - \tilde{f}(u_0, u_1, \ldots, u_{n-1}) & = \tilde{q}_{n-1}(X_0, X_1, \ldots, X_{\color{red}n-1}) \cdot (X_{n-1} - u_{n-1}) \\
-& + \tilde{q}_{n-2}(X_0, X_1, \ldots, X_{\color{red}n-2}) \cdot (X_{n-2} - u_{n-2}) \\
+\tilde{f}(X_0, X_1, \ldots, X_{n-1}) - \tilde{f}(u_0, u_1, \ldots, u_{n-1}) & = \tilde{q}_{n-1}(X_0, X_1, \ldots, X_{\color{red}n-2}) \cdot (X_{n-1} - u_{n-1}) \\
+& + \tilde{q}_{n-2}(X_0, X_1, \ldots, X_{\color{red}n-3}) \cdot (X_{n-2} - u_{n-2}) \\
 & + \cdots \\
 & + \tilde{q}_{1}(X_{\color{red}0}) \cdot (X_{1} - u_{1}) \\
 & + \tilde{q}_{0} \cdot (X_{0} - u_{0}) \\
