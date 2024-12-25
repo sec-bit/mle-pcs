@@ -21,8 +21,8 @@
 from functools import reduce
 import copy
 
-from curve import Fp, Fr as Field, ec_mul, ec_mul_group2, G1Point as G1, G2Point as G2, ec_pairing_check
-from utils import next_power_of_two, is_power_of_two, bits_le_with_width, bit_reverse, log_2
+from curve import Fr as Field, ec_mul, ec_mul_group2, G1Point as G1, G2Point as G2, ec_pairing_check
+from utils import bits_le_with_width
 from merlin.merlin_transcript import MerlinTranscript
 from mle2 import MLEPolynomial
 
@@ -33,10 +33,7 @@ class Commitment:
 
 class LIBRA_PCS:
 
-    def __init__(self, G1, G2, F, debug=False):
-        self.G1 = G1
-        self.G2 = G2
-        self.Scalar = F
+    def __init__(self, debug: int = 0):
         self.debug = debug
 
     # WARNING: This setup function is only used for testing. Never use it in production.
@@ -76,7 +73,7 @@ class LIBRA_PCS:
         self.max_var_num = num_var
 
         # xi: randomness used for hiding
-        xi = self.Scalar.rand()
+        xi = Field.rand()
         # [xi]_1
         xi_g = g.ec_mul(xi)
         # [xi]_2
@@ -129,7 +126,32 @@ class LIBRA_PCS:
 
         return self.params
 
-    def setup_multilinear_basis(self, var_num: int) -> list[G1]:
+    def setup_multilinear_basis(self, var_num: int) -> list[list[G1]]:
+        """
+        Compute all multilinear basis sets for the given variable number.
+
+            eq_k:   [eq_k(0, 0, ..., 0, τ0, τ1, ..., τ_{k-1})]
+                    [eq_k(1, 0, ..., 0, τ0, τ1, ..., τ_{k-1})]
+                    ...
+                    [eq_k(1, 1, ..., 1, τ0, τ1, ..., τ_{k-1})]
+
+            eq_{k-1}: [eq_{k-1}(0, 0, ..., 0, τ0, τ1, ..., τ_{k-2})]
+                      [eq_{k-1}(1, 0, ..., 0, τ0, τ1, ..., τ_{k-2})]
+                      ...
+                      [eq_{k-1}(1, 1, ..., 1, τ0, τ1, ..., τ_{k-2})]
+            
+            ...
+            eq_1:   [eq_1(0, τ0)]
+                    [eq_1(1, τ0)]
+
+            eq_0:   [1]
+
+        Args:
+            var_num: The number of variables.
+        
+        Returns:
+            The multilinear basis sets.
+        """
         # TODO: compute SRS_EQS_OVER_HYPERCUBE from SRS_POWERS_OF_TAU without the knowledge of `tau`
         raise NotImplementedError("Setup multilinear basis is not implemented")
     
@@ -158,6 +180,19 @@ class LIBRA_PCS:
         """
         Commit to a polynomial using multilinear basis.
 
+            f(Xs) = a_0 * eq_0(Xs) + a_1 * eq_1(Xs) + ... + a_{2^n-1} * eq_{2^n-1}(Xs)
+
+            where `Xs` is the short for `(X0, X1, ..., X_{n-1})`
+            
+            and `eq_i(Xs)` is the multilinear polynomial defined as:
+
+                eq_i(X0, X1, ..., X_{n-1}) = \prod_{j=0}^{n-1} (X_j * bits(i)[j] + (1-X_j) * (1-bits(i)[j]))
+
+            Commit(f) = a_0[eq_0(taus)] + a_1[eq_1(taus)] + ... + a_{2^n-1}[eq_{2^n-1}(taus)]
+                        + s * [xi]
+
+            here, `Commit(f)` is on G1, and `s` is randomly chosen.
+
         Args:
             evaluations: The evaluations of the polynomial.
         
@@ -172,7 +207,6 @@ class LIBRA_PCS:
         f_evals = evaluations
 
         s = Field.rand()
-        # s = Field.zero()
 
         basis = basis_vec[num_var]
         f_cm = self.params['xi_g'].ec_mul(s)
@@ -185,7 +219,35 @@ class LIBRA_PCS:
         num_var = polynomial.num_var
         return self.commit_with_multilinear_basis(evaluations, num_var)
     
-    def prove(self, polynomial: MLEPolynomial, point: Field, randomness: Field) -> tuple[Field, dict]:
+    def prove_evaluation(self, polynomial: MLEPolynomial, 
+                    point: Field, randomness: Field) -> tuple[Field, dict]:
+        """
+        Prove the evaluation of a polynomial at a given point.
+
+            f(X0, X1, ..., X_{n-1}) = (X0-u0) * q0 
+                                + (X1-u1) * q1(X0) 
+                                + ... 
+                                + (X_{n-1} - u_{n-1}) * q_{n-1}(X0,X1,...,X_{n-2})
+
+            [q0] = commit(q0; s0)
+            [q1] = commit(q1; s1)
+            ...
+            [q_{n-1}] = commit(q_{n-1}; s_{n-1})
+
+            s_cm = s * [1] + (-s0 * [τ0] + (s0 * u0)[1]) 
+                           + (-s1 * [τ1] + (s1 * u1)[2]) 
+                           + ... 
+                           + (-s_{n-1} * [τ_{n-1}] + (s_{n-1} * u_{n-1})[n])
+            
+        Args:
+            polynomial: The polynomial to be evaluated.
+            point: The point at which the polynomial is evaluated.
+            randomness: The randomness used in the hiding commitment.
+        
+        Returns:
+            v: The evaluation of the polynomial at the given point.
+            argument: The argument for verification.
+        """
         basis_vec = self.params['eqs_of_tau_g']
         assert len(basis_vec) >= polynomial.num_var, "Variable number exceeds the maximum allowed"
 
@@ -195,14 +257,12 @@ class LIBRA_PCS:
         q_cm_vec = []
         s_vec = []
         s_cm = g.ec_mul(randomness)
-        # s_cm = G1.zero()
         quotients, v = MLEPolynomial.decompose_by_div(polynomial, point)
         for i in range(len(quotients)):
             basis = basis_vec[i]
             q_mle = quotients[i]
             q_cm = msm_basic(basis, q_mle.evals)
             s = Field.rand()
-            # s = Field.zero()
             q_cm += xi_g.ec_mul(s)
             s_vec.append(s)
             s_cm -= tau_g[i].ec_mul(s)
@@ -214,7 +274,7 @@ class LIBRA_PCS:
             's_cm': s_cm
         }
 
-    def verify(self, commitment: Commitment, point: Field, value: Field, argument: dict) -> bool:
+    def verify_evaluation(self, commitment: Commitment, point: Field, value: Field, argument: dict) -> bool:
         q_cm_vec = argument['q_cm_vec']
         s_cm = argument['s_cm']
 
@@ -253,13 +313,13 @@ def msm_basic(bases, scalars):
         result += base.ec_mul(scalar)
     return result
 
-def ip(vec_a: list[Field], vec_b: list[Field]) -> Field:
+def product_and_sum(vec_a: list[Field], vec_b: list[Field]) -> Field:
     n = len(vec_a)
     assert len(vec_b) == n
     return sum(a * b for a, b in zip(vec_a, vec_b))
 
 def test_commit_eq():
-    pcs = LIBRA_PCS(G1, G2, Field, debug=True)
+    pcs = LIBRA_PCS(debug=1)
     tau_vec = [Field(2), Field(3), Field(4)]
     pcs.setup(3, secret_vec=tau_vec)
 
@@ -283,8 +343,8 @@ def test_commit_eq():
     print(f"cm2: {cm2.cm}")
     print(f"s2: {s2}")
 
-    assert cm1.cm - pcs.params['xi_g'].ec_mul(s1) == g.ec_mul(ip(powers_of_tau[:4], f1_coeffs))
-    assert cm2.cm - pcs.params['xi_g'].ec_mul(s2) == g.ec_mul(ip(MLEPolynomial.eqs_over_hypercube(tau_vec[:2]), f1_evals))
+    assert cm1.cm - pcs.params['xi_g'].ec_mul(s1) == g.ec_mul(product_and_sum(powers_of_tau[:4], f1_coeffs))
+    assert cm2.cm - pcs.params['xi_g'].ec_mul(s2) == g.ec_mul(product_and_sum(MLEPolynomial.eqs_over_hypercube(tau_vec[:2]), f1_evals))
 
     assert cm1.cm - pcs.params['xi_g'].ec_mul(s1) == cm2.cm - pcs.params['xi_g'].ec_mul(s2)
 
@@ -292,7 +352,7 @@ def test_commit_eq():
     print("✅ test commit eq passed")
     
 def test_setup():
-    pcs = LIBRA_PCS(G1, G2, Field, debug=True)
+    pcs = LIBRA_PCS(debug=1)
     num_var = 3
     tau_vec = [Field(2), Field(3), Field(4)]
 
@@ -325,7 +385,7 @@ def test_setup():
     print("✅ test setup passed")
     
 def test_prove_verify():
-    pcs = LIBRA_PCS(G1, G2, Field, debug=True)
+    pcs = LIBRA_PCS(debug=1)
     tau_vec = [Field(2), Field(3), Field(4)]
     pcs.setup(3, secret_vec=tau_vec)
 
@@ -337,11 +397,11 @@ def test_prove_verify():
 
     point = [Field(1), Field(1)]
 
-    v1, arg1 = pcs.prove(f1, point, r1)
+    v1, arg1 = pcs.prove_evaluation(f1, point, r1)
     print(f"v1: {v1}")
     print(f"arg1: {arg1}")
 
-    checked = pcs.verify(f1_cm, point, v1, arg1)
+    checked = pcs.verify_evaluation(f1_cm, point, v1, arg1)
     print(f"checked: {checked}")
     assert checked, "Verification failed"
     print("✅ test prove verify passed")
