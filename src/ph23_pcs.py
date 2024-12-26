@@ -56,7 +56,7 @@ class PH23_PCS:
         self.rng = random.Random("ipa-pcs")
         self.debug = debug
 
-    def commit(self, polynomial: MLEPolynomial) -> tuple[list[G1Point], list[Field]]:
+    def commit(self, polynomial: MLEPolynomial) -> Commitment:
         """
         Commit to a vector of coefficients.
         """
