@@ -17,6 +17,7 @@ from unipoly import UniPolynomial, Domain_FFT_2Radix
 # from field import Field
 from random import randint
 from utils import is_power_of_two, bit_reverse, log_2
+import copy
 
 class Commitment:
     """Represents a commitment in the KZG scheme."""
@@ -423,31 +424,74 @@ class KZG10_PCS:
         assert cm.oob is not None, "Commitment is not opened"
         assert len(cm.oob) == len(vs), f"Number of values mismatch, len(cm.oob): {len(cm.oob)}, len(vs): {len(vs)}"
 
-    # @staticmethod
-    # def division_by_linear_divisor(coeffs, d):
-    #     """
-    #     Perform polynomial division by a linear divisor.
+    def prove_eval_and_degree(self, cm: Commitment, f: UniPolynomial, point: Field, degree_bound: int):
+        """
+        Prove the degree bound of a polynomial.
+
+            f(X) - f(z) = q(X) * (X - z)
+            
+            arg: [x^{D-(d-1)} * q(x)]
+
+            e([f(x)] - f(z)[1], [x^{D-(d-1)}]) = e([x^{D-(d-1)} * q(x)], [x]- z[1])
+            
+        Args:
+            cm: commitment to the polynomial
+            f: polynomial
+            point: evaluation point
+            degree_bound: degree bound
+        """
+        assert degree_bound <= self.max_degree, \
+                "Degree bound exceeds maximum supported degree"
+        coeffs = f.coeffs.copy()
+
+        while len(coeffs) > 1 and coeffs[-1] == 0:
+            coeffs.pop()
+
+        assert len(coeffs) <= degree_bound, \
+                "Polynomial degree exceeds maximum supported degree"
         
-    #     Args:
-    #         coeffs: List of polynomial coefficients
-    #         d: The constant number in the divisor
+        # Compute the witness polynomial: (f(X) - f(z)) / (X - z)
+        witness_poly, v = self.compute_quotient_polynomial(f, point)
+
+        degree_gap = self.max_degree - degree_bound + 2
+        lift_coeffs = [0] * degree_gap + witness_poly.coeffs
+        xq_cm = self.commit(UniPolynomial(lift_coeffs))
+
+        return v, (xq_cm, degree_gap)
+
+    def verify_eval_and_degree(self, f_cm: Commitment, point: Field, v: Field, degree_bound: int, arg: tuple[Commitment, int]):
+        """
+        Verify the evaluation and degree bound of a polynomial.
+
+        Args:
+            f_cm: commitment to the polynomial
+            arg: proof of the evaluation and degree bound
+            point: evaluation point
+            v: evaluation value
+            degree_bound: degree bound
+        """
+        xq_cm, degree_gap = arg
+        assert degree_gap >= self.max_degree - degree_bound + 2, \
+                "Degree bound is less than the degree of the proof"
+        h_gap = self.params['powers_of_h'][degree_gap]
+        g = self.params['powers_of_g'][0]
+        h_tau = self.params['tau_h']
+        h = self.params['h']
+
+        # Compute [v]
+        # v_cm = g.ec_mul(v)
+
+        # Compute [tau] - z[1]
+        # h_tau_minus_h_point = h_tau - h_gap.ec_mul(point)
+
+        # Check the pairing equation:
+        # e([f(x)] - f(z)[1], [x^{D-(d-1)}]) = e([x^{D-(d-1)} * q(x)], [x]- z[1])
+        # e(C - z[1], [tau^{D-d+1}]) = e(π, [s]H - [z]H)
+        lhs = (f_cm.cm - g.ec_mul(v), h_gap)
+        rhs = (xq_cm.cm, h_tau - h.ec_mul(point))
         
-    #     Returns:
-    #         tuple: (quotient coefficients, remainder)
-    #     """
-    #     assert len(coeffs) > 1, "Polynomial degree must be at least 1"
+        return ec_pairing_check([lhs[0], rhs[0]], [-lhs[1], rhs[1]])
 
-    #     quotient = [0] * (len(coeffs) - 1)
-    #     remainder = 0
-
-    #     for i, coeff in enumerate(reversed(coeffs)):
-    #         if i == 0:
-    #             remainder = coeff
-    #         else:
-    #             quotient[-i] = remainder
-    #             remainder = remainder * d + coeff
-
-    #     return quotient, remainder
 
 def msm_basic(bases, scalars):
     """
@@ -494,7 +538,6 @@ def msm_basic(bases, scalars):
 #                         result += precomp[j][window - 1]
 #     return result
 
-
 def test_lagrange_basis(kzg):
 
     f = UniPolynomial([Field.rand() for _ in range(randint(5, 10))])
@@ -513,6 +556,20 @@ def test_lagrange_basis(kzg):
     assert C1.cm == C2.cm, "Commitment mismatch"
     print("test_lagrange_basis passed!")
 
+def test_prove_verify_eval_and_degree(kzg):
+    kzg = KZG10_PCS(G1, G2, Field, 16, debug=True)
+    f = UniPolynomial([Field.rand() for _ in range(randint(5, 10))])
+    point = Field.rand()
+    degree_bound = len(f.coeffs)
+
+    C = kzg.commit(f)   
+    v, arg = kzg.prove_eval_and_degree(C, f, point, degree_bound)
+
+    verified = kzg.verify_eval_and_degree(C, point, v, degree_bound, arg)
+    assert verified, "Verification failed"
+    print("test_prove_verify_eval_and_degree passed!")
+
+
 if __name__ == '__main__':
     # Test regular check
     print("Testing regular check...")
@@ -522,6 +579,7 @@ if __name__ == '__main__':
 
     test_lagrange_basis(kzg)
 
+    test_prove_verify_eval_and_degree(kzg)
     # # Create a polynomial and a point
     # test_poly = UniPolynomial([Field.rand() for _ in range(randint(5, 10))])
     # test_point = Field.rand()
