@@ -8,7 +8,7 @@ Gemini [BCH+22] 是一种 elastic SNARK，所谓 elastic 是指证明者可以�
 
 在具体构造上，Tensor Product Check 采用了与之前的工作（Sumcheck, Bulletproofs, FRI）类似的 split-and-fold 思想，达到了比较高效的通信和验证者复杂度，同时其证明者算法能够实现 elastic 性质。
 
-# MLE and Tensor Product
+## MLE and Tensor Product
 
 在 Zeromorph 笔记中我们提到，一个 Multilinear Extension 唯一地对应到一个从 Boolean 向量映射到有限域的函数，形如 $f: \{0,1\}^n \rightarrow \mathbb{F}_q$。下图是一个三维的 MLE 多项式 $\tilde{f}(X_0,X_1,X_2)$ 的示例，这个多项式可以唯一地被 $(a_0, a_1,...,a_7)$ 这个 「点值向量」来表示。
 
@@ -46,7 +46,7 @@ $$
 
 其中左边元素是系数向量 $\vec{f}$ ，右边元素则是一个单项式向量 $\otimes_{j=0}^2 (1,X_j)$。
 
-# Split-and-Fold 方法
+## Split-and-Fold 方法
 
 在 Gemini 中，作者给出了一个基于一元多项式承诺方案（例如 KZG10）来检查张量积正确性的协议，基于该协议我们可以进一步构造实现多元到一元多项式转换。我们首先以提到的三维 MLE 多项式为例，解释 Tensor Product Check 的主要思路。
 
@@ -106,7 +106,7 @@ $$
 
 <img src="image/Gemini-multipoly.png" align=center width="60%">
 
-# Tensor Product 检查协议
+## Tensor Product 检查协议
 
 通过上述递归算法，我们将检查 $N$ 长度的 tensor product 关系的正确性归约到检查 $n = \left \lceil \log N \right \rceil$  次 split-and-fold 过程的正确性。
 

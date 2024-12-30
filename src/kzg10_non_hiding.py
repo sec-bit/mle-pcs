@@ -19,27 +19,22 @@ from random import randint
 from utils import is_power_of_two, bit_reverse, log_2
 import copy
 
+
 class Commitment:
     """Represents a commitment in the KZG scheme."""
     def __init__(self, cm, oob=None):
         self.cm = cm
-        self.group = type(cm)
-        self.scalar = Field
         if oob is not None:
             self.oob = oob
-    
-    # @classmethod
-    # def set_scalar(cls, scalar):
-    #     cls.scalar = scalar
 
     @staticmethod
-    def zero(self):
+    def zero():
         """Create a zero commitment."""
-        return Commitment(self.group.zero())
+        return Commitment(G1.zero())
 
     def __add__(self, other):
         """Add two commitments using + operator."""
-        if not isinstance(other, Commitment) or self.group != other.group:
+        if not isinstance(other, Commitment):
             raise TypeError("Can only add commitments from the same group")
         return Commitment(self.cm + other.cm)
     

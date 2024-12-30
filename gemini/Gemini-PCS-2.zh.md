@@ -80,7 +80,7 @@ Gemini 当中并没有讨论如何实现 tensor product check 的 ZK 性质，�
 
 **【方案一】**
 
-采用与论文 [CAS17] 中实现 zk sumcheck 类似的思想，我们可以直接在原多项式 $f(X)$ 上加一个相同大小的盲化多项式 $g(X)$，即对于 $f(X)$ 中每一个系数不为零的单项式，$g(X)$ 都包含对应的一个单项式，且系数为随机值。令 $\langle\vec{g}, \otimes_{j=0}^{n-1}(1,\rho_j) \rangle = v$。
+采用与论文 [CFS17] 中实现 zk sumcheck 类似的思想，我们可以直接在原多项式 $f(X)$ 上加一个相同大小的盲化多项式 $g(X)$，即对于 $f(X)$ 中每一个系数不为零的单项式，$g(X)$ 都包含对应的一个单项式，且系数为随机值。令 $\langle\vec{g}, \otimes_{j=0}^{n-1}(1,\rho_j) \rangle = v$。
 
 接下来，证明者只需要额外对 $g(X)$ 进行承诺，并将承诺值 $cm(g(X))$ 和 $v$ 发送给验证者。验证者则随机选取一个挑战者 $c$ 将 $f,g$ 的 tensor product 关系合并为
 
@@ -146,6 +146,6 @@ $$
 # 参考文献
 [BCH+22] Bootle, Jonathan, Alessandro Chiesa, Yuncong Hu, **et al. "Gemini: Elastic SNARKs for Diverse Environments." *Cryptology ePrint Archive* (2022). [https://eprint.iacr.org/2022/420](https://eprint.iacr.org/2022/420)
 
-[CFS17**]** Chiesa, Alessandro, Michael A. Forbes, and Nicholas Spooner. "A zero knowledge sumcheck and its applications." [*arXiv preprint arXiv:1704.02086* (2017)](https://eprint.iacr.org/2017/305).
+[CFS17] Chiesa, Alessandro, Michael A. Forbes, and Nicholas Spooner. "A zero knowledge sumcheck and its applications." [*arXiv preprint arXiv:1704.02086* (2017)](https://eprint.iacr.org/2017/305).
 
 [XZZPS19] Xie, T., Zhang, J., Zhang, Y., Papamanthou, C., & Song, D. “Libra: Succinct zero-knowledge proofs with optimal prover computation.” [https://eprint.iacr.org/2019/317](https://eprint.iacr.org/2019/317)
