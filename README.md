@@ -4,21 +4,23 @@
 
 ## Table of Contents
 
-- [Background](#background)
-- [Project Purpose](#project-purpose)
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Implementation Details](#implementation-details)
-  - [Reference Implementations](#reference-implementations)
-  - [Jupyter Notebooks](#jupyter-notebooks)
-  - [Research Notes](#research-notes)
-- [Important Notices](#important-notices)
-- [PCS List](#pcs-list)
-  - [On-going](#on-going)
-  - [More PCS (Future work)](#more-pcs-future-work)
-- [Contributors](#contributors)
-- [References](#references)
-- [Acknowledgments](#acknowledgments)
+- [MLE-PCS: Comparison of Multilinear Polynomial Commitment Schemes](#mle-pcs-comparison-of-multilinear-polynomial-commitment-schemes)
+  - [Table of Contents](#table-of-contents)
+  - [Background](#background)
+  - [Project Purpose](#project-purpose)
+  - [Features](#features)
+  - [Project Structure](#project-structure)
+  - [Implementation Details](#implementation-details)
+    - [Reference Implementations](#reference-implementations)
+    - [Jupyter Notebooks](#jupyter-notebooks)
+    - [Research Notes](#research-notes)
+  - [Important Notices](#important-notices)
+  - [PCS List](#pcs-list)
+    - [On-going](#on-going)
+    - [More PCS (Future work)](#more-pcs-future-work)
+  - [Contributors](#contributors)
+  - [References](#references)
+  - [Acknowledgments](#acknowledgments)
 
 ## Background
 
@@ -131,8 +133,7 @@ Comprehensive research notes are available within each relevant folder, provided
 ### On-going
 
 - Basefold 
-    - [BaseFold: Efficient Field-Agnostic Polynomial Commitment Schemes from Foldable Codes
-](https://eprint.iacr.org/2023/1705)
+    - [BaseFold: Efficient Field-Agnostic Polynomial Commitment Schemes from Foldable Codes](https://eprint.iacr.org/2023/1705)
 - Binius-PCS (for binary fields)
     - [Proximity Testing with Logarithmic Randomness](https://eprint.iacr.org/2023/630)
     - [Succinct Arguments over Towers of Binary Fields](https://eprint.iacr.org/2023/1784)
@@ -142,7 +143,6 @@ Comprehensive research notes are available within each relevant folder, provided
     - [Worst-case to average case reductions for the distance to a code](https://www.math.toronto.edu/swastik/fri.pdf)
     - [DEEP-FRI: Sampling Outside the Box Improves Soundness](https://eprint.iacr.org/2019/336)
     - [Proximity Gaps for Reed-Solomon Codes](https://eprint.iacr.org/2020/654)
-
 - Zeromorph (MLE-2-Uni adaptor)
     - [Zeromorph: Zero-Knowledge Multilinear-Evaluation Proofs from Homomorphic Univariate Commitments](https://eprint.iacr.org/2023/917)
 
@@ -179,9 +179,19 @@ You can find guidelines for contributing to this project [here](CONTRIBUTING.md)
 - [DP23] Diamond, Benjamin E., and Jim Posen. "Succinct arguments over towers of binary fields." Cryptology ePrint Archive (2023).
 - [KT23] Kohrita, Tohru, and Patrick Towa. "Zeromorph: Zero-knowledge multilinear-evaluation proofs from homomorphic univariate commitments." Cryptology ePrint Archive (2023).
 - [BBHR18] Eli Ben-Sasson, Iddo Bentov, Ynon Horesh, and Michael Riabzev. Fast Reed-Solomon Interactive Oracle Proofs of Proximity. In Proceedings of the 45th International Colloquium on Automata, Languages, and Programming (ICALP), 2018. Available online as Report 134-17 on Electronic Colloquium on Computational Complexity.
-- [ZCF23] Hadas Zeilberger, Binyi Chen, and Ben Fisch. "BaseFold: efficient field-agnostic polynomial commitment schemes from foldable codes." In *Annual International Cryptology Conference*, pp. 138-169. Cham: Springer Nature Switzerland, 2024.
+- [BGKS20] Eli Ben-Sasson, Lior Goldberg, Swastik Kopparty, and Shubhangi Saraf. "DEEP-FRI: sampling outside the box improves soundness." _arXiv preprint arXiv:1903.12243_ (2019).
 - [BCIKS20] Eli Ben-Sasson, Dan Carmon, Yuval Ishai, Swastik Kopparty, and Shubhangi Saraf. Proximity Gaps for Reed–Solomon Codes. In *Proceedings of the 61st Annual IEEE Symposium on Foundations of Computer Science*, pages 900–909, 2020.
+- [ZCF23] Hadas Zeilberger, Binyi Chen, and Ben Fisch. "BaseFold: efficient field-agnostic polynomial commitment schemes from foldable codes." In *Annual International Cryptology Conference*, pp. 138-169. Cham: Springer Nature Switzerland, 2024.
+- [H24] Ulrich Haböck. "Basefold in the List Decoding Regime." _Cryptology ePrint Archive_(2024).
+- [ACFY24a] Gal Arnon, Alessandro Chiesa, Giacomo Fenzi, and Eylon Yogev. "STIR: Reed-Solomon proximity testing with fewer queries." In _Annual International Cryptology Conference_, pp. 380-413. Cham: Springer Nature Switzerland, 2024.
+- [ACFY24b] Gal Arnon, Alessandro Chiesa, Giacomo Fenzi, and Eylon Yogev. "WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification." _Cryptology ePrint Archive_ (2024).
+-  [GLHQTZ24] Yanpei Guo, Xuanming Liu, Kexi Huang, Wenjie Qu, Tianyang Tao, and Jiaheng Zhang. "DeepFold: Efficient Multilinear Polynomial Commitment from Reed-Solomon Code and Its Application to Zero-knowledge Proofs." _Cryptology ePrint Archive_ (2024).
 - [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over Binary Towers." Cryptology ePrint Archive (2024).
+- [BCH+22] Jonathan Bootle, Alessandro Chiesa, Yuncong Hu, and Michele Orru. "Gemini: Elastic SNARKs for diverse environments." In _Annual International Conference on the Theory and Applications of Cryptographic Techniques_, pp. 427-457. Cham: Springer International Publishing, 2022.
+- [XZZPS19] Tiancheng Xie, Jiaheng Zhang, Yupeng Zhang, Charalampos Papamanthou, and Dawn Song. "Libra: Succinct Zero-Knowledge Proofs with Optimal Prover Computation." Cryptology ePrint Archive (2019). https://eprint.iacr.org/2019/317
+- [KZG10] Kate, Aniket, Gregory M. Zaverucha, and Ian Goldberg. "Constant-size commitments to polynomials and their applications." Advances in Cryptology-ASIACRYPT 2010: 16th International Conference on the Theory and Application of Cryptology and Information Security, Singapore, December 5-9, 2010. Proceedings 16. Springer Berlin Heidelberg, 2010.
+- [PST13] Papamanthou, Charalampos, Elaine Shi, and Roberto Tamassia. "Signatures of correct computation." Theory of Cryptography Conference. Berlin, Heidelberg: Springer Berlin Heidelberg, 2013. https://eprint.iacr.org/2011/587
+- [CHMMVW19] Alessandro Chiesa, Yuncong Hu, Mary Maller, Pratyush Mishra, Psi Vesely, and Nicholas Ward. "Marlin: Preprocessing zkSNARKs with Universal and Updatable SRS." https://eprint.iacr.org/2019/1047
 
 More are listed in the research notes.
 
