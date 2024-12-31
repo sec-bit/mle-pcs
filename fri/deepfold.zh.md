@@ -175,14 +175,14 @@ $$
 3. prover 计算 $c := f^{(0)}(\alpha)$ 并将 $c$ 发送给 verifier 。
 
 prover 想向 verifier 证明的是: 在查询点 $\vec{z} = \{z_1, z_2, z_3\}$ 处 $\tilde{f}(z_1, z_2, z_3) = y$ 。同时 verifier 有 prover 在多项式承诺阶段接收到的 $\mathcal{C} = \langle rt_0, \alpha, c \rangle$ 。prover 和 verifier 进行如下的协议流程：
-**第 1 步**：令 $A_0:= \{\vec{z}, \vec{\alpha}\}$ ， 其中 $\vec{\alpha} = (1, \alpha^2, \alpha^4)$ 。
+**第 1 步**：令 $A_0:= \{\vec{z}, \vec{\alpha}\}$ ， 其中 $\vec{\alpha} = (\alpha, \alpha^2, \alpha^4)$ 。
 **第 2 步**： 对每一轮 $i \in [3]$ ，进行如下步骤:
 
 **2.1 当 $i = 1$ 时**
 
-a. verifier 向 prover 发送 $\alpha_1 \leftarrow \$ \mathbb{F}$ 。令 $A_0 := \{A_0, \vec{\alpha_1}\} = \{\vec{z}, \vec{\alpha}, \vec{\alpha_1}\}$ ，其中 $\vec{\alpha_1} = (1, \alpha_1^2, \alpha_1^4)$ 。
+a. verifier 向 prover 发送 $\alpha_1 \leftarrow \$ \mathbb{F}$ 。令 $A_0 := \{A_0, \vec{\alpha_1}\} = \{\vec{z}, \vec{\alpha}, \vec{\alpha_1}\}$ ，其中 $\vec{\alpha_1} = (\alpha_1, \alpha_1^2, \alpha_1^4)$ 。
 
-> 这一步发送的 $\alpha_1$ 就是使用 DEEP 方法的在 $L_0$ 之外的随机数，用于限定 prover 只能发送唯一的多项式 $f^{(1)}$ 。向量 $\vec{\alpha_1} = (1, \alpha_1^2, \alpha_1^4)$ 就是为了后续不断验证 $f^{(1)}(\alpha_1^2) = \tilde{f}(r_1, \alpha_1^2, \alpha_1^4)$ 的正确性。
+> 这一步发送的 $\alpha_1$ 就是使用 DEEP 方法的在 $L_0$ 之外的随机数，用于限定 prover 只能发送唯一的多项式 $f^{(1)}$ 。向量 $\vec{\alpha_1} = (\alpha_1, \alpha_1^2, \alpha_1^4)$ 就是为了后续不断验证 $f^{(1)}(\alpha_1^2) = \tilde{f}(r_1, \alpha_1^2, \alpha_1^4)$ 的正确性。
 
 b. 令 $A_1 := \emptyset$ ，对每一个 $\vec{\omega} \in A_0 = \{\vec{z}, \vec{\alpha}, \vec{\alpha_1}\}$ ，prover 向 verifier 发送多项式：
     
@@ -211,11 +211,11 @@ e. 令 $\vec{v}^{(1)} = f^{(1)}|_{L_1}$ ，prover 向 verifier 发送关于向�
 
 **2.2 当 $i = 2$ 时**
 
-a. verifier 向 prover 发送 $\alpha_2 \leftarrow \$ \mathbb{F}$ 。令 $A_1 := \{A_1, \vec{\alpha_2}\} = \{(z_2, z_3), (\alpha^2, \alpha^4), (\alpha_1^2, \alpha_1^4), (1, \alpha_2^2)\}$ ，其中 $\vec{\alpha_2} = (1, \alpha_2^2)$ 。
+a. verifier 向 prover 发送 $\alpha_2 \leftarrow \$ \mathbb{F}$ 。令 $A_1 := \{A_1, \vec{\alpha_2}\} = \{(z_2, z_3), (\alpha^2, \alpha^4), (\alpha_1^2, \alpha_1^4), (\alpha_2, \alpha_2^2)\}$ ，其中 $\vec{\alpha_2} = (\alpha_2, \alpha_2^2)$ 。
 
 > 注意这里 $A_1$ 中的每个向量的长度此时都变为了 $2$ 。这里选取的 $\alpha_2$ 是为了在第 $2$ 轮时使用 DEEP 方法，限制 prover 只能发送唯一的多项式 $f^{(2)}(X)$ ，并确保多项式 $f^{(2)}(X)$ 在点 $\alpha_2^2$ 满足 $f^{(2)}(\alpha_2^2) = \tilde{f}(r_1, r_2, \alpha_2^2)$ 。
 
-b. 令 $A_2 := \emptyset$ ，对每一个 $\vec{\omega} \in A_1 = \{(z_2, z_3), (\alpha^2, \alpha^4), (\alpha_1^2, \alpha_1^4), (1, \alpha_2^2)\}$ ，prover 向 verifier 发送多项式：
+b. 令 $A_2 := \emptyset$ ，对每一个 $\vec{\omega} \in A_1 = \{(z_2, z_3), (\alpha^2, \alpha^4), (\alpha_1^2, \alpha_1^4), (\alpha_2, \alpha_2^2)\}$ ，prover 向 verifier 发送多项式：
     
 $$
 \begin{aligned}
@@ -239,7 +239,7 @@ e. 令 $\vec{v}^{(2)} = f^{(2)}|_{L_2}$ ，prover 向 verifier 发送关于向�
 
 **2.3 当 $i = 3$ 时**
 
-a. verifier 向 prover 发送 $\alpha_3 \leftarrow \$ \mathbb{F}$ 。令 $A_2 := \{A_2, \vec{\alpha_3}\} = \{(z_3), (\alpha^4), (\alpha_1^4), (\alpha_2^2), (1)\}$ ，其中 $\vec{\alpha_3} = (1)$ 。
+a. verifier 向 prover 发送 $\alpha_3 \leftarrow \$ \mathbb{F}$ 。令 $A_2 := \{A_2, \vec{\alpha_3}\} = \{(z_3), (\alpha^4), (\alpha_1^4), (\alpha_2^2), (\alpha_3)\}$ ，其中 $\vec{\alpha_3} = (\alpha_3)$ 。
 
 b. prover 向 verifier 发送线性函数 
 
@@ -256,7 +256,7 @@ $$
 f^{(2)}(X) = f_E^{(3)}(X^2) + X \cdot f_O^{(3)}(X^2)
 $$
 
-e. 令 $\vec{v}^{(3)} = f^{(3)}|_{L_3}$ ，prover 向 verifier $f^{(3)} \in \mathbb{F}$ 。
+e. 令 $\vec{v}^{(3)} = f^{(3)}|_{L_3}$ ，prover 向 verifier 发送 $f^{(3)} \in \mathbb{F}$ 。
 
 > 进行到最后一轮时，FRI 最后会折叠成一个常数多项式，因此这里直接发送一个值 $f^{(3)}$ 。
 
@@ -292,49 +292,49 @@ $$
 \begin{aligned}
     & g_{(z_1, z_2, z_3)}(r_0) = g_{(z_2, z_3)}(z_1) \\
     & g_{(\alpha, \alpha^2, \alpha^4)}(r_0) = g_{(\alpha^2, \alpha^4)}(\alpha) \\
-    & g_{(1, \alpha_1^2, \alpha_1^4)}(r_0) = g_{(\alpha_1^2, \alpha_1^4)}(1)
+    & g_{(\alpha_1, \alpha_1^2, \alpha_1^4)}(r_0) = g_{(\alpha_1^2, \alpha_1^4)}(\alpha_1)
 \end{aligned}
 $$
-> 🐞❓ **fix and question**
-> 我认为原论文中的 "if $i < \mu$, $\mathcal{V}$ checks  $g_{\vec{w}}(r_1) = g_{\vec{w}_{[2:]}}(w_1)$" 应该改为 "$g_{\vec{w}}(r_{i - 1}) = g_{\vec{w}_{[2:]}}(w_1)$" ，原因是当 $i = 2$ 时，$g_{\vec{w}}(r_1) = g_{\vec{w}_{[2:]}}(w_1)$ 代入之前 prover 发送的函数构造不成立，不过我的这个修改也有一点疑惑的地方，因为当 $i = 1$ 时，$r_0$ 并没有由 verifier 发送，同时多项式 $g_{(z_1, z_2, z_3)}, g_{(\alpha, \alpha^2, \alpha^4)}, g_{(1, \alpha_1^2, \alpha_1^4)}$ 并没有由 prover 发送。
-> - 是否还有更优的修改方法？
+> 🐞**fix**
+> 我认为原论文中的第 3 步中 
+> > For each round $i$, where $i \in [\mu]$ ,
+> > a. For each $\vec{w} \in A_{i - 1}$, if $i < \mu$, $\mathcal{V}$ checks  $g_{\vec{w}}(r_i) = g_{\vec{w}_{[2:]}}(w_1)$ ; otherwise, $\mathcal{V}$ checks $g_{\vec{w}}(r_i) = g(w_1)$ .
+> 
+> 应该改为，当 $i < \mu$ 时，verifier 检查 $g_{\vec{w}}(r_{i - 1}) = g_{\vec{w}_{[2:]}}(w_1)$，否则检查 $g_{\vec{w}}(r_{i - 1}) = g(w_1)$ 。 原因是例如当 $i = 2$ 时，$g_{\vec{w}}(r_1) = g_{\vec{w}_{[2:]}}(w_1)$ 代入之前 prover 发送的函数构造不成立。
 
-
-> 上面三个式子是成立的，因为代入第 $1$ 轮 $g(X)$ 的式子可以得到
+> 其实上面最后一个式子是不需要检查的，即 $g_{(\alpha_1, \alpha_1^2, \alpha_1^4)}(r_0) = g_{(\alpha_1^2, \alpha_1^4)}(\alpha_1)$ 。可以验证上面几个式子是正确的，因为代入第 $1$ 轮 $g(X)$ 的式子可以得到
 > $$
 > \begin{aligned}
->     & g_{(z_1, z_2, z_3)}(r_0) = \tilde{f}(z_1, z_2, z_3) & g_{(z_2, z_3)}(z_1) = \tilde{f}(z_1, z_2, z_3)\\
->     & g_{(\alpha, \alpha^2, \alpha^4)}(r_0) = \tilde{f}(\alpha, \alpha^2, \alpha^4) & g_{(\alpha^2, \alpha^4)}(\alpha) = \tilde{f}(\alpha, \alpha^2, \alpha^4)\\
->     & g_{(1, \alpha_1^2, \alpha_1^4)}(r_0) = \tilde{f}(1, \alpha_1^2, \alpha_1^4) & g_{(\alpha_1^2, \alpha_1^4)}(1) = \tilde{f}(1, \alpha_1^2, \alpha_1^4)
+>     & g_{(z_1, z_2, z_3)}(r_0) = \tilde{f}(z_1, z_2, z_3) = y & g_{(z_2, z_3)}(z_1) = \tilde{f}(z_1, z_2, z_3)\\
+>     & g_{(\alpha, \alpha^2, \alpha^4)}(r_0) = \tilde{f}(\alpha, \alpha^2, \alpha^4) = c & g_{(\alpha^2, \alpha^4)}(\alpha) = \tilde{f}(\alpha, \alpha^2, \alpha^4)
 > \end{aligned}
 > $$
 
 **3.2 当 $i = 2$ 时**
 
-a. 对每一个 $\vec{w} \in A_1 = \{(z_2, z_3), (\alpha^2, \alpha^4), (\alpha_1^2, \alpha_1^4), (1, \alpha_2^2)\}$ ，检查 $g_{\vec{w}}(r_1) = g_{\vec{w}_{[2:]}}(w_1)$ ，即检查
+a. 对每一个 $\vec{w} \in A_1 = \{(z_2, z_3), (\alpha^2, \alpha^4), (\alpha_1^2, \alpha_1^4), (\alpha_2, \alpha_2^2)\}$ ，检查 $g_{\vec{w}}(r_1) = g_{\vec{w}_{[2:]}}(w_1)$ ，即检查
 
 $$
 \begin{aligned}
     & g_{(z_2, z_3)}(r_1) = g_{(z_3)}(z_2) \\
     & g_{(\alpha^2, \alpha^4)}(r_1) = g_{(\alpha^4)}(\alpha^2) \\
     & g_{(\alpha_1^2, \alpha_1^4)}(r_1) = g_{(\alpha_1^4)}(\alpha_1^2) \\
-    & g_{(1, \alpha_2^2)}(r_1) = g_{(\alpha_2^2)}(1)
+    & g_{(\alpha_2, \alpha_2^2)}(r_1) = g_{(\alpha_2^2)}(\alpha_2)
 \end{aligned}
 $$
 
-> 上面四个式子是成立的，因为代入第 $1,2$ 轮 $g(X)$ 的式子可以得到
+> 最后一个式子并不需要检查 $g_{(\alpha_2, \alpha_2^2)}(r_1) = g_{(\alpha_2^2)}(\alpha_2)$ 。 可以验证上面几个式子是成立的，因为代入第 $1,2$ 轮 $g(X)$ 的式子可以得到
 > $$
 > \begin{aligned}
 >     & g_{(z_2, z_3)}(r_1) = \tilde{f}(r_1, z_2, z_3) &  g_{(z_3)}(z_2) = \tilde{f}(r_1, z_2, z_3)\\
 >     & g_{(\alpha^2, \alpha^4)}(r_1) = \tilde{f}(r_1, \alpha^2, \alpha^4) & g_{(\alpha^4)}(\alpha^2) = \tilde{f}(r_1, \alpha^2, \alpha^4)\\
->     & g_{(\alpha_1^2, \alpha_1^4)}(r_1) = \tilde{f}(r_1, \alpha_1^2, \alpha_1^4) & g_{(\alpha_1^4)}(\alpha_1^2) = \tilde{f}(r_1, \alpha_1^2, \alpha_1^4) \\
->     & g_{(1, \alpha_2^2)}(r_1) = \tilde{f}(r_1, 1, \alpha_2^2)  & g_{(\alpha_2^2)}(1) = \tilde{f}(r_1, 1, \alpha_2^2) 
+>     & g_{(\alpha_1^2, \alpha_1^4)}(r_1) = \tilde{f}(r_1, \alpha_1^2, \alpha_1^4) & g_{(\alpha_1^4)}(\alpha_1^2) = \tilde{f}(r_1, \alpha_1^2, \alpha_1^4) 
 > \end{aligned}
 > $$
 
 **3.2 当 $i = 3$ 时**
 
-a. 对每一个 $\vec{w} \in A_2 = \{(z_3), (\alpha^4), (\alpha_1^4), (\alpha_2^2), (1)\}$ ，检查 $g_{\vec{w}}(r_2) = g(w_1)$ ，即检查
+a. 对每一个 $\vec{w} \in A_2 = \{(z_3), (\alpha^4), (\alpha_1^4), (\alpha_2^2), (\alpha_3)\}$ ，检查 $g_{\vec{w}}(r_2) = g(w_1)$ ，即检查
 
 $$
 \begin{aligned}
@@ -342,18 +342,17 @@ $$
     & g_{(\alpha^4)}(r_2) = g(\alpha^4) \\
     & g_{(\alpha_1^4)}(r_2) = g(\alpha_1^4) \\
     & g_{(\alpha_2^2)}(r_2) = g(\alpha_2^2) \\
-     & g_{(1)}(r_2) = g(1) 
+     & g_{(\alpha_3)}(r_2) = g(\alpha_3) 
 \end{aligned}
 $$
 
-> 上面 $5$ 个式子是成立的，因为代入第 $2,3$ 轮 $g(X)$ 的式子可以得到
+> 同样地，上面最后一个式子不需要进行检查，即检查 $g_{(\alpha_3)}(r_2) = g(\alpha_3)$  。可以验证上面 $4$ 个式子是成立的，因为代入第 $2,3$ 轮 $g(X)$ 的式子可以得到
 > $$
 > \begin{aligned}
->     & g_{(z_3)}(r_2) = \tilde{f}(r_1, r_2, z_3) &  g(z_3) = \tilde{f}(r_1, z_2, z_3)\\
+>     & g_{(z_3)}(r_2) = \tilde{f}(r_1, r_2, z_3) &  g(z_3) = \tilde{f}(r_1, r_2, z_3)\\
 >     & g_{(\alpha^4)}(r_2) = \tilde{f}(r_1, r_2, \alpha^4) & g(\alpha^4) = \tilde{f}(r_1, r_2, \alpha^4)\\
 >     & g_{(\alpha_1^4)}(r_2) = \tilde{f}(r_1, r_2, \alpha_1^4) & g(\alpha_1^4) = \tilde{f}(r_1, r_2, \alpha_1^4) \\
->     & g_{(\alpha_2^2)}(r_2) = \tilde{f}(r_1, r_2, \alpha_2^2)  & g(\alpha_2^2) = \tilde{f}(r_1, r_2, \alpha_2^2) \\
->     & g_{(1)}(r_2) = \tilde{f}(r_1, r_2, 1)  & g(1) = \tilde{f}(r_1, r_2, 1) 
+>     & g_{(\alpha_2^2)}(r_2) = \tilde{f}(r_1, r_2, \alpha_2^2)  & g(\alpha_2^2) = \tilde{f}(r_1, r_2, \alpha_2^2)
 > \end{aligned}
 > $$
 
