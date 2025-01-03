@@ -149,4 +149,5 @@ Overall, after executing the tensor product check protocol, $V^*$ will obtain $3
 [BCH+22] Bootle, Jonathan, Alessandro Chiesa, Yuncong Hu, **et al. "Gemini: Elastic SNARKs for Diverse Environments." *Cryptology ePrint Archive* (2022). [https://eprint.iacr.org/2022/420](https://eprint.iacr.org/2022/420)
 
 [CFS17**]** Chiesa, Alessandro, Michael A. Forbes, and Nicholas Spooner. "A zero knowledge sumcheck and its applications." [*arXiv preprint arXiv:1704.02086* (2017)](https://eprint.iacr.org/2017/305).
+
 [XZZPS19] Xie, T., Zhang, J., Zhang, Y., Papamanthou, C., & Song, D. “Libra: Succinct zero-knowledge proofs with optimal prover computation.” [https://eprint.iacr.org/2019/317](https://eprint.iacr.org/2019/317)
