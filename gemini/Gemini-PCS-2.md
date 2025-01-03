@@ -1,5 +1,7 @@
 # Gemini-PCS-2
 
+- Tianyu ZHENG [tian-yu.zheng@connect.polyu.hk](mailto:tian-yu.zheng@connect.polyu.hk)
+
 In the first part, we introduced the Tensor product check protocol for multivariable polynomial evaluation proofs in Gemini [BCH+22] and briefly explained how it can be applied to practical proof systems to convert multivariable polynomials into univariate polynomials. In this part, we focus on the security of the Tensor product check protocol and propose some optimizations based on Gemini.
 
 # Recap
@@ -121,7 +123,7 @@ $$
 
 For convenience, let $h(X) = f(X) + c\cdot g(X)$. The above construction satisfies zero-knowledge as follows:
 
-**Proof**
+**Proof Sketch**
 
 First, the simulator $S$ can be constructed as follows:
 
@@ -140,7 +142,7 @@ $$
 
 Note that for the right side of the equation involving $h^{(j-1)}(X)$, its corresponding oracle also satisfies an equation related to $h^{(j-2)}(X)$. Therefore, we can always expand the right side of any $h^{(j)}(X^2)$ into a form that only contains $h^{(0)}(X), h^{(0)}(-X), h^{(0)}(X^2)$. Therefore, the responses to any queries by $V^*$ on the oracle $h^{(j)}$ at any point $\beta$ are certainly linearly independent constraints on $\vec{h}$.
 
-Overall, after executing the tensor product check protocol, $V^*$ will obtain $3\cdot (n-1)$,$2$ values on$h^{(0)}(X)$, and one value of $h^{(n)}(X)$, i.e., $u+c\cdot v$. Since $h$ contains a blinding polynomial of size $3n$, the verifier cannot interpolate to find all coefficients of the blinding polynomial, so this protocol is indistinguishable from the one executed by an honest verifier.
+Overall, after executing the tensor product check protocol, $V^*$ will obtain $3\cdot (n-1)$,$2$ values on $h^{(0)}(X)$, and one value of $h^{(n)}(X)$, i.e., $u+c\cdot v$. Since $h$ contains a blinding polynomial of size $3n$, the verifier cannot interpolate to find all coefficients of the blinding polynomial, so this protocol is indistinguishable from the one executed by an honest verifier.
 
 # **References**
 
