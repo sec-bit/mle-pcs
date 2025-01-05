@@ -277,33 +277,42 @@ $$
 
 ### Evaluation证明协议
 
-1. Prover 与 Verifier 把 $\vec{u}$ 拆成两个短向量：
+1. Prover 与 Verifier 把 $\vec{u}$ 拆成两个短向量，分别用 $\vec{u}_L$ 与 $\vec{u}_R$ 表示：
 
 $$
-(u_0, u_1, ..., u_{n-1}) = (u_0, u_1, ..., u_{\log(l)-1}) \parallel (u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1})
+\begin{aligned}
+\vec{u}_L &= (u_0, u_1, ..., u_{\log(l)-1}) \\
+\vec{u}_R &= (u_{\log(l)}, u_{\log(l)+1}, ..., u_{n-1}) \\
+\end{aligned}
+$$
+
+显然
+
+$$
+\vec{u} = \vec{u}_L \parallel \vec{u}_R
 $$
 
 #### Round 1
 
-1. Prover 计算 $\vec{e}$:
+1. Prover 计算 $\vec{e}=(e_0, e_1, ..., e_{h-1})$，长度为 $h$ ：
 
 $$
 \begin{split}
-e_0 &= \tilde{eq}(\mathsf{bits}(0), u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1}) \\
-e_1 &= \tilde{eq}(\mathsf{bits}(1), u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1}) \\
+e_0 &= \tilde{eq}(\mathsf{bits}(0), \vec{u}_R) \\
+e_1 &= \tilde{eq}(\mathsf{bits}(1), \vec{u}_R) \\
 \cdots\ &=\quad \cdots \\
-e_{h-1} &= \tilde{eq}(\mathsf{bits}(h-1), u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1}) \\
+e_{h-1} &= \tilde{eq}(\mathsf{bits}(h-1), \vec{u}_R) \\
 \end{split}
 $$
 
-2. Prover 计算 $(u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1})$ 与 $M_a$ 的矩阵乘法，得到 $\vec{b}$，长度为 $l$
+2. Prover 计算 $\vec{e}$ 与 $M_a$ 的矩阵乘法，得到一个新的向量 $\vec{b}$，长度为 $l$
 
 $$
 \begin{split}
-b_0 &= (u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1}) \cdot (a_0, a_l, ..., a_{(h-1)l}) \\
-b_1 &= (u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1}) \cdot (a_1, a_{l+1}, ..., a_{(h-1)l+1}) \\
+b_0 &= \langle \vec{e}, (a_0, a_l, ..., a_{(h-1)l}) \rangle \\
+b_1 &= \langle \vec{e}, (a_1, a_{l+1}, ..., a_{(h-1)l+1}) \rangle \\
 \cdots\ &=\quad \cdots \\
-b_{l-1} &= (u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1}) \cdot (a_{l-1}, a_{l+l-1}, ..., a_{(h-1)l+l-1}) \\
+b_{l-1} &= \langle \vec{e}, (a_{l-1}, a_{l+l-1}, ..., a_{(h-1)l+l-1}) \rangle \\
 \end{split}
 $$
 
@@ -313,16 +322,18 @@ $$
 C^* = \mathsf{cm}(\vec{b}; \rho^*)
 $$
 
+这里 $\rho^* = \langle \vec{e}, (\rho_0, \rho_1, ..., \rho_{h-1}) \rangle$
+
 #### Round 2. 
 
 Prover 和 Verifier 进行一个 Inner Product Argument 协议，完成 $\vec{b}$ 与 $\vec{d}$ 的内积证明。
 
 $$
 \begin{split}
-d_0 &= \tilde{eq}(\mathsf{bits}(0), u_{0}, u_{1}, ..., u_{\log(l)-1}) \\
-d_1 &= \tilde{eq}(\mathsf{bits}(1), u_{0}, u_{1}, ..., u_{\log(l)-1}) \\
+d_0 &= \tilde{eq}(\mathsf{bits}(0), \vec{u}_L) \\
+d_1 &= \tilde{eq}(\mathsf{bits}(1), \vec{u}_L) \\
 \cdots\ &=\quad \cdots \\
-d_{h-1} &= \tilde{eq}(\mathsf{bits}(h-1), u_{0}, u_{1}, ..., u_{\log(l)-1}) \\
+d_{h-1} &= \tilde{eq}(\mathsf{bits}(h-1), \vec{u}_L) \\
 \end{split}
 $$
 
@@ -379,7 +390,7 @@ $$
 
 ## 4. Bulletproofs 的优化
 
-在上文中的「内积证明」协议（Mini-IPA）的第三步，由于 Prover 要发送长度为 $h$ 的向量（$\vec{b}$），因此整体协议的通讯量为 $O(h)$。如果向量比较长，那么最后的证明尺寸就会比较大。J. Bootle 等人 在[BCC+16] 论文中提出来了一个非常有趣的思路，用递归的方式来逐步地折叠证明，实现**证明尺寸的压缩**。
+在上文中的「内积证明」协议（Mini-IPA）的 Round-2，由于 Prover 要发送长度为 $l$ 的向量（$\vec{z}_b$），因此整体协议的通讯量为 $O(l)$。如果向量比较长，那么最后的证明尺寸就会比较大。J. Bootle 等人 在[BCC+16] 论文中提出来了一个非常有趣的思路，用递归的方式来逐步地折叠证明，实现**证明尺寸的压缩**。
 
 假设有一个长度为 $4$ 的向量 $\vec{a} = (a_1, a_2, a_3, a_4)$，我们可以对半把它切分成两个向量 $\vec{a}_1 = (a_1, a_2)$ 与$\vec{a}_2 = (a_3, a_4)$，然后把它们纵向迭在一起，形成一个矩阵：
 
@@ -408,17 +419,11 @@ $$
 
 我们能注意到，折叠后的向量  $\vec{a}'$ 的长度仅为 $\vec{a}$ 的一半。这样递归地做下去，就通过 Verifier 不断地发送挑战数，Prover 不停地递归折叠，最终把向量折叠成一个素数长度的向量。但是，如果允许我们为向量附加一些冗余值，使得向量的长度按 $2^k$ 对齐， 那么经过 $k$ 次折叠后，我们可以把向量折叠到一个长度仅为  1 的数。这就相当于对一个矩阵进行**横向拍扁**。
 
-请注意，我们这里并没有用 $(1, x)$ 作为「挑战向量」，而是用了一个看上去很奇怪的向量 $(x, x^{-1})$。这是一个小技巧，来自于 [BBB+18]。稍后我们会看到为何这里采用了一个*看着奇怪*的挑战向量。
-
-这个初步思路面临**第一个问题**，就是当向量切成两半之后，原始向量 $\vec{a}$ 的承诺 $A$ 好像就没办法用了。这样当 Prover 进行一次折叠动作之后，如何让 Verifier 得到折叠之后的向量承诺呢？
-
-其实方法和上一篇文章中做内积证明的方法很类似。换个思路，Pedersen 承诺从某种意义上看，也是一种内积。如果我们把群 $\mathbb{G}$ 上的运算用 $+$ 加法来表示，那么一个承诺的计算就是「待承诺的向量」与「基向量」的「内积」：
+这个初步思路面临**第一个问题**，就是当向量切成两半之后，原始向量 $\vec{a}$ 的承诺 $A$ 好像就没办法用了。这样当 Prover 进行一次折叠动作之后，如何让 Verifier 得到折叠之后的向量承诺呢？换个思路，Pedersen 承诺从某种意义上看，也是一种内积，即「待承诺的向量」与「基向量」的「内积」：
 
 $$
 \mathsf{cm}_{\vec{G}}(\vec{a}) = a_1G_1 + a_2G_2 + \cdots + a_mG_m
 $$
-
-*注意* 这个和传统符号表示 $g_1^{a_1}g_2^{a_1}\cdots g_m^{a_m}$ 并没有本质区别，只是符号表示体系不同而已。
 
 接下来的技巧很关键，我们把基向量 $\vec{G}$ 做同样的切分，然后同样折叠，但是用一个**不同的**「挑战向量」：
 $$
@@ -471,7 +476,7 @@ $$
 
 新的承诺 $A'$ 很容易计算 $A'=A + Lx^2 + Rx^{-2}$，其中 $L=(\vec{a}_1\cdot \vec{G}_2)$， $R=(\vec{a}_2\cdot \vec{G}_1)$。承诺 $L$ 与 $R$ 看上去是将两个子向量交叉内积的结果。这样一来，问题得到了解决，当 Prover 需要发送一个长度为 $m$ 的向量 $\vec{v}$ 时，Prover 可以选择发送将其**对折并拍扁后的向量** $\vec{v}'$，它的长度只有 $m/2$。然后 Verifier 同样可以通过验证打开（Open） 对折拍扁后的向量，从而保证原始向量的正确性。
 
-没有免费的午餐，当然 Prover与 Verifier 都要付出额外的代价，Verifier 要额外计算 $\vec{G}'$，Prover 也要额外计算 $L$ 与 $R$，两者也要增加一轮的交互。下面是一个递归折叠的内积证明协议。
+递归折叠也有相应的代价，除了Verifier 要额外计算 $\vec{G}'$，Prover 也要额外计算 $L$ 与 $R$，两者也要增加一轮的交互。我们可以通过下面一个递归折叠的内积证明协议来看下递归折叠的完整过程。
 
 #### 公开参数
 
@@ -506,19 +511,16 @@ Verifier 可以计算得到 $P'$
 
 于是，Prover 和 Verifier 可以接着运行 rIPA 协议，证明 $\vec{a}'\cdot\vec{b}'\overset{?}{=}c'$，这三个值的承诺合并为 $P' = \vec{a}'\vec{G} + \vec{b}'\vec{H} + (\vec{a}'\cdot\vec{b}')U + \rho'T$。
 
-## 5. 协议
+## 5. 完整协议
 
-### 公共输入
+下面是结合了递归折叠与 Square-root IPA 的完整协议，这个协议支持 Zero-Knowledge 性质。如果不需要的 ZK 性质，直接去除 $H$ 部分关于 $\rho$ 相关的值即可。
 
-1. $\vec{a}$ 的承诺： $C_a=\mathsf{cm}(a_0, a_1, ..., a_{2^n-1})$
-2. $\vec{u}=(u_0, u_1, ..., u_{n-1})$ 
-3. $v=\tilde{f}(u_0, u_1, ..., u_{n-1})$
+### 公开参数
 
-### Witness
+- $G_0, G_1, G_2, \ldots, G_{2^n-1}, H, U \in \mathbb{G}$ 。
 
-1. $\vec{a}$
 
-### 承诺
+### 计算承诺
 
 1. Prover 把 $\vec{a}$ 重排成一个矩阵 $M_a\in\mathbb{F}_p^{l\times h}$：
 
@@ -544,13 +546,27 @@ C_{h-1} &= \mathsf{cm}(a_{(h-1)l}, a_{(h-1)l+1}, ..., a_{hl-1}; \rho_{h-1}) \\
 \end{aligned}
 $$
 
+这里的 $\mathsf{cm}(\vec{a};\rho)$ 的定义如下：
+
+$$
+\mathsf{cm}(\vec{a};\rho) = \sum_{i=0}^{l-1} a_iG_i + \rho H
+$$
+
 ### Evaluation证明协议
 
-1. Prover 与 Verifier 把 $\vec{u}$ 拆成两个短向量：
 
-$$
-(u_0, u_1, ..., u_{n-1}) = (u_0, u_1, ..., u_{\log(l)-1}) \parallel (u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1})
-$$
+### 公共输入
+
+1. $\vec{a}$ 的承诺： $(C_0, C_1, ..., C_{h-1})$
+2. $\vec{u}=(u_0, u_1, ..., u_{n-1})=\vec{u}_L \parallel \vec{u}_R$ ，其中 $|\vec{u}_L|=\log(h)$ ，$|\vec{u}_R|=\log(l)$
+3. $v=\tilde{f}(u_0, u_1, ..., u_{n-1})$
+
+### Witness
+
+1. $\vec{a}$
+2. $(\rho_0, \rho_1, ..., \rho_{h-1})$
+
+### 证明协议
 
 #### Round 1
 
@@ -558,25 +574,25 @@ $$
 
 $$
 \begin{split}
-e_0 &= \tilde{eq}(\mathsf{bits}(0), u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1}) \\
-e_1 &= \tilde{eq}(\mathsf{bits}(1), u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1}) \\
+e_0 &= \tilde{eq}(\mathsf{bits}(0), \vec{u}_R) \\
+e_1 &= \tilde{eq}(\mathsf{bits}(1), \vec{u}_R) \\
 \cdots\ &=\quad \cdots \\
-e_{h-1} &= \tilde{eq}(\mathsf{bits}(h-1), u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1}) \\
+e_{h-1} &= \tilde{eq}(\mathsf{bits}(h-1), \vec{u}_R) \\
 \end{split}
 $$
 
-2. Prover 计算 $(u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1})$ 与 $M_a$ 的矩阵乘法，得到 $\vec{b}$，长度为 $l$
+2. Prover 计算 $\vec{e}$ 与 $M_a$ 的矩阵乘法，得到 $\vec{b}$，长度为 $l$
 
 $$
 \begin{split}
-b_0 &= (u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1}) \cdot (a_0, a_l, ..., a_{(h-1)l}) \\
-b_1 &= (u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1}) \cdot (a_1, a_{l+1}, ..., a_{(h-1)l+1}) \\
+b_0 &= \langle \vec{e}, (a_0, a_l, ..., a_{(h-1)l}) \rangle \\
+b_1 &= \langle \vec{e}, (a_1, a_{l+1}, ..., a_{(h-1)l+1}) \rangle \\
 \cdots\ &=\quad \cdots \\
-b_{l-1} &= (u_{\log(l)}, u_{\log(l)+1}, ..., u_{\log(l)+\log(h)-1}) \cdot (a_{l-1}, a_{l+l-1}, ..., a_{(h-1)l+l-1}) \\
+b_{l-1} &= \langle \vec{e}, (a_{l-1}, a_{l+l-1}, ..., a_{(h-1)l+l-1}) \rangle \\
 \end{split}
 $$
 
-2. Prover 计算 $\vec{b}$ 的承诺 $C^*$
+3. Prover 计算 $\vec{b}$ 的承诺 $C^*$
 
 $$
 C^* = \mathsf{cm}(\vec{b}; \rho^*)
@@ -584,66 +600,117 @@ $$
 
 #### Round 2. 
 
-Prover 和 Verifier 进行一个 Inner Product Argument 协议，完成 $\vec{b}$ 与 $\vec{d}$ 的内积证明。
+Prover 和 Verifier 进行一个 IPA 协议，完成 $\vec{b}$ 与 $\vec{d}$ 的内积证明，$\vec{d}$ 计算如下：
 
 $$
 \begin{split}
-d_0 &= \tilde{eq}(\mathsf{bits}(0), u_{0}, u_{1}, ..., u_{\log(l)-1}) \\
-d_1 &= \tilde{eq}(\mathsf{bits}(1), u_{0}, u_{1}, ..., u_{\log(l)-1}) \\
+d_0 &= \tilde{eq}(\mathsf{bits}(0), \vec{u}_L) \\
+d_1 &= \tilde{eq}(\mathsf{bits}(1), \vec{u}_L) \\
 \cdots\ &=\quad \cdots \\
-d_{h-1} &= \tilde{eq}(\mathsf{bits}(h-1), u_{0}, u_{1}, ..., u_{\log(l)-1}) \\
+d_{h-1} &= \tilde{eq}(\mathsf{bits}(h-1), \vec{u}_L) \\
 \end{split}
 $$
 
-1. Prover 先抽样一个随机数向量 $\vec{r}$，用来保护 $\vec{b}$ 的信息，然后计算它的承诺：
+1. Verifier 发送一个随机数 $\gamma$
+
+2. Prover 和 Verifier 计算 $U'\in\mathbb{G}$
 
 $$
-C_{r} = \mathsf{cm}(\vec{r}; \rho_{r})
+U' = \gamma\cdot U
 $$
 
-2. Prover 计算 $\vec{r}$ 与 $\vec{b}$ 的内积，得到 $v$
+#### Round 3 (Repeated $i=0, 1, ..., n-1$). 
+
+先引入下面的符号，比如 $\vec{b}_L$ 表示 $\vec{b}$ 的前半部分，$\vec{b}_R$ 表示 $\vec{b}$ 的后半部分。
 
 $$
-s = \vec{r}\cdot\vec{d}
+\begin{aligned} 
+\vec{b}^{(i)}_L &= (b^{(i)}_0, b^{(i)}_1, ..., b^{(i)}_{2^{n-1}-1}) \\
+\vec{b}^{(i)}_R &= (b^{(i)}_{2^{n-1}}, b^{(i)}_{2^{n-1}+1}, ..., b^{(i)}_{2^n-1}) \\
+\vec{d}^{(i)}_L &= (d^{(i)}_0, d^{(i)}_1, ..., d^{(i)}_{2^{n-1}-1}) \\
+\vec{d}^{(i)}_R &= (d^{(i)}_{2^{n-1}}, d^{(i)}_{2^{n-1}+1}, ..., d^{(i)}_{2^n-1}) \\
+\vec{G}^{(i)}_L &= (G^{(i)}_0, G^{(i)}_1, ..., G^{(i)}_{2^{n-1}-1}) \\
+\vec{G}^{(i)}_R &= (G^{(i)}_{2^{n-1}}, G^{(i)}_{2^{n-1}+1}, ..., G^{(i)}_{2^n-1}) \\
+\end{aligned}
+$$
+
+注意这里的初始值， $\vec{b}^{(0)} = \vec{b}$，$\vec{d}^{(0)} = \vec{d}$，$\vec{G}^{(0)}_L=\vec{G}_L$，$\vec{G}^{(0)}_R=\vec{G}_R$。
+
+1. Prover 发送 $L^{(i)}$ 与 $R^{(i)}$:
+
+$$
+\begin{aligned}
+L^{(i)} &= \mathsf{cm}_{\vec{G}^{(i)}_L}(\vec{b}^{(i)}; \rho^{(i)}_L) + \langle\vec{b}^{(i)}_R, \vec{d}^{(i)}_L\rangle\cdot{}U' \\
+R^{(i)} &= \mathsf{cm}_{\vec{G}^{(i)}_R}(\vec{b}^{(i)}; \rho^{(i)}_R) + \langle\vec{b}^{(i)}_L, \vec{d}^{(i)}_R\rangle\cdot{}U' \\
+\end{aligned}
 $$
 
 
+2. Verifier 发送一个随机数 $\mu^{(i)}$, 
+
+3. Prover 计算并发送下面的值：
+
 $$
-C_0 = \mathsf{cm}(s; \rho_s)
+\begin{aligned}
+\vec{b}^{(i+1)} &= \vec{b}^{i}_L + \mu^{(i)}\cdot\vec{b}^{i}_R \\
+\vec{d}^{(i+1)} &= \vec{d}^{i}_L + {\mu^{(i)}}^{-1}\cdot\vec{d}^{i}_R \\
+\end{aligned}
+$$
+
+4. Prover 和 Verifier 计算 $\vec{G}^{(i+1)}$
+
+$$
+\begin{aligned}
+\vec{G}^{(i+1)} &= \vec{G}^{(i)}_L + {\mu^{(i)}}^{-1}\cdot\vec{G}^{(i)}_R \\
+\end{aligned}
+$$ 
+
+5. Prover 和 Verifier 递归地进行 Round 3，直到 $i=n-1$
+
+6. Prover 计算
+
+$$
+\hat{\rho} = \rho^* + \sum_{i=0}^{n-1}\mu^{(i)}\cdot\rho^{(i)}_L + {\mu^{(i)}}^{-1}\cdot\rho^{(i)}_R
+$$
+
+#### Round 4.
+
+1. Prover 计算并发送 $R$，其中 $r, \rho_r\in\mathbb{F}_p$ 为 Prover 随机抽样的随机数
+
+$$
+R = r\cdot(G^{(n-1)} + b^{(n-1)}\cdot{U'}) + \rho_r\cdot{}H
+$$
+
+#### Round  5.
+
+1. Verifier 发送一个随机数 $\zeta\in\mathbb{F}_p$
+
+2. Prover 计算 $z$ 与 $z_r$
+
+$$
+z = r + \zeta\cdot b^{(n-1)}
 $$
 
 $$
-C_1 = \mathsf{cm}(0; \rho_t)
-$$
-
-#### Round 3.
-
-1. Verifier 发送一个随机数 $\mu$
-
-2. Prover 计算并发送下面的值：
-
-$$
-\vec{z_b} = \vec{r} + \mu\cdot\vec{b}
-$$
-
-$$
-z_\rho = \rho_r + \mu\cdot\rho^*
-$$
-
-$$
-z_t = \rho_s + \mu^{-1}\cdot\rho_t
+z_r = \rho_r + \zeta\cdot\hat{\rho}
 $$
 
 #### Verification
 
-Verifier 验证：
+1. Verifier 计算 $C^*$ 与 $P$
 
 $$
-C_r + \mu\cdot{}C^*\overset{?}{=} \mathsf{cm}(\vec{z_b}; z_\rho)
+C^* = d_0C_0 + d_1C_1 + ... + d_{h-1}C_{h-1}
 $$
 
 $$
-C_0 + \mu^{-1}\cdot{}C_1 + \mu\cdot\mathsf{cm}(v; 0)\overset{?}{=} \mathsf{cm}(\langle\vec{z}_b, \vec{d}\rangle; z_t)
+P = C^* + \sum_{i=0}^{n-1}\mu^{(i)}L^{(i)} + {\mu^{(i)}}^{-1}R^{(i)}
+$$
+
+2. Verifier 验证下面的等式是否成立
+
+$$
+R + \zeta\cdot P \overset{?}{=} z\cdot (G^{(n-1)} + b^{(n-1)}\cdot{U'}) + z_r\cdot{}H
 $$
 
 
