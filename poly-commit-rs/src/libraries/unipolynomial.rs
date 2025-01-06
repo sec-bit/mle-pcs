@@ -547,10 +547,10 @@ mod tests {
 
         // Expected subproduct tree
         let expected_tree = SubproductTree {
-            poly: vec![1, -10, 35, -50, 24], // (x - 1)(x - 2)(x - 3)(x - 4)
+            poly: vec![24, -50, 35, -10, 1], // (x - 1)(x - 2)(x - 3)(x - 4)
             children: Some(Box::new((
                 SubproductTree {
-                    poly: vec![1, -3, 2], // (x - 1)(x - 2)
+                    poly: vec![2, -3, 1], // (x - 1)(x - 2)
                     children: Some(Box::new((
                         SubproductTree {
                             poly: vec![-1, 1], // x - 1
@@ -563,7 +563,7 @@ mod tests {
                     ))),
                 },
                 SubproductTree {
-                    poly: vec![1, -7, 12], // (x - 3)(x - 4)
+                    poly: vec![12, -7, 1], // (x - 3)(x - 4)
                     children: Some(Box::new((
                         SubproductTree {
                             poly: vec![-3, 1], // x - 3
@@ -586,7 +586,7 @@ mod tests {
         // Input domain and polynomial
         let domain = vec![1, 2, 3, 4];
         let tree = UniPolynomial::construct_subproduct_tree(&domain);
-        let poly = vec![1, 0, -1]; // x^2 - 1
+        let poly = vec![-1, 0, 1]; // x^2 - 1
 
         // Compute evaluations
         let evals = UniPolynomial::compute_eval_fix(&tree, &poly, &domain);
