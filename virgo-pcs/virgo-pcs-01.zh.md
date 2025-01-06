@@ -9,7 +9,7 @@ Virgo 是一个基于 GKR 协议的 zkSNARK 证明系统，与 Libra 不同的�
 对于任意的 MLE 多项式，$\tilde{f}(X_0, X_1, \cdots, X_{n-1})$，其可以表示为下面的系数形式（或 Monomial 形式）：
 
 $$
-\tilde{f}(X_0, X_1, \cdots, X_{n-1}) = \sum_{i=0}^{n-1} c_i\cdot X_0^{i_0}X_1^{i_1}\cdots{}X_{n-1}^{i_{n-1}}
+\tilde{f}(X_0, X_1, \cdots, X_{n-1}) = \sum_{i=0}^{2^{n}-1} c_i\cdot X_0^{i_0}X_1^{i_1}\cdots{}X_{n-1}^{i_{n-1}}
 $$
 
 其中，$\vec{c}=(c_0, c_1, \cdots, c_{2^n-1})$ 是系数向量，$\mathsf{bits}(i)=(i_0, i_1, \cdots, i_{n-1})$ 是 $i$ 的二进制表示（Little Endian）。
@@ -17,7 +17,7 @@ $$
 那么如果我们考虑如何证明该多项式在一个给定点 $\vec{u}=(u_0, u_1, \cdots, u_{n-1})$ 的运算取值，即 $\tilde{f}(\vec{u})=v$，那么我们只需要证明下面的「求和式」即可：
 
 $$
-\sum_{i=0}^{n-1} c_i\cdot u_0^{i_0}u_1^{i_1}\cdots{}u_{n-1}^{i_{n-1}} = v
+\sum_{i=0}^{2^n - 1} c_i\cdot u_0^{i_0}u_1^{i_1}\cdots{}u_{n-1}^{i_{n-1}} = v
 $$
 
 Virgo-PCS 的思路与 PH23-PCS 类似，采用一个 Univariate Sumcheck 协议来证明上面的求和式。即 Prover 先承诺 $\vec{c}$，然后通过下面的 Univariate Sumcheck 公式来证明：
@@ -26,7 +26,7 @@ $$
 c(X)\cdot{}m(X) = h(X)\cdot v_{\mathbb{H}}(X) + X\cdot g(X) + \frac{v}{N}
 $$
 
-这里的 $m(X)$ 编码了 $\vec{m}=(m_0, m_1, \cdots, m_{2^n-1})$ 向量：
+其中 $\mathbb{H}$ 是有限域 $\mathbb{F}_{p}$ 中的一个乘法子群，其大小为 $N = |\mathbb{H}| = 2^n$ ，而 $v_{\mathbb{H}}= \prod_{x \in \mathbb{H}}(X - x)$ 是 $\mathbb{H}$ 中的 vaishing polynomial。这里的 $m(X)$ 编码了 $\vec{m}=(m_0, m_1, \cdots, m_{2^n-1})$ 向量：
 
 $$
 m_i = u_0^{i_0}u_1^{i_1}\cdots{}u_{n-1}^{i_{n-1}}
@@ -38,7 +38,43 @@ $$
 g(X) = \frac{N\cdot c(X)\cdot m(X) - N\cdot h(X)\cdot v_{\mathbb{H}}(X) - v}{N\cdot X}
 $$
 
-显然，只要我们能证明 $\deg(g)<N-1$，那么我们就证明了 $\sum_{i=0}^{n-1} c_i\cdot m_i = v$。
+显然，只要我们能证明 $\deg(g)<N-1$，那么我们就证明了 $\sum_{i=0}^{2^n - 1} c_i\cdot m_i = v$。
+
+这里解释下是如何将证明上面的「求和式」转换为证明 $\deg(g)<N-1$ 。为了证明 $\sum_{i=0}^{2^n - 1} c_i\cdot m_i = v$ ，首先可以将 $c_i$ 与 $m_i$ 用多项式 $c(X)$ 与 $m(X)$ 在 $\mathbb{H}$ 上进行编码，进而转换为证明
+
+$$
+\sum_{x \in \mathbb{H}} c(x) \cdot m(x) = v
+$$
+
+并且 $c(X) \cdot m(X)$ 的次数为 $N - 1 + N - 1 = 2N - 2$ 。对 $c(X) \cdot m(X)$ 进行分解可以得到
+
+$$
+c(X) \cdot m(X) = g'(X) + h(X) \cdot v_{\mathbb{H}}(X)
+$$
+
+其中 $\deg(h(X)) < 2N - 1 - N = N - 1$ ，$\deg(g'(X)) < N$ 。因此「求和式」证明可以转换为证明
+
+$$
+\sum_{x \in \mathbb{H}} c(x) \cdot m(x)  = \sum_{x \in \mathbb{H}} (g'(x) + h(x) \cdot v_{\mathbb{H}}(x)) = \sum_{x \in \mathbb{H}} g'(x) =  g'(0) \cdot N = v
+$$
+
+上面倒数第二个等式是由下面这个引理得到的。
+
+> **引理** ([BC99]) 令 $\mathbb{H}$ 为 $\mathbb{F}$ 的乘法陪集，$g(X)$ 是 $\mathbb{F}$ 上一个次数严格小于 $|\mathbb{H}|$ 的单变量多项式，那么 $\sum_{x \in \mathbb{H}}g(x) = g(0) \cdot |\mathbb{H}|$ 。
+
+现在只需要证明 $\deg(g') < N$ 以及 $g'(0) = v/N$ 即可。这可以转换为证明多项式
+
+$$
+\frac{g'(X) - g'(0)}{X - 0} = \frac{g'(X) - v/N}{X - 0} = \frac{N \cdot g'(X) - v}{N \cdot X}
+$$
+
+的次数小于 $N - 1$ ，上面的多项式即为
+
+$$
+g(X) = \frac{N\cdot c(X)\cdot m(X) - N\cdot h(X)\cdot v_{\mathbb{H}}(X) - v}{N\cdot X}
+$$
+
+至此证明「求和式」就转换为了证明 $\deg(g) < N - 1$ 。
 
 这个思路整体上没有问题，但是 Verifier 需要 $O(N)$ 的工作量，因为他要计算 $m(X)$ 在 $\kappa$ 个抽样点的取值。而 $m(X)$ 必须是一个公开的由 $\vec{u}$ 计算得到的向量。
 
@@ -54,14 +90,14 @@ Virgo 论文认为计算 $m(X)$ 在一个点的取值可以利用一个 GKR 协�
 
 4. 根据 Verifier 提供的 FRI-Query 索引集合 $Q$，过滤出 $m(X)$ 在 $\{\mathbb{L}_i\}_{i\in Q}$ 上的取值。
 
-由于这个 GKR 协议的所有计算都是基于公开值，并且电路的输入长度为 $n=\log(N)$，并且电路的深度为 $\log(N)$，电路的宽度为 $|\mathbb{L}|=\rho\cdot N$，因此 Verifier 的计算量仅为 $O(\log^2(N))$ 即可完成验证。
+由于这个 GKR 协议的所有计算都是基于公开值，并且电路的输入长度为 $n=\log(N)$，并且电路的深度为 $\log(N)$，电路的宽度为 $|\mathbb{L}|=N / \rho$，因此 Verifier 的计算量仅为 $O(\log^2(N))$ 即可完成验证。
 
 ## 2. 简化协议
 
 ### 协议参数
 
 1. Domain $\mathbb{H}$ 为素数域 $\mathbb{F}_p$ 的乘法子群，大小为 $N=2^n$。
-2. Extended Domain $\mathbb{L}\subset\mathbb{F}_p$ 为大小为 $|\mathbb{L}|=\rho\cdot N$ 的乘法子群 Coset。
+2. Extended Domain $\mathbb{L}\subset\mathbb{F}_p$ 为大小为 $|\mathbb{L}|=N / \rho$ 的乘法子群 Coset，其中 $\rho$ 表示码率。
 
 ### 承诺计算
 
@@ -87,7 +123,7 @@ $$
 m(X) = m_0\cdot L_{0}(X) + m_1\cdot L_{1}(X) + \cdots + m_{N-1}\cdot L_{N-1}(X)
 $$
 
-2. 构造 $h(X)$，并计算其承诺 $C_h$
+2. 构造 $h(X)$，并计算其承诺 $C_h$ ，其中 $h(X)$ 满足下面这样的等式
 
 $$
 h(X) = \frac{c(X)\cdot m(X) - X\cdot g(X) - v/N}{v_{\mathbb{H}}(X)}
@@ -96,7 +132,6 @@ $$
 $$
 C_h = \mathsf{MerkleTree.Commit}(h|_{\mathbb{L}})
 $$
-
 #### Round 2.
 
 Prover 和 Verifier 通过 FRI 协议证明 $g(X)$ 的存在性。在协议的 Query 阶段，Verifier 提供一个索引集合 $Q$，Prover 计算 $c(X)$，$h(X)$ 在 $\{x_i\}_{i\in Q}$ 上的取值：
@@ -196,7 +231,7 @@ $$
 v^* = v + \alpha\cdot v'
 $$
 
-2. Prover 构造 $h(X)$，并计算其承诺 $C_h$
+2. Prover 构造 $h(X)$，并计算其承诺 $C_h$ ，$h(X)$ 满足
 
 $$
 h(X) = \frac{c^*(X)\cdot m(X) + \alpha\cdot s(X) - X\cdot g(X) - v^*/N}{v_{\mathbb{H}}(X)}
@@ -228,7 +263,7 @@ $$
 \{(h(a_i), \pi_{h}(a_i))\} \leftarrow \mathsf{MerkleTree.Open}(i, h(X)|_{\mathbb{L}}), \quad \forall i\in Q
 $$
 
-#### Round 6.
+#### Round 5.
 
 Prover 和 Verifier 运行 GKR 协议，计算 $m|_{\mathbb{L}}$ 的取值，并输出 $\{m|_{a_i}\}_{i\in Q}$ 的取值，这里 $a_i$ 是乘法子群 $\mathbb{L}$ 中第 $i$ 个元素。
 
@@ -260,3 +295,4 @@ Virgo-PCS 是最早利用 MLE-to-Univariate 的思路来构造多项式承诺的
 1. [ZXZS19] Jiaheng Zhang, Tiancheng Xie, Yupeng Zhang, and Dawn Song. "Transparent Polynomial Delegation and Its Applications to Zero Knowledge Proof". In 2020 IEEE Symposium on Security and Privacy (SP), pp. 859-876. IEEE, 2020. https://eprint.iacr.org/2019/1482.
 2. [PH23] Papini, Shahar, and Ulrich Haböck. "Improving logarithmic derivative lookups using GKR." Cryptology ePrint Archive (2023). https://eprint.iacr.org/2023/1284.
 3. [BCRSVW19] Eli Ben-Sasson, Alessandro Chiesa, Michael Riabzev, Nicholas Spooner, Madars Virza, and Nicholas P. Ward. "Aurora: Transparent succinct arguments for R1CS." Advances in Cryptology–EUROCRYPT 2019: 38th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Darmstadt, Germany, May 19–23, 2019, Proceedings, Part I 38. Springer International Publishing, 2019. https://eprint.iacr.org/2018/828.
+4. [BC99] Byott, Nigel P., and Robin J. Chapman. "Power sums over finite subspaces of a field." _Finite Fields and Their Applications_ 5, no. 3 (1999): 254-265.
