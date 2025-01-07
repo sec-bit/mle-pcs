@@ -1,16 +1,14 @@
 # 缺失的协议 PH23-PCS（一）
 
-在 Improving logarithmic derivative lookups using
-GKR （[PH23]） 论文中， 作者给出了一个将 MLE 转成 Univariate Polynomial 的思路，虽然论文没有给出完整的协议描述，但是这个协议也展示了在某些特性方面的优势，比如可以支持任意偏移的 Shift Argument。
-这个方案的主要优势是能支持任意的 Shift Argument（见论文 Appendix A.2）。其次，如果对接 KZG10，那么这个 PCS Adaptor 
-的证明仅仅包含常数个 $\mathbb{G}_1$ 元素，和对数个 $\mathbb{F}_r$ 元素。这要优于 Gemini-PCS 与 Zeromorph-PCS
-（KT23），后者需要对数个 $\mathbb{G}_1$ 元素。
+在 Improving logarithmic derivative lookups using GKR （[PH23]） 论文中， 作者给出了一个将 MLE 转成 Univariate Polynomial 的思路，虽然论文没有给出完整的协议描述，但是这个协议也展示了在某些特性方面的优势，比如可以支持任意偏移的 Shift Argument。
+
+这个方案的主要优势是能支持任意的 Shift Argument（见论文 Appendix A.2）。其次，如果对接 KZG10，那么这个 PCS Adaptor 的证明仅仅包含常数个 $\mathbb{G}_1$ 元素，和对数个 $\mathbb{F}_r$ 元素。这要优于 Gemini-PCS 与 Zeromorph-PCS（KT23），后者需要对数个 $\mathbb{G}_1$ 元素。
 
 这个协议的思路与 Virgo-PCS 有类似之处，都是将 MLE 的多项式运算看成是一个求和，并且都是利用 Univariate Sumcheck 协议来完成「求和证明」。但是 PH23-PCS 还要求 Prover 证明 MLE Lagrange Polynomial 在求值点上的值，从而减轻 Verifier 的负担；而 Virgo-PCS 则利用了 GKR 协议来做到这一点。另一个不同之处是，Virgo-PCS 要求 MLE 多项式需要是一个 Coefficient Form 的表示，因此 Virgo-PCS 利用 GKR 电路来完成 MLE 多项式由 Evaluation Form 到 Coefficient Form 的转换的计算正确性的证明。
 
 这个文章系列补全了 [PH23] 论文中关于 PH23-PCS 的描述，并给出了 PH23-KZG10 的一个简化协议来帮助大家理解这个协议的基本思路。
 
-本文先详细介绍 PH23-PCS-Adaptor 的基础 原理，然后给出 PH23-KZG10 的一个简单协议实现。
+本文先详细介绍 PH23-PCS-Adaptor 的基础原理，然后给出 PH23-KZG10 的一个简单协议实现。
 
 ## 1. 原理概述
 
@@ -226,13 +224,14 @@ $$
 
 那么 $\langle \vec{a}, \vec{c}\rangle = v$。
 
-Prover 可以发送 $q(X)$ 与 $g(X)$ 的承诺，然后 Verifier 通过挑战 $\zeta$ ，Prover 发送相关多项式在 $X=\\zeta$ 的取值，然后 Verifier 验证上面等式是否成立：
+Prover 可以发送 $q(X)$ 与 $g(X)$ 的承诺，然后 Verifier 通过挑战 $\zeta$ ，Prover 发送相关多项式在 $X=\zeta$ 的取值，然后 Verifier 验证上面等式是否成立：
 
 $$
 a(\zeta)\cdot c(\zeta) \overset{?}{=} q(\zeta)\cdot v_H(\zeta) + \zeta\cdot g(\zeta) + (v/N)
 $$
 
 Prover 和 Verifier 再通过一个一元多项式承诺方案，比如 KZG10 来证明 $a(\zeta), c(\zeta), q(\zeta), g(\zeta)$ 的正确性。
+
 同时通过 KZG10 协议还可以证明 $g(X)$ 的 Degree Bound，即 $\deg(g(X))\lt N-1$。
 
 ### Grand Sum
@@ -294,7 +293,7 @@ $$
 \begin{aligned}
 p_0(X) = &s_0(X)\cdot \big(c(X) - (1-u_0)(1-u_1)\cdots(1-u_{n-1})\big)      \\
 p_1(X) = &s_0(X)\cdot \big(c(X)u_{n-1} - c(\omega^{2^{n-1}}\cdot X)(1-u_{n-1})\big) \\
-p_2(X) = &s_1(X)\cdot \big(c(X)u_1 - c(\omega^{2^{n-2}}\cdot X)(1-u_1)\big)  \\
+p_2(X) = &s_1(X)\cdot \big(c(X)u_{n-2} - c(\omega^{2^{n-2}}\cdot X)(1-u_{n-2})\big)  \\
 \cdots & \quad\cdots \\
 p_{n}(X) = &s_{n-1}(X)\cdot \big(c(X)u_0 - c(\omega\cdot X)(1-u_0)\big) \\
 \end{aligned}
@@ -304,9 +303,9 @@ $$
 
 $$
 \begin{aligned}
-h_1(X) = &L_0(X)\cdot\big(z(X) - a_0\cdot c_0\big) \\
-h_2(X) = &(X-1)\cdot\big(z(X)-z(\omega^{-1}\cdot X)-a(X)\cdot c(X)) \\
-h_3(X) = &L_{N-1}(X)\cdot\big( z(X) - v \big) \\
+h_0(X) = &L_0(X)\cdot\big(z(X) - a_0\cdot c_0\big) \\
+h_1(X) = &(X-1)\cdot\big(z(X)-z(\omega^{-1}\cdot X)-a(X)\cdot c(X)) \\
+h_2(X) = &L_{N-1}(X)\cdot\big( z(X) - v \big) \\
 \end{aligned}
 $$
 
@@ -324,12 +323,12 @@ $$
 h(X) = t(X) \cdot v_H(X)
 $$
 
-然后 Verifier 挑战一个随机点 $\zeta$，要求 Prover 计算并发送 $f(X)$，$c(X)$ 以及 $z(X)$ $t(X)$ 在 $\zeta$ 处的取值，以及 $z(X)$ 在 $X=\zeta\cdot\omega^{-1}$ 处的取值，还有 $c(X)$ 在 $X=\zeta\cdot\omega, \zeta\cdot\omega^2, \ldots, \zeta\cdot\omega^{2^{n-1}}$ 处的取值。并提供这些求值的 KZG10 Evaluation 证明 $\pi_{kzg10}$。
+然后 Verifier 挑战一个随机点 $\zeta$，要求 Prover 计算并发送 $a(X)$，$c(X)$ 以及 $z(X)$ $t(X)$ 在 $\zeta$ 处的取值，以及 $z(X)$ 在 $X=\zeta\cdot\omega^{-1}$ 处的取值，还有 $c(X)$ 在 $X=\zeta\cdot\omega, \zeta\cdot\omega^2, \ldots, \zeta\cdot\omega^{2^{n-1}}$ 处的取值。并提供这些求值的 KZG10 Evaluation 证明 $\pi_{kzg10}$。
 
 $$
 \begin{split}
-\pi_e &= \big(f(\zeta), c(\zeta), c(\zeta\cdot\omega), c(\zeta\cdot\omega^2), \ldots, c(\zeta\cdot\omega^{2^{n-1}}), z(\zeta), z(\zeta\cdot\omega^{-1}), t(\zeta)\big) \\
-\pi_{kzg10} &= \big(\pi_{f(\zeta)}, \pi_{c(\zeta)}, \pi_{c(\zeta\cdot\omega)}, \pi_{c(\zeta\cdot\omega^2)}, \ldots, \pi_{c(\zeta\cdot\omega^{2^{n-1}})}, \pi_{z(\zeta)}, \pi_{z(\zeta\cdot\omega^{-1})}, \pi_{t(\zeta)}\big)
+\pi_e &= \big(a(\zeta), c(\zeta), c(\zeta\cdot\omega), c(\zeta\cdot\omega^2), \ldots, c(\zeta\cdot\omega^{2^{n-1}}), z(\zeta), z(\zeta\cdot\omega^{-1}), t(\zeta)\big) \\
+\pi_{kzg10} &= \big(\pi_{a(\zeta)}, \pi_{c(\zeta)}, \pi_{c(\zeta\cdot\omega)}, \pi_{c(\zeta\cdot\omega^2)}, \ldots, \pi_{c(\zeta\cdot\omega^{2^{n-1}})}, \pi_{z(\zeta)}, \pi_{z(\zeta\cdot\omega^{-1})}, \pi_{t(\zeta)}\big)
 \end{split}
 $$
 
@@ -483,7 +482,7 @@ Prover:
 1. 构造 Selector 多项式 $s_0(X), s_1(X), \ldots, s_{n-1}(X)$ 
 
 $$
-s_i(X) = \frac{v_H(X)}{z_{H_i}(X)} = \frac{X^n-1}{X^{2^i}-1}, \qquad i=0,1,\ldots, n-1
+s_i(X) = \frac{v_H(X)}{z_{H_i}(X)} = \frac{X^{2^n}-1}{X^{2^i}-1}, \qquad i=0,1,\ldots, n-1
 $$
 
 2. 构造 $\vec{c}$ 的约束多项式 $p_0(X),\ldots, p_{n-1}(X)$
@@ -492,7 +491,7 @@ p_0(X) = s_0(X) \cdot \Big( c(X) - (1-u_0)(1-u_1)...(1-u_{n-1}) \Big)
 $$
 
 $$
-p_k(X) = s_{k-1}(X) \cdot \Big( u_{n-k}\cdot c(X)   - (1-u_{n-k})\cdot c(\omega^k\cdot X)\Big), \qquad k = 1\ldots n
+p_k(X) = s_{k-1}(X) \cdot \Big( u_{n-k}\cdot c(X)   - (1-u_{n-k})\cdot c(\omega^{2^{n-k}}\cdot X)\Big), \qquad k = 1\ldots n
 $$
 
 3. 构造累加多项式 $z(X)$ ，满足
@@ -552,7 +551,7 @@ $$
 它的陪集 $D'=\zeta D$ 是 Prover 要计算 $c(X)$ 的求值点的集合。
 
 $$
-D'=\zeta D = \{\zeta\omega, \zeta\omega^2,\zeta\omega^4, \ldots, \zeta\omega^{2^{n-1}}, 1\}
+D'=\zeta D = \{\zeta\omega, \zeta\omega^2,\zeta\omega^4, \ldots, \zeta\omega^{2^{n-1}}, \zeta\}
 $$
 
 3. 计算 $c(\zeta\cdot\omega), c(\zeta\cdot\omega^2), c(\zeta\cdot\omega^4), \ldots, c(\zeta\cdot\omega^{2^{n-1}})$, $c(\zeta)$ 
@@ -584,6 +583,8 @@ c(\zeta), c(\zeta\cdot\omega), c(\zeta\cdot\omega^2), \ldots, c(\zeta\cdot\omega
 \end{array}\right)
 $$
 
+Verifier 先计算出  $s_0(\zeta), \ldots, s_{n-1}(\zeta)$ ，$v_H(\zeta)$ ，$L_0(\zeta), L_{N-1}(\zeta)$ 。
+
 Verifier 需要验证下面的等式，来完成对多项式 $a(X)$, $c(X)$, $t(X)$, $z(X)$ 多项式的求值证明的验证过程：
 
 $$
@@ -603,10 +604,10 @@ $$
 Verifier 用多项式在 $X=\zeta$ 处的取值来验证下面的约束等式：
 
 $$
-t(\zeta)\cdot v_H(\zeta) \overset{?}{=} \Big(\sum_{i=0}^{n} \alpha^i\cdot p_i(\zeta)\Big) + \alpha^{n+1}\cdot h_1(\zeta) + \alpha^{n+2}\cdot h_2(\zeta) + \alpha^{n+3}\cdot h_3(\zeta)
+t(\zeta)\cdot v_H(\zeta) \overset{?}{=} \Big(\sum_{i=0}^{n} \alpha^i\cdot p_i(\zeta)\Big) + \alpha^{n+1}\cdot h_0(\zeta) + \alpha^{n+2}\cdot h_1(\zeta) + \alpha^{n+3}\cdot h_2(\zeta)
 $$
 
-这里 $p_0(\zeta),\ldots, p_{n}(\zeta), h_1(\zeta), h_2(\zeta), h_3(\zeta)$ 的定义如下：
+这里 $p_0(\zeta),\ldots, p_{n}(\zeta), h_0(\zeta), h_1(\zeta), h_2(\zeta)$ 的定义如下：
 
 $$
 \begin{split}
@@ -615,19 +616,18 @@ p_1(\zeta) &= s_0(\zeta)\cdot \big(c(\zeta)u_{n-1} - c(\omega^{2^{n-1}}\cdot\zet
 p_2(\zeta) &= s_1(\zeta)\cdot \big(c(\zeta)u_1 - c(\omega^{2^{n-2}}\cdot\zeta)(1-u_1)\big) \\
 \cdots \\
 p_{n}(\zeta) &= s_{n-1}(\zeta)\cdot \big(c(\zeta)u_0 - c(\omega\cdot\zeta)(1-u_0)\big) \\
-h_1(\zeta) &= L_0(\zeta)\cdot\big(z(\zeta) - a_0\cdot c_0\big) \\
-h_2(\zeta) &= (\zeta-1)\cdot\big(z(\zeta)-z(\zeta\omega^{-1})-a(\zeta)\cdot c(\zeta)\big) \\
-h_3(\zeta) &= L_{N-1}(\zeta)\cdot\big( z(\zeta) - v \big) \\
+h_0(\zeta) &= L_0(\zeta)\cdot\big(z(\zeta) - a_0\cdot c_0\big) \\
+h_1(\zeta) &= (\zeta-1)\cdot\big(z(\zeta)-z(\zeta\omega^{-1})-a(\zeta)\cdot c(\zeta)\big) \\
+h_2(\zeta) &= L_{N-1}(\zeta)\cdot\big( z(\zeta) - v \big) \\
 \end{split}
 $$
 
-其中 $v_H(\zeta)$ ，$L_0(\zeta), L_{N-1}(\zeta)$ 由 Verifier 自行计算。
 
 ## 总结
 
 PH23 PCS Adaptor 是将 MLE 多项式的 Evaluations 映射到一个一元多项式的 Evaluations，然后再利用「求和证明」来保证 MLE 多项式运算的正确性。
 
-我们将在后续文章优化和改进这个协议
+我们将在后续文章优化和改进这个协议。
 
 ## References
 
