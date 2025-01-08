@@ -78,7 +78,7 @@ $$
 \langle\vec{f}, \otimes_{j=0}^{2}(1,\rho_j) \rangle =  \langle\vec{f}_1, \otimes_{j=1}^{2}(1,\rho_j) \rangle + \rho_0 \langle\vec{f}_2, \otimes_{j=1}^{2}(1,\rho_j) \rangle
 $$
 
-Note that in these two subproblems, the right elements of the inner product are the same: both are $\otimes_{j=0}^1 (1,\rho_j)$, so they can be further combined into one $\langle\vec{f}_1 + \rho_0 \vec{f}_2, \otimes_{j=1}^{2}(1,\rho_j) \rangle$.
+Note that in these two subproblems, the right elements of the inner product are the same: both are $\otimes_{j=1}^2 (1,\rho_j)$, so they can be further combined into one $\langle\vec{f}_1 + \rho_0 \vec{f}_2, \otimes_{j=1}^{2}(1,\rho_j) \rangle$.
 
 It can be seen that for a vector $\vec{f}$ of length $N$, we divide it into two vectors of length $N/2$, and then combine them into one vector. Through this round of operation, we turn a tensor product problem of size $N$ into a problem of size $N/2$.
 
