@@ -72,13 +72,13 @@ If the value of $f(X)$ at $X=z$ is not equal to $r$, then $q(X)$ is not a polyno
 Therefore, the Prover only needs to send the commitment of $q(X)$ to prove the existence of $q(X)$ to the Verifier, which is equivalent to proving that the evaluation of $f(X)$ is correct.
 
 $$
-\pi_{eval} = q_0 \cdot [1]_1 + q_1 \cdot [\tau]_1 + \cdots + q_d \cdot [\tau^d]_1 = [q(\tau)]_1
+\pi_{eval} = q_0 \cdot [1]_1 + q_1 \cdot [\tau]_1 + \cdots + q_{d-1} \cdot [\tau^{d-1}]_1 = [q(\tau)]_1
 $$
 
 Then the Verifier uses the Base elements provided by SRS to check the correctness of the decomposition formula. For the Verifier, $f(z)$ and $z$ are public, so the Verifier can check the decomposition formula through the following formula:
 
 $$
-e\Big({\color{red}[f(\tau)]} - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) = e\Big({\color{red}[q(\tau)]},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
+e\Big({\color{red}[f(\tau)]_1} - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) = e\Big({\color{red}[q(\tau)]_1},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
 $$
 
 The red parts in the above formula are provided by the Prover and do not expose the values inside $[\cdot]_1$.
@@ -175,13 +175,13 @@ We denote the commitment of $q(X)$ with the blinding factor added as the short s
 Continuing to recall, the Verifier of Non-hiding KZG10 needs to check the following equation to verify the commitment of $q(X)$:
 
 $$
-e\Big({\color{red}[f(\tau)]} - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) = e\Big({\color{red}[q(\tau)]},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
+e\Big({\color{red}[f(\tau)]_1} - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) = e\Big({\color{red}[q(\tau)]_1},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
 $$
 
 However, in Hiding-KZG10, since both the polynomial commitment $\mathsf{cm}(f)$ and the quotient polynomial commitment $\mathsf{cm}(q)$ have blinding factors, the Verifier can no longer complete the verification according to the above Pairing equation:
 
 $$
-e\Big([f(\tau) + {\color{red}r\cdot\gamma}] - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) \neq e\Big([q(\tau)+{\color{red}s\cdot\gamma}],\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
+e\Big([f(\tau) + {\color{red}r\cdot\gamma}]_1 - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) \neq e\Big([q(\tau)+{\color{red}s\cdot\gamma}]_1,\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
 $$
 
 Let's reason why the above equation doesn't hold. First, look at the left side of the equation, which is equivalent to calculating
