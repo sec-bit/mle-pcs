@@ -729,17 +729,17 @@ $$
 \end{aligned}
 $$
 
-<!-- 错误的思路：
+<!-- 错误的思路： -->
 
-根据定理条件知 $\rho |L^{(0)}| > 16$ ，则
+<!-- 根据定理条件知 $\rho |L^{(0)}| > 16$ ，则 -->
 
-$$
+<!-- $$
 \rho |L^{(0)}| > 16 \Rightarrow \frac{1}{\rho |L^{(0)}|} < \frac{1}{16} \Rightarrow \frac{1}{\rho} < \frac{|L^{(0)}|}{16}
-$$
+$$ -->
 
-因此
+<!-- 因此 -->
 
-$$
+<!-- $$
 \begin{aligned}
 	\log(\rho|L^{(0)}| )  \cdot \sqrt{|L^{(0)}|/\rho} & < \log(\rho|L^{(0)}| ) \cdot \sqrt{|L^{(0)}| \cdot \frac{|L^{(0)}|}{16}}\\
 	& < \log(\rho|L^{(0)}| ) \cdot \frac{|L^{(0)}|}{4} \\
