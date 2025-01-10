@@ -1,7 +1,10 @@
 #!/bin/bash
 # Will export all markdown files to PDF files using Typora on MacOS
+
+count=0
+
 # Find all markdown files (both .md and .markdown extensions) and sort them
-find . -type f \( -name "*.md" -o -name "*.markdown" \) | sort | while read -r file; do
+for file in $(find . -type f \( -name "*.md" -o -name "*.markdown" \) | sort); do
     # Skip files in .git directory
     if [[ "$file" == *".git"* ]]; then
         continue
@@ -17,6 +20,7 @@ find . -type f \( -name "*.md" -o -name "*.markdown" \) | sort | while read -r f
 
     echo "Processing: $file"
     ./export-pdf.sh "$file"
+    ((count++))
 done
 
-echo "All markdown files have been processed."
+echo "Processed $count markdown files."
