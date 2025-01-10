@@ -10,10 +10,11 @@ for file in $(find . -type f \( -name "*.md" -o -name "*.markdown" \) | sort); d
         continue
     fi
 
-    # Skip blacklisted files
+    # Skip some files
     if [[ "$file" == *"README.md"* ||
           "$file" == *"CONTRIBUTING.md"* ||
           "$file" == *"mle_div.md"* ||
+          "$file" == *"reversed-bit-order.md"* ||
           "$file" == *"mmcs/interpretions/src"* ]]; then
         continue
     fi
