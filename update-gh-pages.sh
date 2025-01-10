@@ -15,30 +15,16 @@ find . -name "*.pdf" -type f ! -path "./publications/*" | while read file; do
 done
 echo "Moved PDF files to temporary directory"
 
-# Stash any changes in current branch
-git stash push
-
 # Switch to gh-pages branch
 git checkout gh-pages
 
+echo "Switched to gh-pages branch"
+
 # Copy all PDF files from temporary directory preserving structure
+echo "Restoring PDF files from temporary directory"
+echo "You may need to delete some old files manually if directory structure or filename has changed"
 cp -r "$tmp_dir"/. .
 
-# Add all PDFs
-git add ./**/*.pdf
-
-# Move back PDF files from temporary directory preserving structure
-cp -r "$tmp_dir"/. .
-rm -rf "$tmp_dir"
 echo "Restored PDF files from temporary directory"
 
-# # Create commit with timestamp
-git commit -m "Update PDFs from main branch ($(date '+%Y-%m-%d %H:%M:%S'))"
-
-# # Switch back to original branch
-git checkout -
-
-# # Pop stashed changes if any
-git stash pop
-
-echo "PDF files have been updated in gh-pages branch"
+echo "Now commit those PDF files yourself"
