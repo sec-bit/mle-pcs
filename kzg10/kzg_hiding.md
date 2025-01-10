@@ -255,61 +255,35 @@ $$
 
 Readers can verify for themselves why the above equation holds.
 
-<!-- ### Evaluation-with-degree-Bound Proof
-
-Suppose that for the same Polynomial $f(X)$, the Prover needs to simultaneously prove both the Evaluation and the Degree Bound of $f(X)$. If we were to use the above Evaluation and Degree Bound proof protocols separately, the Prover would need to send two elements of $\mathbb{G}_1$, and then the Verifier would need to perform 4 Pairing computations. In fact, we can combine these two proof steps into one: the Prover only needs to send one $\mathbb{G}_1$ element, while the Verifier can complete the verification using only two Pairings.
-
-$$
-\pi = [\tau^{D-d}\cdot q(\tau)]_1
-$$
-
-The Verifier only needs to verify the following equation:
-
-$$
-e\Big(\mathsf{cm}(f) - f(z)\cdot[1]_1,\ [\tau^{D-d}]_2\Big) = e\Big(\pi,\ [\tau] - z\cdot[1]_2\Big)
-$$ -->
-
-
 ### Evaluation-and-degree-bound proof of Hiding KZG10
 
 Suppose for the same Polynomial $f(X)$, the Prover needs to prove both the Evaluation and Degree Bound of $f(X)$ simultaneously. If we use the above Evaluation and Degree Bound proof protocols separately, the Prover would need to send two $\mathbb{G}_1$ elements, and then the Verifier would need to complete 4 Pairing calculations. In fact, we can combine these two proof steps into one: the Prover only sends two $\mathbb{G}_1$ elements, and the Verifier only needs to use two Pairings to complete the verification.
 
 The Prover needs to construct two $\mathbb{G}_1$ elements,
-
 $$
 \mathsf{cm}(q) = [\tau^{D-d}\cdot q(\tau)]_1 + \eta\cdot[\gamma]_1
 $$
-
 Another element $E$ is defined as:
-
 $$
 E = \rho\cdot[\tau^{D-d}]_1 - \eta\cdot[\tau]_1 + (\eta\cdot z)\cdot[1]_1
 $$
-
 The Prover sends the proof
-
 $$
 \pi = (\mathsf{cm}(q), E)
 $$
-
 And the Verifier needs to verify the following equation:
-
 $$
 e\Big({\color{red}\mathsf{cm}(f)} - {\color{blue}f(z)}\cdot[1]_1,\ [\tau^{D-d}]_2\Big) = e\Big({\color{red}\mathsf{cm}(q)},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big) + e\Big({\color{red}E},\ [\gamma]_2\Big)
 $$
-
 ## Another construction of Hiding KZG10
 
 In the original [KZG10] paper, a scheme for achieving Perfect Hiding was also provided. We can compare these two different styles of Hiding KZG10 variants.
 
 The idea of this scheme is to add a random polynomial $r(X)$ when committing to $f(X)$, rather than just a single random blinding factor. Here, $f(X)$ and $r(X)$ are defined as follows:
-
 $$
 f(X)=\sum_{i=0}^{d}f_i\cdot X^i\qquad r(X)=\sum_{i=0}^{d}r_i\cdot X^i
 $$
-
 Note that here, the Degree of the blinding polynomial $r(X)$ is consistent with the Degree of $f(X)$. To support the blinding polynomial (Blinding Polynomial), the SRS produced in the initial Setup phase needs to introduce a random number $\gamma$ to isolate the blinding factor from the normal message to be committed. So the SRS is expanded to:
-
 $$
 SRS = \left(
     \begin{array}{ccccccc}
@@ -318,40 +292,29 @@ SRS = \left(
     [1]_2, &[\tau]_2, &[\tau^2]_2, &[\tau^3]_2, &\ldots, &[\tau^D]_2\\
 \end{array}\right)
 $$
-
 Below we define the calculation formula for $\mathsf{cm}(f)$:
-
 $$
 \begin{split}
 \mathsf{KZG10.Commit}(f(X), r(X)) & = \sum_{i=0}^{d}f_i\cdot[\tau^i]_1 + \sum_{i=0}^{d}r_i\cdot[{\color{red}\gamma}\tau^i]_1 \\
 & = [f(\tau) + {\color{red}\gamma}\cdot r(\tau)]_1
 \end{split}
 $$
-
 Essentially, the commitment to the polynomial $f(X)$ is actually a commitment to $\bar{f}(X) = f(X) + {\color{red}\gamma}\cdot r(X)$.
-
 $$
 \mathsf{cm}(f) = [f(\tau) + {\color{red}\gamma}\cdot r(\tau)]_1 = [\bar{f}(\tau)]_1
 $$
-
 When the Prover needs to prove $f(z)=v$, he not only needs to send the commitment of the quotient polynomial $q(X)$, but also needs to calculate the value of $r(X)$ at $X=z$.
-
 $$
 \pi = (\mathsf{cm}(q), r(z))
 $$
-
 Where the polynomial $\bar{q}(X)$ is the quotient polynomial after dividing $\bar{f}(X)$ with blinding polynomial by $(X-z)$:
-
 $$
 \bar{q}(X) = q(X) + \gamma\cdot q'(X) = \frac{f(X)-f(z)}{X-z} + \gamma\cdot \frac{r(X)-r(z)}{X-z}
 $$
-
 When the Verifier receives $\pi_{eval}=(\mathsf{cm}(\bar{q}), r(z))$, he can verify the following equation:
-
 $$
 e\Big({\color{red}\mathsf{cm}(\bar{f})} - {\color{blue}f(z)}\cdot[1]_1 - {\color{red}r(z)}\cdot[\gamma]_1,\ [1]_2\Big) = e\Big({\color{red}\mathsf{cm}(\bar{q})},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
 $$
-
 Intuitively, although the Prover sent the value of $r(X)$ at $r(z)$, as long as the Degree of $r(X)$ is greater than or equal to 1, the attacker cannot reverse-engineer $r(X)$ through the value of $r(z)$ alone, so there is at least one random factor still protecting $f(X)$.
 
 In fact, if we know that $f(X)$ will be opened at most $k<d$ times throughout its lifecycle, then we don't need to force the Degree of $r(X)$ to be d, but it can be a polynomial of Degree $k$. Because the $k$-degree blinding factor polynomial consists of $k+1$ random factors, when $r(X)$ is calculated $k$ times, there is still one random factor protecting the commitment of $f(X)$.
@@ -367,29 +330,23 @@ The next question is, in this Hiding-KZG10 scheme, can we prove $f(z)=v$ and $\d
 
 Assuming $f(X)$ is opened at most $e$ times, then the Degree of the blinding polynomial $r(X)$ only needs to be equal to $e$.
 
-
 $$
 \begin{aligned}
 C_{f}=\mathsf{Commit}(f(X),r(X)) & = \Big(\sum_{i=0}^{d}f_i\cdot[\tau^i]_1\Big) + \Big(\sum_{i=0}^{e}r_i\cdot[{\color{red}\gamma}\tau^i]_1\Big) \\
 & = [f(\tau) + {\color{red}\gamma}\cdot r(\tau)]_1
 \end{aligned}
 $$
-
 To prove the Degree Bound, we also need to commit to $X^{D-d}\cdot f(X)$:
-
 $$
 \begin{aligned}
 C_{xf}=\mathsf{Commit}(X^{D-d}\cdot f(X),s(X)) & = \Big(\sum_{i=0}^{d}f_i\cdot[\tau^{D-d+i}]_1\Big) + \Big(\sum_{i=0}^{d}s_i\cdot[{\color{red}\gamma}\cdot \tau^{i}]_1\Big) \\
 & = [\tau^{D-d}\cdot f(\tau) + {\color{red}\gamma}\cdot s(\tau)]_1
 \end{aligned}
 $$
-
 So overall, the commitment $\mathsf{cm}(f)$ of $f(X)$ is defined as:
-
 $$
 \mathsf{cm}(f) = (C_{f}, C_{xf})
 $$
-
 #### Evaluation with degree bound protocol
 
 **Public inputs**:
@@ -407,31 +364,22 @@ $$
 **Step 2**: Prover follows these steps
 
 1. Prover calculates quotient polynomial $q(X)$:
-
 $$
 q(X) = \frac{f(X) - f(z)}{X-z}
 $$
-
 3. Prover calculates aggregated blinding polynomial $t(X)$, obviously $\deg(t)\leq d$
-
 $$
 t(X) = r(X)  + \alpha\cdot s(X) 
 $$
-
 4. Prover calculates quotient polynomial $q_t(X)$
-
 $$
 q_t(X) = \frac{t(X) - t(z)}{X-z}
 $$
-
 5. Prover introduces an auxiliary polynomial $f^*(X)$, which takes value 0 at $X=z$, i.e., $f^*(z)=0$
-
 $$
 f^*(X)=X^{D-d}\cdot f(X)-X^{D-d}\cdot f(z)
 $$
-
 6. Prover calculates the quotient polynomial $q^*(X)$ of $f^*(X)$ divided by $(X-z)$,
-
 $$
 \begin{aligned}
 q^*(X) & = \frac{f^*(X) - f^*(z)}{X-z} \\
@@ -439,51 +387,38 @@ q^*(X) & = \frac{f^*(X) - f^*(z)}{X-z} \\
 & = X^{D-d}\cdot q(X)
 \end{aligned}
 $$
-
 6. Prover commits to quotient polynomial $q(X)$, without adding any blinding factor
-
 $$
 Q = \sum_{i=0}^{d-1}q_i\cdot[\tau^{i}]_1 = [q(\tau)]_1
 $$
-
 7. Prover commits to quotient polynomial $q^*(X)$, without adding any blinding factor
-
 $$
 Q^* = \sum_{i=0}^{d-1}q_i\cdot[\tau^{D-d+i}]_1 = [q^*(\tau)]_1
 $$
-
 8. Prover commits to quotient polynomial $q_t(X)$ of blinding polynomial
-
 $$
 \begin{aligned}
 Q_{t} & = \sum_{i=0}^{d-1}q_{t,i}\cdot[{\color{red}\gamma}\tau^{i}]_1 \\
 & = [{\color{red}\gamma}\cdot q_t(\tau)]_1
 \end{aligned}
 $$
-
 9. Prover calculates merged commitment $Q$
-
 $$
 \begin{aligned}
 Q & = Q + \alpha\cdot {Q^*} + Q_{t} \\
 & = [q(\tau)]_1 + \alpha\cdot [q^*(\tau)]_1 + [{\color{red}\gamma}\cdot q_t(\tau)]_1
 \end{aligned}
 $$
-
 10. Prover outputs proof $\pi = \big(Q, t(z)\big)$
 
 The principle of this protocol can actually be understood from another perspective. The construction process can be decomposed into: Batch of evaluations of two polynomials at the same point (using random number $\alpha$). One is to prove that the polynomial $f(X)$ takes value $f(z)$ at $X=z$, and the other is to prove that $f^*(X)$ takes value 0 at $X=z$. We can introduce an auxiliary polynomial $g(X)$ to represent the random linear combination of these two polynomials about $\alpha$:
-
 $$
 g(X) = f(X) + \alpha\cdot (X^{D-d}\cdot f(X) - X^{D-d}\cdot f(z))
 $$
-
 And the quotient polynomial $q_g(X)$ of this aggregated polynomial $g(X)$ divided by $(X-z)$ can be expressed as:
-
 $$
 q_g(X) = \frac{g(X) - g(z)}{X-z} = q(X) + \alpha\cdot q^*(X)
 $$
-
 Finally, the commitment $Q$ calculated by the Prover is exactly equal to the commitment $[q_g(\tau)]$ of the quotient polynomial plus the commitment of the random polynomial $[{\color{red}\gamma}\cdot q_t(\tau)]$.
 
 Therefore, this proof idea is actually consistent with the idea of Evaluation proof.
@@ -493,19 +428,14 @@ Therefore, this proof idea is actually consistent with the idea of Evaluation pr
 The proof received by the Verifier is $\pi = \big(Q, t(z)\big)$, then verify according to the following steps:
 
 1. Calculate the commitment of $g(X)+t(X)$, denoted as $C_{g+t}$:
-
 $$
 C_{g+t} = {\color{red}C_{f}} + \alpha\cdot ({\color{red}C_{xf}} - {\color{blue}f(z)}\cdot[\tau^{D-d}]_1)
 $$
-
 2. Calculate the commitment of the value of $g(X)+t(X)$ at $X=z$, denoted as $V_{g+t}$:
-
 $$
 V_{g+t} = f(z)\cdot[1]_1 + {\color{red}t(z)}\cdot[\gamma]_1
 $$
-
 3. Verify the correctness of $C_{g+t}$:
-
 $$
 e\Big(C_{g+t} - V_{g+t},\ [1]_2\Big) = e\Big({\color{red}Q},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big) 
 $$
