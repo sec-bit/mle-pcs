@@ -173,7 +173,7 @@ In the commitment phase of $\tilde{f}$, the polynomial commitment sent by the pr
 2. The verifier sends a random point $\alpha \leftarrow \$ \mathbb{F}$.
 3. The prover calculates $c := f^{(0)}(\alpha)$ and sends $c$ to the verifier.
 
-The prover wants to prove to the verifier that: at the query point $\vec{z} = \{z_1, z_2, z_3}$, $\tilde{f}(z_1, z_2, z_3) = y$. At the same time, the verifier has $\mathcal{C} = \langle rt_0, \alpha, c \rangle$ received from the prover during the polynomial commitment phase. The prover and verifier perform the following protocol process:
+The prover wants to prove to the verifier that: at the query point $\vec{z} = \{z_1, z_2, z_3\}$, $\tilde{f}(z_1, z_2, z_3) = y$. At the same time, the verifier has $\mathcal{C} = \langle rt_0, \alpha, c \rangle$ received from the prover during the polynomial commitment phase. The prover and verifier perform the following protocol process:
 **Step 1**: Let $A_0:= \{\vec{z}, \vec{\alpha}\}$, where $\vec{\alpha} = (\alpha, \alpha^2, \alpha^4)$.
 **Step 2**: For each round $i \in [3]$, perform the following steps:
 
