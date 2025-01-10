@@ -343,11 +343,11 @@ $$
 
 4. 计算并发送 $z(\omega^{-1}\cdot\zeta)$
 
-5. 计算 Linearized Polynomial $r_\zeta(X)$
+5. 计算 Linearized Polynomial $l_\zeta(X)$
 
 $$
 \begin{split}
-r_\zeta(X) =& \Big(s_0(\zeta) \cdot (c(\zeta) - c_0) \\
+l_\zeta(X) =& \Big(s_0(\zeta) \cdot (c(\zeta) - c_0) \\
 & + \alpha\cdot s_0(\zeta) \cdot (u_{n-1}\cdot c(\zeta) - (1-u_{n-1})\cdot c(\omega^{2^{n-1}}\cdot\zeta))\\
   & + \alpha^2\cdot s_1(\zeta) \cdot (u_{n-2}\cdot c(\zeta) - (1-u_{n-2})\cdot c(\omega^{2^{n-2}}\cdot\zeta)) \\
   & + \cdots \\
@@ -360,7 +360,7 @@ r_\zeta(X) =& \Big(s_0(\zeta) \cdot (c(\zeta) - c_0) \\
 \end{split}
 $$
 
-显然，$r_\zeta(\zeta)= 0$，因此这个运算值不需要发给 Verifier，并且 $[r_\zeta(\tau)]_1$ 可以由 Verifier 自行构造。
+显然，$l_\zeta(\zeta)= 0$，因此这个运算值不需要发给 Verifier，并且 $[l_\zeta(\tau)]_1$ 可以由 Verifier 自行构造。
 
 6. 构造多项式 $c^*(X)$，它是下面向量在 $D\zeta$ 上的插值多项式
 
@@ -383,10 +383,10 @@ $$
 $$
 
 
-7. 因为 $r_\zeta(\zeta)= 0$，所以存在 Quotient 多项式 $q_\zeta(X)$ 满足
+7. 因为 $l_\zeta(\zeta)= 0$，所以存在 Quotient 多项式 $q_\zeta(X)$ 满足
 
 $$
-q_\zeta(X) = \frac{1}{X-\zeta}\cdot r_\zeta(X)
+q_\zeta(X) = \frac{1}{X-\zeta}\cdot l_\zeta(X)
 $$
 
 8. 构造 $D\zeta$ 上的消失多项式 $z_{D_{\zeta}}(X)$
@@ -431,7 +431,10 @@ $$
 $7\cdot\mathbb{G}_1$, $(n+1)\cdot\mathbb{F}$ 
 
 $$
-\pi_{eval} = \big(z(\omega^{-1}\cdot\zeta), c(\zeta)，c(\omega\cdot\zeta), c(\omega^2\cdot\zeta), c(\omega^4\cdot\zeta), \ldots, c(\omega^{2^{n-1}}\cdot\zeta), C_{c}, C_{t}, C_{z}, Q_c, Q_\zeta, Q_\xi, Q_{\omega\zeta}\big)
+\begin{aligned}
+\pi_{eval} &= \big(z(\omega^{-1}\cdot\zeta), c(\zeta)，c(\omega\cdot\zeta), c(\omega^2\cdot\zeta), c(\omega^4\cdot\zeta), \ldots, c(\omega^{2^{n-1}}\cdot\zeta), \\
+& \qquad C_{c}, C_{t}, C_{z}, Q_c, Q_\zeta, Q_\xi, Q_{\omega\zeta}\big)
+\end{aligned}
 $$
 
 ### 验证过程
@@ -459,11 +462,11 @@ $$
 
 3. Verifier 计算 $s_0(\zeta), \ldots, s_{n-1}(\zeta)$ ，其计算方法可以采用前文提到的递推方式进行计算。
 
-4. Verifier 计算线性化多项式的承诺 $C_r$ 
+4. Verifier 计算线性化多项式的承诺 $C_l$ 
 
 $$
 \begin{split}
-C_r & = 
+C_l & = 
 \Big( (c(\zeta) - c_0)s_0(\zeta) \\
 & + \alpha \cdot (u_{n-1}\cdot c(\zeta) - (1-u_{n-1})\cdot c(\omega^{2^{n-1}}\cdot\zeta))\cdot s_0(\zeta)\\
   & + \alpha^2\cdot (u_{n-2}\cdot c(\zeta) - (1-u_{n-2})\cdot c(\omega^{2^{n-2}}\cdot\zeta))\cdot s_1(\zeta)  \\
@@ -477,25 +480,28 @@ C_r & =
 \end{split}
 $$
 
-5. Verifier 产生随机数 $\gamma$ 来合并下面的 Pairing 验证：
+5. Verifier 产生随机数 $\eta$ 来合并下面的 Pairing 验证：
 
 $$
 \begin{split}
-e(C_r + \zeta\cdot Q_\zeta, [1]_2)\overset{?}{=}e(Q_\zeta, [\tau]_2)\\
+e(C_l + \zeta\cdot Q_\zeta, [1]_2)\overset{?}{=}e(Q_\zeta, [\tau]_2)\\
 e(C - C^*(\xi) - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi, [1]_2) \overset{?}{=} e(Q_\xi, [\tau]_2)\\
-e(Z + \zeta*Q_{\omega\zeta} - z(\omega^{-1}\cdot\zeta)\cdot[1]_1, [1]_2) \overset{?}{=} e(Q_{\omega\zeta}, [\tau]_2)\\
+e(C_z + \zeta\cdot Q_{\omega\zeta} - z(\omega^{-1}\cdot\zeta)\cdot[1]_1, [1]_2) \overset{?}{=} e(Q_{\omega\zeta}, [\tau]_2)\\
 \end{split}
 $$
 
 合并后的验证只需要两个 Pairing 运算。
 
 $$
-P = \Big(C_r + \zeta\cdot Q_\zeta\Big) + \gamma\cdot \Big(C - C^* - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi\Big) + 
-\gamma^2\cdot\Big(Z + \zeta*Q_{\omega\zeta} - z(\omega^{-1}\cdot\zeta)\cdot[1]_1\Big)
+\begin{split}
+P &= \Big(C_l + \zeta\cdot Q_\zeta\Big) \\
+& + \eta\cdot \Big(C - C^* - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi\Big) \\
+& + \eta^2\cdot\Big(C_z + \zeta\cdot Q_{\omega\zeta} - z(\omega^{-1}\cdot\zeta)\cdot[1]_1\Big)
+\end{split}
 $$
 
 $$
-e\Big(P, [1]_2\Big) \overset{?}{=} e\Big(Q_\zeta + \gamma\cdot Q_\xi + \gamma^2\cdot Q_{\omega\zeta}, [\tau]_2\Big)
+e\Big(P, [1]_2\Big) \overset{?}{=} e\Big(Q_\zeta + \eta\cdot Q_\xi + \eta^2\cdot Q_{\omega\zeta}, [\tau]_2\Big)
 $$
 
 ## 3. 优化性能分析
@@ -507,19 +513,6 @@ Prover's cost
   - Evaluation 阶段：$O(N\log N)~\mathbb{F}$ + $7~\mathbb{G}_1$
 
 Verifier's cost: $4~\mathbb{F} + O(n)~\mathbb{F}+ 3~\mathbb{G}_1 + 2~P$
-
-Verifier 在验证阶段需要计算的有
-
-$$
-(c^{*}(\xi), v_H(\zeta), L_0(\zeta), L_{N-1}(\zeta), s_0(\zeta), \ldots, s_{n-1}(\zeta), C_r, P, Q_\zeta + \gamma\cdot Q_\xi + \gamma^2\cdot Q_{\omega\zeta})
-$$
-
-以及两个 pairing 操作
-$$
-e\Big(P, [1]_2\Big), \quad e\Big(Q_\zeta + \gamma\cdot Q_\xi + \gamma^2\cdot Q_{\omega\zeta}, [\tau]_2\Big)
-$$
-
-因此 Verifier 的 cost 为 $4~\mathbb{F} + O(n)~\mathbb{F}+ 3~\mathbb{G}_1 + 2~P$
 
 ## References
 

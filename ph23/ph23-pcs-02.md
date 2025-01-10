@@ -343,11 +343,11 @@ $$
 
 4. Calculate and send $z(\omega^{-1}\cdot\zeta)$
 
-5. Calculate Linearized Polynomial $r_\zeta(X)$
+5. Calculate Linearized Polynomial $l_\zeta(X)$
 
 $$
 \begin{split}
-r_\zeta(X) =& \Big(s_0(\zeta) \cdot (c(\zeta) - c_0) \\
+l_\zeta(X) =& \Big(s_0(\zeta) \cdot (c(\zeta) - c_0) \\
 & + \alpha\cdot s_0(\zeta) \cdot (u_{n-1}\cdot c(\zeta) - (1-u_{n-1})\cdot c(\omega^{2^{n-1}}\cdot\zeta))\\
   & + \alpha^2\cdot s_1(\zeta) \cdot (u_{n-2}\cdot c(\zeta) - (1-u_{n-2})\cdot c(\omega^{2^{n-2}}\cdot\zeta)) \\
   & + \cdots \\
@@ -360,7 +360,7 @@ r_\zeta(X) =& \Big(s_0(\zeta) \cdot (c(\zeta) - c_0) \\
 \end{split}
 $$
 
-Obviously, $r_\zeta(\zeta)= 0$, so this computation value doesn't need to be sent to the Verifier, and $[r_\zeta(\tau)]_1$ can be constructed by the Verifier themselves.
+Obviously, $l_\zeta(\zeta)= 0$, so this computation value doesn't need to be sent to the Verifier, and $[l_\zeta(\tau)]_1$ can be constructed by the Verifier themselves.
 
 6. Construct polynomial $c^*(X)$, which is the interpolation polynomial of the following vector on $D\zeta$
 
@@ -383,10 +383,10 @@ $$
 $$
 
 
-7. Because $r_\zeta(\zeta)= 0$, there exists a Quotient polynomial $q_\zeta(X)$ satisfying
+7. Because $l_\zeta(\zeta)= 0$, there exists a Quotient polynomial $q_\zeta(X)$ satisfying
 
 $$
-q_\zeta(X) = \frac{1}{X-\zeta}\cdot r_\zeta(X)
+q_\zeta(X) = \frac{1}{X-\zeta}\cdot l_\zeta(X)
 $$
 
 8. Construct vanishing polynomial $z_{D_{\zeta}}(X)$ on $D\zeta$
@@ -426,12 +426,15 @@ $$
 Q_\xi = \mathsf{KZG10.Commit}(q_\xi(X)) = [q_\xi(\tau)]_1
 $$
 
-### Proof Representation
+### Proof
 
 $7\cdot\mathbb{G}_1$, $(n+1)\cdot\mathbb{F}$ 
 
 $$
-\pi_{eval} = \big(z(\omega^{-1}\cdot\zeta), c(\zeta)，c(\omega\cdot\zeta), c(\omega^2\cdot\zeta), c(\omega^4\cdot\zeta), \ldots, c(\omega^{2^{n-1}}\cdot\zeta), C_{c}, C_{t}, C_{z}, Q_c, Q_\zeta, Q_\xi, Q_{\omega\zeta}\big)
+\begin{aligned}
+\pi_{eval} &= \big(z(\omega^{-1}\cdot\zeta), c(\zeta)，c(\omega\cdot\zeta), c(\omega^2\cdot\zeta), c(\omega^4\cdot\zeta), \ldots, c(\omega^{2^{n-1}}\cdot\zeta), \\
+& \qquad C_{c}, C_{t}, C_{z}, Q_c, Q_\zeta, Q_\xi, Q_{\omega\zeta}\big)
+\end{aligned}
 $$
 
 ### Verification Process
@@ -459,11 +462,11 @@ $$
 
 3. Verifier calculates $s_0(\zeta), \ldots, s_{n-1}(\zeta)$, which can be calculated using the recursive method mentioned earlier.
 
-4. Verifier calculates the commitment of the linearized polynomial $C_r$ 
+4. Verifier calculates the commitment of the linearized polynomial $C_l$ 
 
 $$
 \begin{split}
-C_r & = 
+C_l & = 
 \Big( (c(\zeta) - c_0)s_0(\zeta) \\
 & + \alpha \cdot (u_{n-1}\cdot c(\zeta) - (1-u_{n-1})\cdot c(\omega^{2^{n-1}}\cdot\zeta))\cdot s_0(\zeta)\\
   & + \alpha^2\cdot (u_{n-2}\cdot c(\zeta) - (1-u_{n-2})\cdot c(\omega^{2^{n-2}}\cdot\zeta))\cdot s_1(\zeta)  \\
@@ -477,25 +480,28 @@ C_r & =
 \end{split}
 $$
 
-5. Verifier generates a random number $\gamma$ to merge the following Pairing verifications:
+5. Verifier generates a random number $\eta$ to merge the following Pairing verifications:
 
 $$
 \begin{split}
-e(C_r + \zeta\cdot Q_\zeta, [1]_2)\overset{?}{=}e(Q_\zeta, [\tau]_2)\\
+e(C_l + \zeta\cdot Q_\zeta, [1]_2)\overset{?}{=}e(Q_\zeta, [\tau]_2)\\
 e(C - C^*(\xi) - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi, [1]_2) \overset{?}{=} e(Q_\xi, [\tau]_2)\\
-e(Z + \zeta*Q_{\omega\zeta} - z(\omega^{-1}\cdot\zeta)\cdot[1]_1, [1]_2) \overset{?}{=} e(Q_{\omega\zeta}, [\tau]_2)\\
+e(C_z + \zeta\cdot Q_{\omega\zeta} - z(\omega^{-1}\cdot\zeta)\cdot[1]_1, [1]_2) \overset{?}{=} e(Q_{\omega\zeta}, [\tau]_2)\\
 \end{split}
 $$
 
 After merging, the verification only needs two Pairing operations.
 
 $$
-P = \Big(C_r + \zeta\cdot Q_\zeta\Big) + \gamma\cdot \Big(C - C^* - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi\Big) + 
-\gamma^2\cdot\Big(Z + \zeta*Q_{\omega\zeta} - z(\omega^{-1}\cdot\zeta)\cdot[1]_1\Big)
+\begin{split}
+P &= \Big(C_l + \zeta\cdot Q_\zeta\Big) \\
+& + \eta\cdot \Big(C - C^* - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi\Big) \\
+& + \eta^2\cdot\Big(C_z + \zeta\cdot Q_{\omega\zeta} - z(\omega^{-1}\cdot\zeta)\cdot[1]_1\Big)
+\end{split}
 $$
 
 $$
-e\Big(P, [1]_2\Big) \overset{?}{=} e\Big(Q_\zeta + \gamma\cdot Q_\xi + \gamma^2\cdot Q_{\omega\zeta}, [\tau]_2\Big)
+e\Big(P, [1]_2\Big) \overset{?}{=} e\Big(Q_\zeta + \eta\cdot Q_\xi + \eta^2\cdot Q_{\omega\zeta}, [\tau]_2\Big)
 $$
 
 ## 3. Optimized Performance Analysis
@@ -507,19 +513,6 @@ Prover's cost
   - Evaluation phase: $O(N\log N)~\mathbb{F}$ + $7~\mathbb{G}_1$
 
 Verifier's cost: $4~\mathbb{F} + O(n)~\mathbb{F}+ 3~\mathbb{G}_1 + 2~P$
-
-The Verifier needs to calculate the following in the verification phase
-
-$$
-(c^{*}(\xi), v_H(\zeta), L_0(\zeta), L_{N-1}(\zeta), s_0(\zeta), \ldots, s_{n-1}(\zeta), C_r, P, Q_\zeta + \gamma\cdot Q_\xi + \gamma^2\cdot Q_{\omega\zeta})
-$$
-
-and two pairing operations
-$$
-e\Big(P, [1]_2\Big), \quad e\Big(Q_\zeta + \gamma\cdot Q_\xi + \gamma^2\cdot Q_{\omega\zeta}, [\tau]_2\Big)
-$$
-
-Therefore, the Verifier's cost is $4~\mathbb{F} + O(n)~\mathbb{F}+ 3~\mathbb{G}_1 + 2~P$
 
 ## References
 
