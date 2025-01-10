@@ -33,12 +33,12 @@ rm -rf "$tmp_dir"
 echo "Restored PDF files from temporary directory"
 
 # # Create commit with timestamp
-# git commit -m "Update PDFs from main branch ($(date '+%Y-%m-%d %H:%M:%S'))"
+git commit -m "Update PDFs from main branch ($(date '+%Y-%m-%d %H:%M:%S'))"
 
 # # Switch back to original branch
-# git checkout -
+git checkout -
 
 # # Pop stashed changes if any
-# git stash pop
+git stash pop
 
-# echo "PDF files have been updated in gh-pages branch"
+echo "PDF files have been updated in gh-pages branch"
