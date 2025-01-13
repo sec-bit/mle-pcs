@@ -453,11 +453,11 @@ v_H(\zeta) = \zeta^N - 1
 $$
 
 $$
-L_0(\zeta) = \frac{1}{N}\cdot \frac{z_{H}(\zeta)}{\zeta-1}
+L_0(\zeta) = \frac{1}{N}\cdot \frac{v_{H}(\zeta)}{\zeta-1}
 $$
 
 $$
-L_{N-1}(\zeta) = \frac{\omega^{N-1}}{N}\cdot \frac{z_{H}(\zeta)}{\zeta-\omega^{N-1}}
+L_{N-1}(\zeta) = \frac{\omega^{N-1}}{N}\cdot \frac{v_{H}(\zeta)}{\zeta-\omega^{N-1}}
 $$
 
 3. Verifier calculates $s_0(\zeta), \ldots, s_{n-1}(\zeta)$, which can be calculated using the recursive method mentioned earlier.

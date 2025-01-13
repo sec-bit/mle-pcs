@@ -453,11 +453,11 @@ v_H(\zeta) = \zeta^N - 1
 $$
 
 $$
-L_0(\zeta) = \frac{1}{N}\cdot \frac{z_{H}(\zeta)}{\zeta-1}
+L_0(\zeta) = \frac{1}{N}\cdot \frac{v_{H}(\zeta)}{\zeta-1}
 $$
 
 $$
-L_{N-1}(\zeta) = \frac{\omega^{N-1}}{N}\cdot \frac{z_{H}(\zeta)}{\zeta-\omega^{N-1}}
+L_{N-1}(\zeta) = \frac{\omega^{N-1}}{N}\cdot \frac{v_{H}(\zeta)}{\zeta-\omega^{N-1}}
 $$
 
 3. Verifier 计算 $s_0(\zeta), \ldots, s_{n-1}(\zeta)$ ，其计算方法可以采用前文提到的递推方式进行计算。
