@@ -1,6 +1,13 @@
 import random
 from typing import List
 
+def convert_int_to_babybear(func):
+    def wrapper(self, other):
+        if isinstance(other, int):
+            other = BabyBear(other)
+        return func(self, other)
+    return wrapper
+
 class BabyBear:
     P = 15 * (1 << 27) + 1
     def __init__(self, value: int):
@@ -26,20 +33,17 @@ class BabyBear:
             return self.value == other.value
         return False
 
+    @convert_int_to_babybear
     def __add__(self, other):
-        if isinstance(other, BabyBear):
-            return BabyBear(self.add(self.value, other.value))
-        raise TypeError("Unsupported operand type for +")
+        return BabyBear(self.add(self.value, other.value))
 
+    @convert_int_to_babybear
     def __sub__(self, other):
-        if isinstance(other, BabyBear):
-            return BabyBear(self.sub(self.value, other.value))
-        raise TypeError("Unsupported operand type for -")
+        return BabyBear(self.sub(self.value, other.value))
 
+    @convert_int_to_babybear
     def __mul__(self, other):
-        if isinstance(other, BabyBear):
-            return BabyBear(self.mul(self.value, other.value))
-        raise TypeError("Unsupported operand type for *")
+        return BabyBear(self.mul(self.value, other.value))
 
     def __neg__(self):
         return BabyBear(self.P - self.value)
@@ -74,10 +78,21 @@ class BabyBear:
     def __pow__(self, n: int):
         return self.pow(n)
 
+    @convert_int_to_babybear
     def __truediv__(self, other):
-        if isinstance(other, BabyBear):
-            return self * other.inv()
-        raise TypeError("Unsupported operand type for /")
+        return self * other.inv()
+
+    def __radd__(self, other):
+        return BabyBear(other) + self
+
+    def __rsub__(self, other):
+        return BabyBear(other) - self
+
+    def __rmul__(self, other):
+        return BabyBear(other) * self
+
+    def __rtruediv__(self, other):
+        return BabyBear(other) / self
 
 class BabyBearExtElem:
     BETA = BabyBear(11)
@@ -174,6 +189,14 @@ if __name__ == "__main__":
     print(f"a = {a}")
     print(f"b = {b}")
     print(f"a + b = {a + b}")
+    print(f"a + 42 = {a + 42}")
+    print(f"42 + a = {42 + a}")
+    print(f"42 - a = {42 - a}")
+    print(f"-a + 42 = {-a + 42}")
+    print(f"42 * a = {42 * a}")
+    print(f"a * 42 = {a * 42}")
+    print(f"42 / a * a = {42 / a * a}")
+    print(f"a / 42 * 42 = {a / 42 * 42}")
     print(f"a - b = {a - b}")
     print(f"a * b = {a * b}")
     print(f"a.inv() = {a.inv()}")

@@ -462,25 +462,31 @@ $$
 
 3. Verifier 计算 $s_0(\zeta), \ldots, s_{n-1}(\zeta)$ ，其计算方法可以采用前文提到的递推方式进行计算。
 
-4. Verifier 计算线性化多项式的承诺 $C_l$ 
+4. Verifier 计算 $z_{D_\zeta}(\xi)$ ，
+   
+$$
+z_{D_{\zeta}}(\xi) = (\xi-\zeta\omega)\cdots (\xi-\zeta\omega^{2^{n-1}})(\xi-\zeta)
+$$
+
+5. Verifier 计算线性化多项式的承诺 $C_l$ 
 
 $$
 \begin{split}
 C_l & = 
-\Big( (c(\zeta) - c_0)s_0(\zeta) \\
+\Big( \Big((c(\zeta) - c_0)s_0(\zeta) \\
 & + \alpha \cdot (u_{n-1}\cdot c(\zeta) - (1-u_{n-1})\cdot c(\omega^{2^{n-1}}\cdot\zeta))\cdot s_0(\zeta)\\
   & + \alpha^2\cdot (u_{n-2}\cdot c(\zeta) - (1-u_{n-2})\cdot c(\omega^{2^{n-2}}\cdot\zeta))\cdot s_1(\zeta)  \\
   & + \cdots \\
   & + \alpha^{n-1}\cdot (u_{1}\cdot c(\zeta) - (1-u_{1})\cdot c(\omega^2\cdot\zeta))\cdot s_{n-2}(\zeta)\\
-  & + \alpha^n\cdot (u_{0}\cdot c(\zeta) - (1-u_{0})\cdot c(\omega\cdot\zeta))\cdot s_{n-1}(\zeta) \\
+  & + \alpha^n\cdot (u_{0}\cdot c(\zeta) - (1-u_{0})\cdot c(\omega\cdot\zeta))\cdot s_{n-1}(\zeta) \Big) \cdot [1]_1 \\
   & + \alpha^{n+1}\cdot L_0(\zeta)\cdot(C_z - c_0\cdot C_a)\\
-  & + \alpha^{n+2}\cdot (\zeta-1)\cdot\big(C_z - z(\omega^{-1}\cdot \zeta)-c(\zeta)\cdot C_{a} ) \\
-  & + \alpha^{n+3}\cdot L_{N-1}(\zeta)\cdot(C_z - v) \\
+  & + \alpha^{n+2}\cdot (\zeta-1)\cdot\big(C_z - z(\omega^{-1}\cdot \zeta) \cdot [1]_1 -c(\zeta)\cdot C_{a} ) \\
+  & + \alpha^{n+3}\cdot L_{N-1}(\zeta)\cdot(C_z - v \cdot [1]_1) \\
   & - v_H(\zeta)\cdot C_t \Big)
 \end{split}
 $$
 
-5. Verifier 产生随机数 $\eta$ 来合并下面的 Pairing 验证：
+6. Verifier 产生随机数 $\eta$ 来合并下面的 Pairing 验证：
 
 $$
 \begin{split}
