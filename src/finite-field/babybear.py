@@ -71,6 +71,14 @@ class BabyBear:
     def mul(cls, lhs: int, rhs: int) -> int:
         return (lhs * rhs) % cls.P
 
+    def __pow__(self, n: int):
+        return self.pow(n)
+
+    def __truediv__(self, other):
+        if isinstance(other, BabyBear):
+            return self * other.inv()
+        raise TypeError("Unsupported operand type for /")
+
 class BabyBearExtElem:
     BETA = BabyBear(11)
     NBETA = BabyBear(BabyBear.P - 11)
@@ -149,6 +157,16 @@ class BabyBearExtElem:
             n >>= 1
         return result
 
+    def __pow__(self, n: int):
+        return self.pow(n)
+
+    def __truediv__(self, other):
+        if isinstance(other, BabyBearExtElem):
+            return self * other.inv()
+        elif isinstance(other, BabyBear):
+            return self * BabyBearExtElem([other.inv()] + [BabyBear.zero()] * 3)
+        raise TypeError("Unsupported operand type for /")
+
 # Example usage:
 if __name__ == "__main__":
     a = BabyBear(5)
@@ -174,3 +192,9 @@ if __name__ == "__main__":
     print(f"x.pow(3) = {x.pow(3)}")
     print(f"x * x.inv() = {x * x.inv()}")  # Should be 1
     print(f"x_neg = {-x}, x + x_neg = {x+(-x)}")
+
+    # Test new operators
+    print(f"a ** 3 = {a ** 3}")  # Should be same as a.pow(3)
+    print(f"a / b = {a / b}")    # Should be same as a * b.inv()
+    print(f"x ** 3 = {x ** 3}")  # Should be same as x.pow(3)
+    print(f"x / y = {x / y}")    # Should be same as x * y.inv()

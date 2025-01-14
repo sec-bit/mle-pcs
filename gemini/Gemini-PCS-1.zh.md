@@ -78,7 +78,7 @@ $$
 \langle\vec{f}, \otimes_{j=0}^{2}(1,\rho_j) \rangle =  \langle\vec{f}_1, \otimes_{j=1}^{2}(1,\rho_j) \rangle + \rho_0 \langle\vec{f}_2, \otimes_{j=1}^{2}(1,\rho_j) \rangle
 $$
 
-注意到，这两个子问题中，内积的右边元素相同：均为 $\otimes_{j=0}^1 (1,\rho_j)$，因此它们可以进一步合并成一个 $\langle\vec{f}_1 + \rho_0 \vec{f}_2, \otimes_{j=1}^{2}(1,\rho_j) \rangle$。
+注意到，这两个子问题中，内积的右边元素相同：均为 $\otimes_{j=1}^2 (1,\rho_j)$，因此它们可以进一步合并成一个 $\langle\vec{f}_1 + \rho_0 \vec{f}_2, \otimes_{j=1}^{2}(1,\rho_j) \rangle$。
 
 可以看到，对于一个 $N$ 长度的向量 $\vec{f}$，我们将其分开为两个 $N/2$ 长度的向量，再合并成一个向量。通过这一轮操作，我们把一个 $N$ 大小的 tensor product 问题变成了 $N/2$ 大小的问题。
 

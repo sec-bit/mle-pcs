@@ -207,7 +207,7 @@ $$
 我们把 $X^2+X+\eta$ 在 $\mathbb{F}_{2^4}$ 中的根记为 $\zeta$，那么 $\mathbb{F}_{2^4}$ 可以表示为：
 
 $$
-\mathbb{F}_{2^4} = \cong \mathbb{F}_{2^2}(\zeta)  \cong \mathbb{F}_2(\eta)(\zeta) \cong \mathbb{F}_2(\eta, \zeta)
+\mathbb{F}_{2^4} \cong \mathbb{F}_{2^2}(\zeta)  \cong \mathbb{F}_2(\eta)(\zeta) \cong \mathbb{F}_2(\eta, \zeta)
 $$
 
 <img src="img/image-2.png" align=center width="40%">

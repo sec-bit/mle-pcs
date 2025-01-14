@@ -586,13 +586,28 @@ class PH23_PCS:
         ln_1_poly_at_zeta = H_weights[-1] * vH_poly_at_zeta * (zeta - omega.inv()).inv()
 
         # evaluate selector polynomials at zeta
-        x = zeta
+        # Method 1
+        # x = zeta
+        # s_evals = []
+        
+        # for k in range(log_n):
+        #     vH = x - Field.one()
+        #     s_poly_at_zeta = vH_poly_at_zeta / vH
+        #     x = x**2
+        #     s_evals.append(s_poly_at_zeta)
+
+        # evaluate selector polynomials at zeta
+        # Method 2
         s_evals = []
-        for k in range(log_n):
-            vH = x - Field.one()
-            s_poly_at_zeta = vH_poly_at_zeta / vH
-            x = x**2
-            s_evals.append(s_poly_at_zeta)
+        # s_{n-1}(zeta) = zeta^{2^{n-1}} + 1
+        s_evals.append(zeta**(2**(log_n - 1)) + Field.one()) 
+        # compute s_{n-2}(zeta), ..., s_{0}(zeta)
+        # s_{i}(zeta) = s_{i+1}(zeta) * (zeta^{2^i} + 1)
+        for i in range(log_n - 2, -1, -1):
+            temp = zeta**(2**i) + Field.one()
+            s_evals.append(s_evals[-1] * temp)
+        # reserve s_evals
+        s_evals.reverse()
 
         P = G1Point.zero()
         Q = G1Point.zero()

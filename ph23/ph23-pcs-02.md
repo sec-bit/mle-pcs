@@ -1,31 +1,31 @@
-# 缺失的协议 PH23-PCS（二）
+# Missing Protocol PH23-PCS (Part 2)
 
-本文给出 PH23-KZG10 的完整的优化协议。
+This article provides the complete optimized protocol for PH23-KZG10.
 
-## 1. 协议框架与优化
+## 1. Protocol Framework and Optimization
 
-首先回顾下 PH23+KZG10 协议的 Evaluation Argument 的简单流程，然后我们看看有哪些可以优化的地方。
+First, let's review the simple process of the Evaluation Argument in the PH23+KZG10 protocol, and then we'll look at areas for optimization.
 
-P: 发送 $c(X)$ 的承诺 $C_c$
-V: 发送随机数 $\alpha$ 用来聚合多个多项式的约束等式
-P: 计算公开的多项式集合 $\{s_i(X)\}$
-P: 计算聚合的约束多项式 $h(X)$
+P: Send commitment $C_c$ of $c(X)$
+V: Send random number $\alpha$ to aggregate constraint equations for multiple polynomials
+P: Calculate the set of public polynomials $\{s_i(X)\}$
+P: Calculate the aggregated constraint polynomial $h(X)$
 
 $$
 h(X) = G(c(X), s_0(X), s_1(X),\ldots, s_{n-1}(X), z(X), z(\omega^{-1}X), X)
 $$
 
-P: 计算商多项式 $t(X)$ 的承诺 $C_t$, $z(X)$ 的承诺 $C_z$
+P: Calculate commitment $C_t$ of quotient polynomial $t(X)$, commitment $C_z$ of $z(X)$
 
 $$
 t(X) = \frac{h(X)}{v_H(X)}
 $$
 
-V: 发送随机的求值点 $\zeta$
+V: Send random evaluation point $\zeta$
 
-P: 计算 $c(\zeta\cdot\omega), c(\zeta\cdot\omega^2), c(\zeta\cdot\omega^4), \ldots, c(\zeta\cdot\omega^{2^{n-1}})$, $c(\zeta)$ ，还有 $z(\zeta), z(\omega^{-1}\cdot\zeta)$ ，$t(\zeta), a(\zeta)$ ；发送上述多项式求值的 KZG10 Evaluation Arguments
+P: Calculate $c(\zeta\cdot\omega), c(\zeta\cdot\omega^2), c(\zeta\cdot\omega^4), \ldots, c(\zeta\cdot\omega^{2^{n-1}})$, $c(\zeta)$, and $z(\zeta), z(\omega^{-1}\cdot\zeta)$, $t(\zeta), a(\zeta)$; Send KZG10 Evaluation Arguments for the above polynomial evaluations
 
-V: 验证所有的 KZG10 Evaluation Arguments，然后验证下面的等式：
+V: Verify all KZG10 Evaluation Arguments, then verify the following equation:
 
 $$
 \begin{split}
@@ -33,91 +33,91 @@ h(\zeta) \overset{?}{=} t(\zeta)\cdot v_H(\zeta) \\
 \end{split}
 $$
 
-### $c^*(X)$ 在多点求值的证明优化
+### Optimization of Multi-point Evaluation Proof for $c^*(X)$
 
-在证明中，Prover 需要证明 $c(X)$ 多项式在 $n+1$ 个点上的 Evaluation，即
+In the proof, the Prover needs to prove the Evaluation of polynomial $c(X)$ at $n+1$ points, namely
 
 $$
 c(\omega\cdot\zeta), c(\omega^2\cdot\zeta), c(\omega^4\cdot\zeta), \ldots, c(\omega^{2^{n-1}}\cdot\zeta), c(\zeta)
 $$
 
-利用 [BDFG20] 论文中的技术，如果一个 $f(X)$ 在 $m$ 个点 $D=(z_0,z_1,\ldots,z_{m-1})$ 上的 Evaluation 为 $\vec{v}=(v_0, v_1, \ldots, v_{m-1})$，定义 $f^*(X)$ 是 $\vec{v}$ 在 $D$ 上的插值多项式，即 $\deg(f^*(X)) = m-1$，并且有 $f^*(z_i) = f(z_i), \forall i\in[0,m)$ 
+Using the technique from the [BDFG20] paper, if a polynomial $f(X)$ has Evaluation $\vec{v}=(v_0, v_1, \ldots, v_{m-1})$ at $m$ points $D=(z_0,z_1,\ldots,z_{m-1})$, define $f^*(X)$ as the interpolation polynomial of $\vec{v}$ on $D$, i.e., $\deg(f^*(X)) = m-1$, and $f^*(z_i) = f(z_i), \forall i\in[0,m)$ 
 
 $$
 v_D(X) = \prod_{i=0}^{m-1} (X-z_i)
 $$
 
-那么 $f(X)$ 满足下面的等式：
+Then $f(X)$ satisfies the following equation:
 
 $$
 f(X) - f^*(X) = q(X)\cdot (X-z_0)(X-z_1)\cdots(X-z_{m-1})
 $$
 
-上面等式这个很容易验证，因为当 $X=z_i$ 的时候，等式左边等于零，那么 $f(X)-f^*(X)$ 可以被 $(X-z_i)$ 整除。那么对于所有的 $i=0,1,\ldots,m-1$，$f(X)-f^*(X)$ 可以被 $v_D(X)$ 整除，
+This equation is easy to verify because when $X=z_i$, the left side of the equation equals zero, so $f(X)-f^*(X)$ can be divided by $(X-z_i)$. For all $i=0,1,\ldots,m-1$, $f(X)-f^*(X)$ can be divided by $v_D(X)$,
 
 $$
 v_D(X) = \prod_{i=0}^{m-1} (X-z_i)
 $$
 
-这样一来，Prover 只要向 Verifier 证明存在 $q(X)$，使得 $f(X) - f^*(X) = q(X)\cdot v_D(X)$，那么 $f(X)$ 在 $D$ 上的 Evaluation 就等于 $\vec{v}$。而这个等式又可以通过 Verifier 提供一个随机挑战点  $X=\xi$ 来验证，其中 $v_D(\xi)$ 与 $f^*(\xi)$ 可以由 Verifier 自行计算，而 $f(\xi)$ 与 $q(\xi)$ 可以通过 KZG10 的 Evaluation Argument 来证明。
+In this way, the Prover only needs to prove to the Verifier that there exists $q(X)$ such that $f(X) - f^*(X) = q(X)\cdot v_D(X)$, then the Evaluation of $f(X)$ on $D$ equals $\vec{v}$. This equation can be verified by the Verifier providing a random challenge point $X=\xi$, where $v_D(\xi)$ and $f^*(\xi)$ can be calculated by the Verifier, and $f(\xi)$ and $q(\xi)$ can be proven through KZG10's Evaluation Argument.
 
-### $c^*(X)$ 多项式计算的优化
+### Optimization of $c^*(X)$ Polynomial Calculation
 
-Prover 可以构造多项式 $c^*(X)$，它是下面向量在 $\zeta D$ 上的插值多项式。这样做的优势是可以让 Prover 一次证明 $c(X)$ 的多个不同点的 Evaluation，记为 $\vec{c^*}$：
+The Prover can construct polynomial $c^*(X)$, which is the interpolation polynomial of the following vector on $\zeta D$. The advantage of doing this is to allow the Prover to prove the Evaluation of $c(X)$ at multiple different points at once, denoted as $\vec{c^*}$:
 
 $$
 c(\omega\cdot\zeta), c(\omega^2\cdot\zeta), c(\omega^4\cdot\zeta), \ldots, c(\omega^{2^{n-1}}\cdot\zeta), c(\zeta)
 $$
 
-我们引入 $D$ 满足  $|D|=n+1$ ，其定义为
+We introduce $D$ satisfying $|D|=n+1$, defined as
 
 $$
 D = \big(\omega,\ \omega^2,\ \omega^4,\ \ldots,\ \omega^{2^{n-1}}, \omega^{2^n}=1\big)
 $$
 
-那么 $c^*(X)$ 的 Evaluation 的 Domain 就可以表示为 $\zeta D$，
+Then the Evaluation Domain of $c^*(X)$ can be expressed as $\zeta D$,
 
 $$
 D'=D\zeta = \big(\omega\cdot\zeta,\ \omega^2\cdot\zeta,\ \omega^4\cdot\zeta,\ \ldots,\ \omega^{2^{n-1}}\cdot\zeta,\ \zeta\big)
 $$
 
-其 Vanishing 多项式 $v_{D'}(X)$ 定义如下：
+Its Vanishing polynomial $v_{D'}(X)$ is defined as follows:
 
 $$
 v_{D'}(X) = (X-\omega\zeta)(X-\omega^2\zeta)(X-\omega^4\zeta)\cdots(X-\omega^{2^n}\zeta)
 $$
 
-对于 $D'$ 上的 Lagrange 多项式 可以定义如下：
+The Lagrange polynomial on $D'$ can be defined as follows:
 
 $$
 L^{D'}_j(X) = \hat{d}_j\cdot\frac{v_{D'}(X)}{X-\omega^{2^j}\zeta}, \qquad j=0,1,\ldots, n
 $$
 
-其中 $\hat{d}_j$ 是 $D'$ 上的 Bary-Centric Weights，定义为
+where $\hat{d}_j$ are the Bary-Centric Weights on $D'$, defined as
 
 $$
 \hat{d}_j = \prod_{l\neq j} \frac{1}{\zeta\cdot\omega^{2^j} - \zeta\cdot\omega^{2^l}} = \frac{1}{\zeta^n}\cdot\prod_{l\neq j} \frac{1}{\omega^{2^j} - \omega^{2^l}} = \frac{1}{\zeta^n}\cdot\hat{w}_j
 $$
 
-这里 $\hat{w}_j$ 是 $D$ 上的 Bary-Centric Weights，并且它的定义只与 $D$ 相关，和 $\zeta$ 无关。因此，我们可以事先预计算 $\hat{w}_j$ ，然后利用 $\hat{w}_j$ 来计算 $c^*(X)$：
+Here $\hat{w}_j$ are the Bary-Centric Weights on $D$, and their definition is only related to $D$, independent of $\zeta$. Therefore, we can precompute $\hat{w}_j$ and then use $\hat{w}_j$ to calculate $c^*(X)$:
 
 $$
 c^*(X) = c^*_0 \cdot L^{D'}_0(X) + c^*_1 \cdot L^{D'}_1(X) + \cdots + c^*_n \cdot L^{D'}_n(X)
 $$
 
-上面的等式可以进一步优化，等式右边除以一个常数项多项式 $g(X)=1$
+The above equation can be further optimized by dividing the right side by a constant polynomial $g(X)=1$
 
 $$
 g(X) = 1 \cdot L^{D'}_0(X) + 1 \cdot L^{D'}_1(X) + \cdots + 1 \cdot L^{D'}_n(X)
 $$
 
-可以得到：
+We can get:
 
 $$
 c^*(X) = \frac{c^*(X)}{g(X)} = \frac{c^*_0 \cdot L^{D'}_0(X) + c^*_1 \cdot L^{D'}_1(X) + \cdots + c^*_n \cdot L^{D'}_n(X)}{g(X)} \\
 $$
 
-展开 $g(X)$ 与 $L^{D'}_i(X)$ ，可以得到：
+Expanding $g(X)$ and $L^{D'}_i(X)$, we can get:
 
 $$
 c^*(X) = \frac{c^*_0 \cdot \hat{d}_0 \cdot \frac{z_{D'}(X)}{X-\omega\zeta} + c^*_1 \cdot \hat{d}_1 \cdot \frac{z_{D'}(X)}{X-\omega^{2}\zeta} + \cdots + c^*_n \cdot \hat{d}_n \cdot \frac{z_{D'}(X)}{X-\omega^{2^n}\zeta}}{
@@ -125,7 +125,7 @@ c^*(X) = \frac{c^*_0 \cdot \hat{d}_0 \cdot \frac{z_{D'}(X)}{X-\omega\zeta} + c^*
   }
 $$
 
-分子分母同时消去 $z_{D'}(X)$，可以得到
+Canceling out $z_{D'}(X)$ in both numerator and denominator, we can get
 
 $$
 c^*(X) = \frac{c^*_0 \cdot \hat{d}_0 \cdot \frac{1}{X-\omega\zeta} + c^*_1 \cdot \hat{d}_1 \cdot \frac{1}{X-\omega^{2}\zeta} + \cdots + c^*_n \cdot \hat{d}_n \cdot \frac{1}{X-\omega^{2^n}\zeta}}{
@@ -133,7 +133,7 @@ c^*(X) = \frac{c^*_0 \cdot \hat{d}_0 \cdot \frac{1}{X-\omega\zeta} + c^*_1 \cdot
   }
 $$
 
-再展开 $\hat{d}_i$ 的定义，并且分子分母同时消去 $\frac{1}{\zeta^n}$ ，可以得到
+Expanding the definition of $\hat{d}_i$ and canceling out $\frac{1}{\zeta^n}$ in both numerator and denominator, we can get
 
 $$
 c^*(X) = \frac{c^*_0 \cdot \frac{\hat{w}_0}{X-\omega\zeta} + c^*_1 \cdot \frac{\hat{w}_1}{X-\omega^{2}\zeta} + \cdots + c^*_n \cdot \frac{\hat{w}_n}{X-\omega^{2^n}\zeta}}{
@@ -141,27 +141,27 @@ c^*(X) = \frac{c^*_0 \cdot \frac{\hat{w}_0}{X-\omega\zeta} + c^*_1 \cdot \frac{\
   }
 $$
 
-Prover 可以利用事先预计算的 $D$ 上的Bary-Centric Weights $\{\hat{w}_i\}$ 来快速计算 $c^*(X)$，如果 $n$ 是固定的。 尽管如此，$c^*(X)$ 的计算复杂度仍为 $O(n\log^2(n))$。不过考虑到 $n=\log(N)$，所以 $c^*(X)$ 的计算复杂度是对数级别的。
+The Prover can use the precomputed Bary-Centric Weights $\{\hat{w}_i\}$ on $D$ to quickly calculate $c^*(X)$, if $n$ is fixed. Nevertheless, the computational complexity of $c^*(X)$ is still $O(n\log^2(n))$. However, considering that $n=\log(N)$, the computational complexity of $c^*(X)$ is logarithmic.
 
 $$
 c^*(X) = \sum_{j=0}^{n-1} \frac{{\hat{w}}_j}{\zeta^n} \cdot \frac{z_{D_\zeta}(X)}{X-\zeta\cdot\omega^{2^j}}
 $$
 
-预计算的 $\hat{w}_j$ 的定义为
+The definition of the precomputed $\hat{w}_j$ is
 
 $$
 \hat{w}_j = \prod_{l\neq j} \frac{1}{\omega^{2^j} - \omega^{2^l}}
 $$
 
-不仅如此，Verifier 需要计算 $c^*(X)$ 在某个挑战点上的取值 ，比如 $X=\xi$， Verifier 可以通过上面的等式，以 $O(\log{N})$ 时间复杂度根据 Prover 提供的 $\vec{c^*}$ 来计算 $c^*(\xi)$。
+Moreover, the Verifier needs to calculate the value of $c^*(X)$ at a certain challenge point, such as $X=\xi$. The Verifier can use the above equation to calculate $c^*(\xi)$ based on $\vec{c^*}$ provided by the Prover with a time complexity of $O(\log{N})$.
 
-## 2. PH23+KZG10 协议（优化版）
+## 2. PH23+KZG10 Protocol (Optimized Version)
 
-对于 KZG10 协议，因为其 Commitment 具有加法同态性。
+For the KZG10 protocol, because its Commitment has additive homomorphism.
 
 ### Precomputation 
 
-1. 预计算 $s_0(X),\ldots, s_{n-1}(X)$ and $v_H(X)$	
+1. Precompute $s_0(X),\ldots, s_{n-1}(X)$ and $v_H(X)$	
 
 
 $$
@@ -171,7 +171,7 @@ $$
 s_i(X) = \frac{v_H(X)}{v_{H_i}(X)} = \frac{X^N-1}{X^{2^i}-1}
 $$
 
-2. 预计算 $D=(1, \omega, \omega^2, \ldots, \omega^{2^{n-1}})$ 上的 Bary-Centric Weights $\{\hat{w}_i\}$。这个可以加速 
+2. Precompute Bary-Centric Weights $\{\hat{w}_i\}$ on $D=(1, \omega, \omega^2, \ldots, \omega^{2^{n-1}})$. This can accelerate 
 
 
 $$
@@ -179,56 +179,56 @@ $$
 $$
 
 
-3. 预计算 Lagrange Basis 的 KZG10 SRS $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$ 
+3. Precompute KZG10 SRS of Lagrange Basis $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$ 
 
 
 ### Common inputs
 
 1. $C_a=[\hat{f}(\tau)]_1$:  the (uni-variate) commitment of $\tilde{f}(X_0, X_1, \ldots, X_{n-1})$ 
-2. $\vec{u}=(u_0, u_1, \ldots, u_{n-1})$: 求值点
-3. $v=\tilde{f}(u_0,u_1,\ldots, u_{n-1})$: MLE 多项式 $\tilde{f}$ 在 $\vec{X}=\vec{u}$ 处的运算值
+2. $\vec{u}=(u_0, u_1, \ldots, u_{n-1})$: evaluation point
+3. $v=\tilde{f}(u_0,u_1,\ldots, u_{n-1})$: computation value of MLE polynomial $\tilde{f}$ at $\vec{X}=\vec{u}$
 
 
-### Commit 计算过程
+### Commit Calculation Process
 
-1. Prover 构造一元多项式 $a(X)$，使其 Evaluation form 等于 $\vec{a}=(a_0, a_1, \ldots, a_{N-1})$，其中 $a_i = \tilde{f}(\mathsf{bits}(i))$, 为 $\tilde{f}$ 在 Boolean Hypercube $\{0,1\}^n$ 上的取值。
+1. Prover constructs univariate polynomial $a(X)$ such that its Evaluation form equals $\vec{a}=(a_0, a_1, \ldots, a_{N-1})$, where $a_i = \tilde{f}(\mathsf{bits}(i))$, which is the value of $\tilde{f}$ on the Boolean Hypercube $\{0,1\}^n$.
 
 $$
 a(X) = a_0\cdot L_0(X) + a_1\cdot L_1(X) + a_2\cdot L_2(X)
 + \cdots + a_{N-1}\cdot L_{N-1}(X)
 $$
 
-2. Prover 计算 $\hat{f}(X)$ 的承诺 $C_a$，并发送 $C_a$
+2. Prover calculates commitment $C_a$ of $\hat{f}(X)$ and sends $C_a$
 
 $$
 C_{a} = a_0\cdot A_0 + a_1\cdot A_1 + a_2\cdot A_2 + \cdots + a_{N-1}\cdot A_{N-1} = [\hat{f}(\tau)]_1
 $$
 
-其中 $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$ ，在预计算过程中已经得到。
+where $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$ have been obtained in the precomputation process.
 
-### Evaluation 证明协议
+### Evaluation Proof Protocol
 
-回忆下证明的多项式运算的约束：
+Recall the constraint of polynomial computation to be proved:
 
 $$
 \tilde{f}(u_0, u_1, u_2, \ldots, u_{n-1}) = v
 $$
 
-这里 $\vec{u}=(u_0, u_1, u_2, \ldots, u_{n-1})$ 是一个公开的挑战点。
+Here $\vec{u}=(u_0, u_1, u_2, \ldots, u_{n-1})$ is a public challenge point.
 
 #### Round 1.
 
 Prover:
 
-1. 计算向量 $\vec{c}$，其中每个元素 $c_i=\overset{\sim}{eq}(\mathsf{bits}(i), \vec{u})$
+1. Calculate vector $\vec{c}$, where each element $c_i=\overset{\sim}{eq}(\mathsf{bits}(i), \vec{u})$
 
-2. 构造多项式 $c(X)$，其在 $H$ 上的运算结果恰好是 $\vec{c}$ 。
+2. Construct polynomial $c(X)$, whose computation result on $H$ is exactly $\vec{c}$.
 
 $$
 c(X) = \sum_{i=0}^{N-1} c_i \cdot L_i(X)
 $$
  
-3. 计算 $c(X)$ 的承诺 $C_c= [c(\tau)]_1$，并发送 $C_c$
+3. Calculate commitment $C_c= [c(\tau)]_1$ of $c(X)$ and send $C_c$
 
 $$
 C_c = \mathsf{KZG10.Commit}(\vec{c})  =  [c(\tau)]_1 
@@ -236,11 +236,11 @@ $$
 
 #### Round 2.
 
-Verifier: 发送挑战数 $\alpha\leftarrow_{\$}\mathbb{F}_p$ 
+Verifier: Send challenge number $\alpha\leftarrow_{\$}\mathbb{F}_p$ 
 
 Prover: 
 
-1. 构造关于 $\vec{c}$ 的约束多项式 $p_0(X),\ldots, p_{n}(X)$
+1. Construct constraint polynomials $p_0(X),\ldots, p_{n}(X)$ about $\vec{c}$
 
 $$
 \begin{split}
@@ -249,13 +249,13 @@ p_k(X) &= s_{k-1}(X) \cdot \Big( u_{n-k}\cdot c(X) - (1-u_{n-k})\cdot c(\omega^{
 \end{split}
 $$
 
-2. 把 $\{p_i(X)\}$ 聚合为一个多项式 $p(X)$ 
+2. Aggregate $\{p_i(X)\}$ into one polynomial $p(X)$ 
 
 $$
 p(X) = p_0(X) + \alpha\cdot p_1(X) + \alpha^2\cdot p_2(X) + \cdots + \alpha^{n}\cdot p_{n}(X)
 $$
 
-3. 构造累加多项式 $z(X)$，满足
+3. Construct accumulation polynomial $z(X)$, satisfying
 
 $$
 \begin{split}
@@ -265,7 +265,7 @@ z(\omega^{N-1}) &= v \\
 \end{split}
 $$
 
-4. 构造约束多项式 $h_0(X), h_1(X), h_2(X)$，满足
+4. Construct constraint polynomials $h_0(X), h_1(X), h_2(X)$, satisfying
 
 $$
 \begin{split}
@@ -275,7 +275,7 @@ h_2(X) & = L_{N-1}(X)\cdot\big( z(X) - v \big) \\
 \end{split}
 $$
 
-5. 把 $p(X)$ 和 $h_0(X), h_1(X), h_2(X)$ 聚合为一个多项式 $h(X)$，满足
+5. Aggregate $p(X)$ and $h_0(X), h_1(X), h_2(X)$ into one polynomial $h(X)$, satisfying
 
 $$
 \begin{split}
@@ -283,13 +283,13 @@ h(X) &= p(X) + \alpha^{n+1} \cdot h_0(X) + \alpha^{n+2} \cdot h_1(X) + \alpha^{n
 \end{split}
 $$
 
-6. 计算 Quotient 多项式 $t(X)$，满足
+6. Calculate Quotient polynomial $t(X)$, satisfying
 
 $$
 h(X) =t(X)\cdot v_H(X)
 $$
 
-7. 计算 $C_t=[t(\tau)]_1$， $C_z=[z(\tau)]_1$，并发送 $C_t$ 和 $C_z$
+7. Calculate $C_t=[t(\tau)]_1$, $C_z=[z(\tau)]_1$, and send $C_t$ and $C_z$
 
 $$
 \begin{split}
@@ -300,17 +300,17 @@ $$
 
 #### Round 3.
 
-Verifier: 发送随机求值点 $\zeta\leftarrow_{\$}\mathbb{F}_p$ 
+Verifier: Send random evaluation point $\zeta\leftarrow_{\$}\mathbb{F}_p$ 
 
 Prover: 
 
-1. 计算 $s_i(X)$ 在 $\zeta$ 处的取值：
+1. Calculate the values of $s_i(X)$ at $\zeta$:
 
 $$
 s_0(\zeta), s_1(\zeta), \ldots, s_{n-1}(\zeta)
 $$
 
-这里 Prover 可以高效计算 $s_i(\zeta)$ ，由 $s_i(X)$ 的公式得
+Here the Prover can efficiently calculate $s_i(\zeta)$. From the formula of $s_i(X)$, we get
 
 $$
 \begin{aligned}
@@ -321,29 +321,29 @@ $$
 \end{aligned} 
 $$
 
-因此 $s_i(\zeta)$ 的值可以通过 $s_{i + 1}(\zeta)$ 计算得到，而
+Therefore, the value of $s_i(\zeta)$ can be calculated from $s_{i + 1}(\zeta)$, and
 
 $$
 s_{n-1}(\zeta) = \frac{\zeta^N - 1}{\zeta^{2^{n-1}} - 1} = \zeta^{2^{n-1}} + 1
 $$
 
-因此可以得到一个 $O(n)$ 的算法来计算 $s_i(\zeta)$ ，并且这里不含除法运算。计算过程是：$s_{n-1}(\zeta) \rightarrow s_{n-2}(\zeta) \rightarrow \cdots \rightarrow s_0(\zeta)$ 。
+Thus, we can get an $O(n)$ algorithm to calculate $s_i(\zeta)$, and it doesn't contain division operations. The calculation process is: $s_{n-1}(\zeta) \rightarrow s_{n-2}(\zeta) \rightarrow \cdots \rightarrow s_0(\zeta)$.
 
-2. 定义求值 Domain $D'$，包含 $n+1$ 个元素：
+2. Define evaluation Domain $D'$, containing $n+1$ elements:
 
 $$
 D'=D\zeta = \{\zeta, \omega\zeta, \omega^2\zeta,\omega^4\zeta, \ldots, \omega^{2^{n-1}}\zeta\}
 $$
 
-3. 计算并发送 $c(X)$ 在 $D'$ 上的取值 
+3. Calculate and send the values of $c(X)$ on $D'$ 
 
 $$
 c(\zeta), c(\zeta\cdot\omega), c(\zeta\cdot\omega^2), c(\zeta\cdot\omega^4), \ldots, c(\zeta\cdot\omega^{2^{n-1}})
 $$
 
-4. 计算并发送 $z(\omega^{-1}\cdot\zeta)$
+4. Calculate and send $z(\omega^{-1}\cdot\zeta)$
 
-5. 计算 Linearized Polynomial $l_\zeta(X)$
+5. Calculate Linearized Polynomial $l_\zeta(X)$
 
 $$
 \begin{split}
@@ -360,15 +360,15 @@ l_\zeta(X) =& \Big(s_0(\zeta) \cdot (c(\zeta) - c_0) \\
 \end{split}
 $$
 
-显然，$l_\zeta(\zeta)= 0$，因此这个运算值不需要发给 Verifier，并且 $[l_\zeta(\tau)]_1$ 可以由 Verifier 自行构造。
+Obviously, $l_\zeta(\zeta)= 0$, so this computation value doesn't need to be sent to the Verifier, and $[l_\zeta(\tau)]_1$ can be constructed by the Verifier themselves.
 
-6. 构造多项式 $c^*(X)$，它是下面向量在 $D\zeta$ 上的插值多项式
+6. Construct polynomial $c^*(X)$, which is the interpolation polynomial of the following vector on $D\zeta$
 
 $$
 \vec{c^*}= \Big(c(\omega\cdot\zeta), c(\omega^2\cdot\zeta), c(\omega^4\cdot\zeta), \ldots, c(\omega^{2^{n-1}}\cdot\zeta), c(\zeta)\Big)
 $$
 
-Prover 可以利用事先预计算的 $D$ 上的Bary-Centric Weights $\{\hat{w}_i\}$ 来快速计算 $c^*(X)$，
+The Prover can use the precomputed Bary-Centric Weights $\{\hat{w}_i\}$ on $D$ to quickly calculate $c^*(X)$,
 
 $$
 c^*(X) = \frac{c^*_0 \cdot \frac{\hat{w}_0}{X-\omega\zeta} + c^*_1 \cdot \frac{\hat{w}_1}{X-\omega^{2}\zeta} + \cdots + c^*_n \cdot \frac{\hat{w}_n}{X-\omega^{2^n}\zeta}}{
@@ -376,57 +376,57 @@ c^*(X) = \frac{c^*_0 \cdot \frac{\hat{w}_0}{X-\omega\zeta} + c^*_1 \cdot \frac{\
   }
 $$
 
-这里 $\hat{w}_j$ 为预计算的值：
+Here $\hat{w}_j$ are precomputed values:
 
 $$
 \hat{w}_j = \prod_{l\neq j} \frac{1}{\omega^{2^j} - \omega^{2^l}}
 $$
 
 
-7. 因为 $l_\zeta(\zeta)= 0$，所以存在 Quotient 多项式 $q_\zeta(X)$ 满足
+7. Because $l_\zeta(\zeta)= 0$, there exists a Quotient polynomial $q_\zeta(X)$ satisfying
 
 $$
 q_\zeta(X) = \frac{1}{X-\zeta}\cdot l_\zeta(X)
 $$
 
-8. 构造 $D\zeta$ 上的消失多项式 $z_{D_{\zeta}}(X)$
+8. Construct vanishing polynomial $z_{D_{\zeta}}(X)$ on $D\zeta$
 
 $$
 z_{D_{\zeta}}(X) = (X-\zeta\omega)\cdots (X-\zeta\omega^{2^{n-1}})(X-\zeta)
 $$
 
-9. 构造 Quotient 多项式  $q_c(X)$ :
+9. Construct Quotient polynomial $q_c(X)$:
 
 $$
 q_c(X) = \frac{(c(X) - c^*(X))}{(X-\zeta)(X-\omega\zeta)(X-\omega^2\zeta)\cdots(X-\omega^{2^{n-1}}\zeta)}
 $$
 
 
-10. 构造 Quotient 多项式 $q_{\omega\zeta}(X)$
+10. Construct Quotient polynomial $q_{\omega\zeta}(X)$
 
 $$
 q_{\omega\zeta}(X) = \frac{z(X) - z(\omega^{-1}\cdot\zeta)}{X - \omega^{-1}\cdot\zeta}
 $$
 
-11. 发送 $\big(Q_c = [q_c(\tau)]_1, Q_\zeta=[q_\zeta(\tau)]_1, Q_{\omega\zeta}=[q_{\omega\zeta}(\tau)]_1,  \big)$
+11. Send $\big(Q_c = [q_c(\tau)]_1, Q_\zeta=[q_\zeta(\tau)]_1, Q_{\omega\zeta}=[q_{\omega\zeta}(\tau)]_1,  \big)$
 
 #### Round 4.
 
-1. Verifier 发送第二个随机挑战点 $\xi\leftarrow_{\$}\mathbb{F}_p$ 
+1. Verifier sends the second random challenge point $\xi\leftarrow_{\$}\mathbb{F}_p$ 
 
-2. Prover 构造第三个 Quotient 多项式 $q_\xi(X)$
+2. Prover constructs the third Quotient polynomial $q_\xi(X)$
 
 $$
 q_\xi(X) = \frac{c(X) - c^*(\xi) - z_{D_\zeta}(\xi)\cdot q_c(X)}{X-\xi}
 $$
 
-3. Prover 计算并发送 $Q_\xi$
+3. Prover calculates and sends $Q_\xi$
 
 $$
 Q_\xi = \mathsf{KZG10.Commit}(q_\xi(X)) = [q_\xi(\tau)]_1
 $$
 
-### 证明表示
+### Proof
 
 $7\cdot\mathbb{G}_1$, $(n+1)\cdot\mathbb{F}$ 
 
@@ -437,15 +437,15 @@ $$
 \end{aligned}
 $$
 
-### 验证过程
+### Verification Process
 
-1. Verifier 计算 $c^*(\xi)$ 使用预计算的 Barycentric Weights $\{\hat{w}_i\}$
+1. Verifier calculates $c^*(\xi)$ using precomputed Barycentric Weights $\{\hat{w}_i\}$
 
 $$
 c^*(\xi)=\frac{\sum_i c_i\frac{w_i}{\xi-x_i}}{\sum_i \frac{w_i}{\xi-x_i}}
 $$
 
-2. Verifier 计算 $v_H(\zeta), L_0(\zeta), L_{N-1}(\zeta)$ 
+2. Verifier calculates $v_H(\zeta), L_0(\zeta), L_{N-1}(\zeta)$ 
 
 
 $$
@@ -460,9 +460,9 @@ $$
 L_{N-1}(\zeta) = \frac{\omega^{N-1}}{N}\cdot \frac{v_{H}(\zeta)}{\zeta-\omega^{N-1}}
 $$
 
-3. Verifier 计算 $s_0(\zeta), \ldots, s_{n-1}(\zeta)$ ，其计算方法可以采用前文提到的递推方式进行计算。
+3. Verifier calculates $s_0(\zeta), \ldots, s_{n-1}(\zeta)$, which can be calculated using the recursive method mentioned earlier.
 
-4. Verifier 计算线性化多项式的承诺 $C_l$ 
+4. Verifier calculates the commitment of the linearized polynomial $C_l$ 
 
 $$
 \begin{split}
@@ -480,7 +480,7 @@ C_l & =
 \end{split}
 $$
 
-5. Verifier 产生随机数 $\eta$ 来合并下面的 Pairing 验证：
+5. Verifier generates a random number $\eta$ to merge the following Pairing verifications:
 
 $$
 \begin{split}
@@ -490,7 +490,7 @@ e(C_z + \zeta\cdot Q_{\omega\zeta} - z(\omega^{-1}\cdot\zeta)\cdot[1]_1, [1]_2) 
 \end{split}
 $$
 
-合并后的验证只需要两个 Pairing 运算。
+After merging, the verification only needs two Pairing operations.
 
 $$
 \begin{split}
@@ -504,13 +504,13 @@ $$
 e\Big(P, [1]_2\Big) \overset{?}{=} e\Big(Q_\zeta + \eta\cdot Q_\xi + \eta^2\cdot Q_{\omega\zeta}, [\tau]_2\Big)
 $$
 
-## 3. 优化性能分析
+## 3. Optimized Performance Analysis
 
 Proof size:  $7~\mathbb{G}_1 + (n+1)~\mathbb{F}$
 
 Prover's cost
-  - Commit 阶段：$O(N\log N)~\mathbb{F}$ + $\mathbb{G}_1$
-  - Evaluation 阶段：$O(N\log N)~\mathbb{F}$ + $7~\mathbb{G}_1$
+  - Commit phase: $O(N\log N)~\mathbb{F}$ + $\mathbb{G}_1$
+  - Evaluation phase: $O(N\log N)~\mathbb{F}$ + $7~\mathbb{G}_1$
 
 Verifier's cost: $4~\mathbb{F} + O(n)~\mathbb{F}+ 3~\mathbb{G}_1 + 2~P$
 

@@ -72,13 +72,13 @@ $$
 因此，Prover 只要发送 $q(X)$ 的承诺，向 Verifier 证明 $q(X)$ 的存在性，即相当于证明了 $f(X)$ 的求值是正确的。
 
 $$
-\pi_{eval} = q_0 \cdot [1]_1 + q_1 \cdot [\tau]_1 + \cdots + q_d \cdot [\tau^d]_1 = [q(\tau)]_1
+\pi_{eval} = q_0 \cdot [1]_1 + q_1 \cdot [\tau]_1 + \cdots + q_{d-1} \cdot [\tau^{d-1}]_1 = [q(\tau)]_1
 $$
 
 然后 Verifier 利用 SRS 提供的 Base 元素来检查分解公式的正确性。对于 Verifier， $f(z)$ 与 $z$ 是公开的，所以 Verifier 可以通过下面的公式来检查分解公式：
 
 $$
-e\Big({\color{red}[f(\tau)]} - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) = e\Big({\color{red}[q(\tau)]},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
+e\Big({\color{red}[f(\tau)]_1} - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) = e\Big({\color{red}[q(\tau)]_1},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
 $$
 
 上面公式中红色的部分由 Prover 提供，并且不暴露 $[\cdot]_1$ 中的值。
@@ -175,13 +175,13 @@ $$
 继续回忆下，Non-hiding KZG10 的 Verifier 需要检查下面的等式来验证 $q(X)$ 的承诺：
 
 $$
-e\Big({\color{red}[f(\tau)]} - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) = e\Big({\color{red}[q(\tau)]},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
+e\Big({\color{red}[f(\tau)]_1} - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) = e\Big({\color{red}[q(\tau)]_1},\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
 $$
 
 不过在 Hiding-KZG10 中，由于多项式承诺 $\mathsf{cm}(f)$ 和商多项式承诺 $\mathsf{cm}(q)$ 都带上了盲化因子，所以 Verifier 就不再能按照上面的 Pairing 等式完成验证了：
 
 $$
-e\Big([f(\tau) + {\color{red}r\cdot\gamma}] - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) \neq e\Big([q(\tau)+{\color{red}s\cdot\gamma}],\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
+e\Big([f(\tau) + {\color{red}r\cdot\gamma}]_1 - {\color{blue}f(z)}\cdot[1]_1,\ [1]_2\Big) \neq e\Big([q(\tau)+{\color{red}s\cdot\gamma}]_1,\ [\tau] - {\color{blue}z}\cdot[1]_2\Big)
 $$
 
 我们来推理下为什么上面的等式不成立。先看看等式左边相当于在计算

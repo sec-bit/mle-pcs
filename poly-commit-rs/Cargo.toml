@@ -5,3 +5,6 @@ edition = "2021"
 
 [dependencies]
 rand = "0.8.5"
+ark-bls12-381 = "0.5"
+ark-ff = "0.5"
+ark-std = "0.5"

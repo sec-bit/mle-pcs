@@ -6,10 +6,14 @@
 from curve import Fr as Field, G1Point as G1, G2Point as G2
 from unipoly import UniPolynomial
 from random import randint
-from utils import is_power_of_two, log_2
+from utils import is_power_of_two
 from mle2 import MLEPolynomial
 from kzg10_non_hiding import Commitment, KZG10_PCS
 from merlin.merlin_transcript import MerlinTranscript
+
+
+# POC Implement BCHO22(Gemini) PCS
+
 
 class BCHO_PCS:
     """BCHO commitment scheme implementation."""
@@ -36,7 +40,12 @@ class BCHO_PCS:
         """
         Commit to a polynomial.
         """
-        pass
+
+        assert f.degree < self.kzg_pcs.max_degree, \
+            "f.degree must be less than max_degree of the KZG10 PCS"
+        f_cm = self.kzg_pcs.commit(f)
+        return f_cm
+
 
     def prove_eval(self, commitment: Commitment, \
                                polynomial: MLEPolynomial, \
