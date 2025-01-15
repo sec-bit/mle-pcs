@@ -2,6 +2,20 @@ from merkle import MerkleTree, verify_decommitment
 from merlin.merlin_transcript import MerlinTranscript
 from utils import from_bytes, log_2, is_power_of_two
 from unipolynomial import UniPolynomial
+import sys
+
+sys.path.append('finite-field')
+sys.path.append('../src/finite-field')
+
+from babybear import BabyBear, BabyBearExtElem
+
+def ext_from_babybear(e):
+    if isinstance(e, BabyBearExtElem):
+        return e
+    elif isinstance(e, BabyBear):
+        return BabyBearExtElem([e, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()])
+    else:
+        raise ValueError(f"Unsupported type: {type(e)}")
 
 class FRI:
     security_level = 128
@@ -13,13 +27,13 @@ class FRI:
         assert is_power_of_two(N)
         degree_bound = N
         if debug: print("degree_bound:", degree_bound)
-        coeffs = UniPolynomial.compute_coeffs_from_evals_fast(evals, domain[:N])
+        coeffs = UniPolynomial.ntt_coeffs_from_evals(evals, log_2(N), domain[1], BabyBear.one())
         if debug: print("coeffs:", coeffs)
-        code = cls.rs_encode_single(coeffs, domain, rate)
+        code = UniPolynomial.ntt_evals_from_coeffs(coeffs + [0] * (N * rate - len(coeffs)), log_2(N * rate), domain[1])
         if debug: print("code:", code)
         assert len(code) == N * rate, f"code: {code}, degree_bound: {degree_bound}, rate: {rate}"
         
-        return MerkleTree(code), code
+        return MerkleTree(code), code, coeffs
 
     @classmethod
     def prove(cls, code, code_tree, val, point, domain, rate, degree_bound, gen, transcript, debug=False):
@@ -110,8 +124,7 @@ class FRI:
         evals_copy = evals
         transcript.append_message(b"first_oracle", first_tree.root.encode('ascii'))
 
-        alpha = transcript.challenge_bytes(b"alpha", 4)
-        alpha = from_bytes(alpha)
+        alpha = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))) for _ in range(4)])
 
         trees = []
         tree_evals = []
@@ -125,8 +138,7 @@ class FRI:
             tree_evals.append(evals)
 
             transcript.append_message(b"oracle", tree.root.encode('ascii'))
-            alpha = transcript.challenge_bytes(b"alpha", 4)
-            alpha = from_bytes(alpha)
+            alpha = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))) for _ in range(4)])
 
             gen *= gen
 
@@ -161,8 +173,8 @@ class FRI:
         assert len(evals) % 2 == 0
 
         half = len(evals) // 2
-        f0_evals = [(evals[i] + evals[half + i]) / 2 for i in range(half)]
-        f1_evals = [(evals[i] - evals[half + i]) / (2 * g ** i) for i in range(half)]
+        f0_evals = [ext_from_babybear((evals[i] + evals[half + i]) / BabyBear(2)) for i in range(half)]
+        f1_evals = [(evals[i] - evals[half + i]) / (BabyBear(2) * g ** i) for i in range(half)]
 
         if debug:
             x = g ** 5
@@ -244,13 +256,12 @@ class FRI:
     @staticmethod
     def verify_queries(proof, k, num_vars, num_verifier_queries, T, transcript, debug=False):
         transcript.append_message(b"first_oracle", bytes(proof['first_oracle'], 'ascii'))
-        alpha = transcript.challenge_bytes(b"alpha", 4)
-        alpha = from_bytes(alpha)
+        alpha = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))) for _ in range(4)])
 
         fold_challenges = [alpha]
         for i in range(k):
             transcript.append_message(bytes(f'oracle', 'ascii'), bytes(proof['intermediate_oracles'][i], 'ascii'))
-            fold_challenges.append(from_bytes(transcript.challenge_bytes(b"alpha", 4)))
+            fold_challenges.append(BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))) for _ in range(4)]))
 
         queries = [from_bytes(transcript.challenge_bytes(b"queries", 4)) % num_vars for _ in range(num_verifier_queries)]
         # query loop
@@ -274,15 +285,21 @@ class FRI:
                 if i != len(mps) - 1:
                     f_code_folded = cur_path[i + 1][0 if x0 < num_vars_copy / 4 else 1]
                     alpha = fold_challenges[i]
+                    left = (code_left + code_right)/BabyBear(2)
+                    right = alpha * (code_left - code_right)/(BabyBear(2)*table[x0])
+                    if not isinstance(left, BabyBearExtElem):
+                        left = BabyBearExtElem([left, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()])
+                    if not isinstance(right, BabyBearExtElem):
+                        right = BabyBearExtElem([right, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()])
                     if debug: assert x0 < len(table), f"x0: {x0}, table: {table}"
                     if debug: print("f_code_folded:", f_code_folded)
-                    if debug: print("expected:", ((code_left + code_right)/2 + alpha * (code_left - code_right)/(2*table[x0])))
+                    if debug: print("expected:", left + right)
                     if debug: print("code_left:", code_left)
                     if debug: print("code_right:", code_right)
                     if debug: print("alpha:", alpha)
-                    assert f_code_folded == (code_left + code_right)/2 + alpha * (code_left - code_right)/(2*table[x0]), f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, table: {table}"
+                    assert f_code_folded == left + right, f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, table: {table}"
                 else:
-                    assert proof["final_value"] == (code_left + code_right)/2 + alpha * (code_left - code_right)/(2*table[x0]), f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, table: {table}, final_value: {proof['final_value']}"
+                    assert proof["final_value"] == left + right, f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, table: {table}, final_value: {proof['final_value']}"
 
                 if i == 0:
                     assert verify_decommitment(x0, code_left, mp, proof['first_oracle']), "failed to check decommitment at first level"
@@ -293,11 +310,11 @@ class FRI:
                 q = x0
 
     @staticmethod
-    def rs_encode_single(m, alpha, c):
+    def rs_encode_single(m, alpha, c, zero=0):
         k0 = len(m)
         code = [None] * (k0 * c)
         for i in range(k0 * c):
             # Compute f_m(alpha[i])
-            code[i] = sum(m[j] * (alpha[i] ** j) for j in range(k0))
+            code[i] = sum([m[j] * (alpha[i] ** j) for j in range(k0)], zero)
         return code
 

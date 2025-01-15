@@ -1,4 +1,5 @@
 # from sage.all import *
+from utils import log_2
 
 class UniPolynomial:
 
@@ -318,7 +319,7 @@ class UniPolynomial:
         # omega = cls.get_root_of_unity(k_log_size)
         # evals = [Fp(e) for e in evals]
 
-        omega_inv = omega.inverse()
+        omega_inv = one / omega
         domain_size = UniPolynomial.scalar_constructor(2 ** k_log_size)
         domain_size_inv = one / domain_size
         
