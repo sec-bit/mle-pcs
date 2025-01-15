@@ -204,7 +204,7 @@ Similarly, the values of $\tilde{c}$ on a four-dimensional HyperCube are $(v_0, 
 
 $$
 \begin{split}
-    [[\tilde{c}]]_4 &= v_0 + v_1X + v_2X^2 + v_3X^3 + v_0X^4 + v_1X^5 + v_2X^6 + v_3X^7 \\
+    [[\tilde{c}]]_4 &= v_0 + v_1X + v_2X^2 + v_3X^3 + v_0X^4 + v_1X^5 + v_2X^6 + v_3X^7 + v_0X^8 + v_1X^9 + v_2X^{10} + v_3X^{11} + v_0X^{12} + v_1X^{13} + v_2X^{14} + v_3X^{15} \\
     & = (1 + X^4 + X^8 + X^{12})\cdot (v_0 + v_1X + v_2X^2 + v_3X^3) \\
     & = (1 + X^4 + X^8 + X^{12})\cdot [[\tilde{c}]]_2
 \end{split}
@@ -279,7 +279,7 @@ $$
 First, look at the term $[[\tilde{f}(X_0,X_1,\ldots, X_{n-1})]]_n$ on the left side of the equation, which directly maps to $\hat{f}(X)$. Then look at the term $[[v]]_n$, which maps to $\hat{v}(X)$,
 
 $$
-[[v]]_n  = \hat{v}(X) = v + vX + vX^2 + \ldots + vX^{n-1}
+[[v]]_n  = \hat{v}(X) = v + vX + vX^2 + \ldots + vX^{2^n-1}
 $$
 
 Or we can use the $\Phi_n(X)$ function to represent it:
