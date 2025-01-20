@@ -15,7 +15,7 @@ $$
 V_m = \langle \beta_0, \beta_1, \ldots, \beta_{m-1} \rangle
 $$
 
-这样任意一个元素 $ \theta\in\mathbb{F}_{2^m}$ ，可以写为 Basis 分量的线性组合：
+这样任意一个元素 $\theta\in\mathbb{F}_{2^m}$ ，可以写为 Basis 分量的线性组合：
 
 $$
 \theta = c_0\cdot \beta_0 + c_1\cdot \beta_1 + \ldots + c_{m-1}\cdot \beta_{m-1}, \text{ where $c_i\in \mathbb{F}_2$}
@@ -142,7 +142,7 @@ s_1(\beta_0+\beta_1+\beta_2) &= \beta_0\beta_1 + \beta_1^2 + \beta_0\beta_2 + \b
 \end{split}
 $$
 
-上面的等式显示 $s_1(V_3)$ 被映射到了一个大小只有 $V_3$ 一半的集合，记为 $V_2$。该集合也是一个子空间，$V_2= \langle \beta'_0, \beta'_1\rangle = \langle \beta_0\beta_1 + \beta_1^2, \beta_0\beta_2 + \beta_2^2 \rangle $，维度为 $2$ 。
+上面的等式显示 $s_1(V_3)$ 被映射到了一个大小只有 $V_3$ 一半的集合，记为 $V_2$。该集合也是一个子空间，$V_2= \langle \beta'_0, \beta'_1\rangle = \langle \beta_0\beta_1 + \beta_1^2, \beta_0\beta_2 + \beta_2^2 \rangle$，维度为 $2$ 。
 
 这不是巧合，根据群同构定理，同态映射 $\phi: H \to G$ 的 Image $G$ 满足 $G\cong H/Ker(\phi)$ ，其中 $G$ 是一个商群，并且 $|G| = |H|/|Ker(\phi)|$ 。在上面这个例子里，$s_1: V_3\to V_2$ 是同态映射，$V_1=Ker(s_1)$ 。
 
@@ -193,7 +193,7 @@ $$
 
 给定 $S^{(i)}$ 的一组 Basis 后，假设为 $B^{(i)}=(\beta^{(i)}_0, \beta^{(i)}_1,\ldots, \beta^{(i)}_s)$，在 Basis 上定义 Subspace Polynomial ${s}^{(i)}_1$，并用其作为群同态映射函数，把 $S^{(i)}$ 降维到 $S^{(i+1)}$。降维后的线性子空间 $S^{(i+1)}$ 的 Basis 需要把 $S^{(i)}$ 的 Basis 同步跟着 ${s}^{(i)}_1$ 转换到一个新的 Basis。切换到新 Basis 之后，我们又可以定义一组新的 Subspace Polynomial ${s}^{(i+1)}_i(X)$。
 
-我们假设 $S^{(0)}=\langle \beta_0, \beta_1, \ldots, \beta_{k-1}\rangle $ 开始，给定一组 Basis $B_k$，经过 ${s}_1$ 的映射之后，我们得到了 $S^{(1)}$，以及其 Basis $B^{(1)}$：
+我们假设 $S^{(0)}=\langle \beta_0, \beta_1, \ldots, \beta_{k-1}\rangle$ 开始，给定一组 Basis $B_k$，经过 ${s}_1$ 的映射之后，我们得到了 $S^{(1)}$，以及其 Basis $B^{(1)}$：
 
 $$
 B^{(1)} = \langle {\color{blue}{s}_1(\beta_1)}, {\color{blue}{s}_1(\beta_2)}, \ldots, {s}_1(\beta_{k-1}) \rangle
