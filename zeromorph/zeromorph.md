@@ -478,7 +478,7 @@ $$
 - Verifier only needs two Pairing operations to verify $s(\zeta)=0$, thus obtaining the proof that $n$ Degree Bounds hold
 
 $$
-e\big(\mathsf{cm}(s), \ [\tau^{D_{max}-2^n+1}]_2\big) = e\big(\mathsf{cm}(h_1), [\tau]_2 - \zeta\cdot [1]_2\big)
+e\big(\mathsf{cm}(s), \ [\tau^{D_{max}-2^n+2}]_2\big) = e\big(\mathsf{cm}(h_1), [\tau]_2 - \zeta\cdot [1]_2\big)
 $$
 
 Moreover, Verifier can send a random number $\alpha$ to further aggregate the evaluation proofs of $r(X)$ and $s(X)$, because they both take the value zero at $X=\zeta$.
@@ -552,7 +552,7 @@ $$
 2. Prover calculates $h(X)$ and sends its commitment $\mathsf{cm}(h)$ 
 
 $$
-h(X)=(h_0(X) + \alpha\cdot h_1(X))\cdot X^{D_{max}-2^n+1}
+h(X)=(h_0(X) + \alpha\cdot h_1(X))\cdot X^{D_{max}-2^n+2}
 $$ 
 
 #### Verification 
@@ -574,7 +574,7 @@ $$
 - Verify $r(\zeta) = 0$ and $s(\zeta) = 0$
 
 $$
-e(\mathsf{cm}(r) + \alpha\cdot \mathsf{cm}(s), \ [\tau^{D-2^n+1}]_2) = e(\mathsf{cm}(h),\ [\tau]_2 - \zeta\cdot [1]_2)
+e(\mathsf{cm}(r) + \alpha\cdot \mathsf{cm}(s), \ [\tau^{D-2^n+2}]_2) = e(\mathsf{cm}(h),\ [\tau]_2 - \zeta\cdot [1]_2)
 $$
 
 

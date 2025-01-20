@@ -473,7 +473,7 @@ $$
 - Verifier 只需要两个 Pairing 运算即可验证 $s(\zeta)=0$，从而得到 $n$ 个 Degree Bound 证明成立
 
 $$
-e\big(\mathsf{cm}(s), \ [\tau^{D_{max}-2^n+1}]_2\big) = e\big(\mathsf{cm}(h_1), [\tau]_2 - \zeta\cdot [1]_2\big)
+e\big(\mathsf{cm}(s), \ [\tau^{D_{max}-2^n+2}]_2\big) = e\big(\mathsf{cm}(h_1), [\tau]_2 - \zeta\cdot [1]_2\big)
 $$
 
 此外，Verfier 还可以发一个随机数 $\alpha$，进一步聚合 $r(X)$ 与 $s(X)$ 的取值证明，因为它们两个在 $X=\zeta$ 处的取值都为零。
@@ -543,7 +543,7 @@ $$
 2. Prover 计算 $h(X)$ 并发送其承诺 $\mathsf{cm}(h)$ 
 
 $$
-h(X)=(h_0(X) + \alpha\cdot h_1(X))\cdot X^{D_{max}-2^n+1}
+h(X)=(h_0(X) + \alpha\cdot h_1(X))\cdot X^{D_{max}-2^n+2}
 $$ 
 
 #### Verification 
@@ -564,7 +564,7 @@ $$
 - 验证 $r(\zeta) = 0$ 与 $s(\zeta) = 0$
 
 $$
-e(\mathsf{cm}(r) + \alpha\cdot \mathsf{cm}(s), \ [\tau^{D-2^n+1}]_2) = e(\mathsf{cm}(h),\ [\tau]_2 - \zeta\cdot [1]_2)
+e(\mathsf{cm}(r) + \alpha\cdot \mathsf{cm}(s), \ [\tau^{D-2^n+2}]_2) = e(\mathsf{cm}(h),\ [\tau]_2 - \zeta\cdot [1]_2)
 $$
 
 
