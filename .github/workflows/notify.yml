@@ -21,12 +21,6 @@ jobs:
       - name: Make escape script executable
         run: chmod +x .github/workflows/escape_markdown.sh
 
-      - name: Escape commit message
-        if: github.event_name == 'push'
-        id: escape_commit
-        run: |
-          echo "message=$(echo '${{ github.event.head_commit.message }}' | .github/workflows/escape_markdown.sh)" >> $GITHUB_OUTPUT
-
       - name: Send Telegram Message on Push
         if: github.event_name == 'push'
         uses: appleboy/telegram-action@master
@@ -42,7 +36,7 @@ jobs:
             
             📝 *Commit Message:* 
             ```
-            ${{ steps.escape_commit.outputs.message }}
+            ${{ github.event.head_commit.message }}
             ```
             
             🔗 [View Commit](https://github.com/${{ github.repository }}/commit/${{github.sha}})
