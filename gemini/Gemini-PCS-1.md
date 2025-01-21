@@ -234,7 +234,7 @@ Therefore, to compile the IOP protocol, we only need to commit to the polynomial
 **Degree Bound Proof:** To prove $deg(f)\leq d$
 
 - The prover provides $[f(\tau)]_1$ and additionally sends $[\tau^{D-d}\cdot f(\tau)]_1$ to the verifier
-- The verifier checks the equation $e([f(\tau)]_1, [1]_2) = e([\tau^{D-d}\cdot f(\tau)]_1, [\tau^{D-d}]_2)$
+- The verifier checks the equation $e([f(\tau)]_1, [\tau^{D-d}]_2) = e([\tau^{D-d}\cdot f(\tau)]_1, [1]_2)$
 
 **Multi-point Evaluation Proof:** To prove that $f(X)$ is opened as $u_1,u_2,u_3$ at $\beta_1, \beta_2, \beta_3$
 
@@ -266,7 +266,7 @@ Below we first give the Multi-to-Uni AoK scheme compiled based on KZG:
 4. The prover calculates the evaluation proof for each polynomial, where
 - $[q^{(0)}(\tau)]_1 = \frac{f^{(0)}(\tau)-g^{(0)}(\tau)}{(\tau-\beta)(\tau+\beta)}$                    % $f^{(0)}(\beta), f^{(0)}(-\beta)$
 - $[q^{(j)}(\tau)]_1 = \frac{f^{(j)}(\tau)-g^{(j)}(\tau)}{(\tau-\beta)(\tau+\beta)(\tau-\beta^2)}$              % $f^{(j)}(\beta), f^{(j)}(-\beta), f^{(j)}(\beta^2), j=1,...,n-1$
-5. The verifier checks:
+1. The verifier checks:
 - The correctness of degree bound proofs $[\tau^{D-N\cdot 2^{-j} + 1}\cdot f^{(j)}(\tau)]_1, j = 0,\ldots n-1$ for $f^{(0)},...,f^{(n-1)}$
 - The correctness of multi-point evaluation proofs $[q^{(0)}(\tau)]_1,\ldots [q^{(n-1)}(\tau)]_1$ for $f^{(0)},...,f^{(n-1)}$
 - The correctness of split-and-fold relations, i.e., for $j = 0,...,n-1$, whether the following equation holds:
