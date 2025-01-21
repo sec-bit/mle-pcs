@@ -264,8 +264,8 @@ $$
 
 一般地，不妨假设我们要进行次数校正的函数是 $f: \mathcal{L} \rightarrow \mathbb{F}$ ，其初始的次数是 $d$ ，目标矫正的次数是 $d^* \ge d$ ，我们想要构造一个高效的次数校正算法，能输出一个函数 $f^*$ 满足：
 
-1. 如果 $f \in \mathrm{RS}[\mathbb{F},\mathcal{L},d/k]$ ，那么 $f^* \in \mathrm{RS}[\mathbb{F},\mathcal{L},d/k]$ 。
-2. 如果 $f$ 距离 $\mathrm{RS}[\mathbb{F},\mathcal{L},d/k]$ 有 $\delta$ 远，那么以极大的概率有 $f^*$ 距离 $\mathrm{RS}[\mathbb{F},\mathcal{L},d/k]$ 也有 $\delta$ 远。
+1. 如果 $f \in \mathrm{RS}[\mathbb{F},\mathcal{L},d]$ ，那么 $f^* \in \mathrm{RS}[\mathbb{F},\mathcal{L},d^*]$ 。
+2. 如果 $f$ 距离 $\mathrm{RS}[\mathbb{F},\mathcal{L},d]$ 有 $\delta$ 远，那么以极大的概率有 $f^*$ 距离 $\mathrm{RS}[\mathbb{F},\mathcal{L},d^*]$ 也有 $\delta$ 远。
 3. 对 $f^*$ 的查询可以通过查询 $f$ 来高效的计算出来。
 
 STIR 论文 ([ACFY24], 第 2.3 节) 中提出了一种方法，不仅满足上述三个条件，还利用几何级数求和的方法，使得第 3 项的计算更加高效。
