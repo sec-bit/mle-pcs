@@ -177,7 +177,7 @@ class BCHO_PCS:
         #    [(beta, h_agg(beta)), (-beta, h_agg(-beta)), (beta^2, h_agg(beta^2))]
         #
         #   h*(X) = h(beta) * (X+beta)(X-beta^2)  / (2*beta*(beta-beta^2)) + 
-        #           h(-beta) * (X-beta)(X-beta^2) / (2*beta*(beta^2-beta)) + 
+        #           h(-beta) * (X-beta)(X-beta^2) / (2*beta*(beta^2+beta)) + 
         #           h(beta^2) * (X+beta)(X-beta)  / (beta^4-beta^2)
         #
         interp_poly = UniPolynomial.interpolate([h_agg_poly_at_beta, h_agg_poly_at_neg_beta, 
