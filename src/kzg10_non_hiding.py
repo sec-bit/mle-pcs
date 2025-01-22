@@ -24,6 +24,7 @@ class Commitment:
     """Represents a commitment in the KZG scheme."""
     def __init__(self, cm, oob=None):
         self.cm = cm
+        self.group = type(cm)
         if oob is not None:
             self.oob = oob
 
