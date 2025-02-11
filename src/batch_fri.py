@@ -10,19 +10,21 @@ class BatchFRI:
     security_level = 128
 
     @classmethod
-    def batch_commit(cls, evals, rate, domains, debug=False):
+    def batch_commit(cls, evals, rate, domains, one=1, debug=False):
         if debug: print("evals:", evals)
         MMCS.configure(lambda x: sha256(str(x).encode('ascii')).digest(), lambda x: sha256(sha256(x[0]).digest() + sha256(x[1]).digest()).digest(), b'default_digest')
         sorted_evals = sorted(evals, key=lambda x: len(x), reverse=True)
-        coeffs = [UniPolynomial.compute_coeffs_from_evals_fast(sorted_evals[i], domains[i][:len(sorted_evals[i])]) for i in range(len(sorted_evals))]
+        # coeffs = [UniPolynomial.compute_coeffs_from_evals_fast(sorted_evals[i], domains[i][:len(sorted_evals[i])]) for i in range(len(sorted_evals))]
+        coeffs = [UniPolynomial.ntt_coeffs_from_evals(sorted_evals[i], log_2(len(sorted_evals[i])), domains[i][1] ** rate, one) for i in range(len(sorted_evals))]
         if debug: print("coeffs:", coeffs, ", domains:", domains)
-        codes = [cls.rs_encode_single(coeffs[i], domains[i], rate) for i in range(len(coeffs))]
+        # codes = [cls.rs_encode_single(coeffs[i], domains[i], rate) for i in range(len(coeffs))]
+        codes = [UniPolynomial.ntt_evals_from_coeffs(coeffs[i] + [0] * (len(sorted_evals[i]) * rate - len(coeffs[i])), log_2(len(sorted_evals[i]) * rate), domains[i][1]) for i in range(len(sorted_evals))]
         if debug: print("codes:", codes)
         if debug: assert evals == [codes[i][:len(evals[i])] for i in range(len(evals))], f"evals: {evals}, codes: {codes}"
         return MMCS.commit(codes, debug=False), codes
 
     @classmethod
-    def batch_prove(cls, codes, code_tree, vals, point, domains, rate, degree_bound, gen, transcript, debug=False):
+    def batch_prove(cls, codes, code_tree, vals, point, domains, rate, degree_bound, gen, transcript, one=1, debug=False):
         assert len(domains[0]) == degree_bound * rate, f"domain: {domains[0]}, degree_bound: {degree_bound}, rate: {rate}"
         assert len(vals) == len(codes), f"len(vals): {len(vals)}, len(codes): {len(codes)}"
         assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
@@ -35,14 +37,14 @@ class BatchFRI:
         #         if debug: print("codes[j][i]:", codes[j][i], "vals[j]:", vals[j], "domains[j][i]:", domains[j][i], "point:", point, "quotient:", (codes[j][i] - vals[j]) / (domains[j][i] - point))
         #         quotients[-1].append((codes[j][i] - vals[j]) / (domains[j][i] - point))
 
-        if debug:
-            coeffs = UniPolynomial.compute_coeffs_from_evals_fast(quotients[0], domains[0]) + [0]
-            print("domain:", domains[0])
-            print("coeffs:", coeffs)
-            print("quotients[0]:", quotients[0])
-            encoded = cls.rs_encode_single(coeffs, domains[0], rate)
-            assert encoded == quotients[0], f"failed to rs encode, encoded: {encoded}, quotients[0]: {quotients[0]}"
-            assert len(coeffs) <= len(quotients[0]) // rate, f"coeffs: {coeffs}, quotients[0]: {quotients[0]}, rate: {rate}"
+        # if debug:
+        #     coeffs = UniPolynomial.compute_coeffs_from_evals_fast(quotients[0], domains[0]) + [0]
+        #     print("domain:", domains[0])
+        #     print("coeffs:", coeffs)
+        #     print("quotients[0]:", quotients[0])
+        #     encoded = cls.rs_encode_single(coeffs, domains[0], rate)
+        #     assert encoded == quotients[0], f"failed to rs encode, encoded: {encoded}, quotients[0]: {quotients[0]}"
+        #     assert len(coeffs) <= len(quotients[0]) // rate, f"coeffs: {coeffs}, quotients[0]: {quotients[0]}, rate: {rate}"
 
         quotients_commitment = MMCS.commit(quotients, debug=False)
         layers = quotients_commitment['layers']
@@ -66,7 +68,7 @@ class BatchFRI:
         if cls.security_level % log_2(rate) != 0:
             num_verifier_queries += 1
 
-        low_degree_proof = cls.prove_low_degree(quotients, rate, degree_bound, gen, num_verifier_queries, transcript, debug)
+        low_degree_proof = cls.prove_low_degree(quotients, rate, degree_bound, gen, num_verifier_queries, transcript, one, debug)
 
         return {
             'low_degree_proof': low_degree_proof,
@@ -124,7 +126,7 @@ class BatchFRI:
         cls.verify_low_degree(degree_bound, rate, low_degree_proof, gen, num_verifier_queries, transcript, debug)
 
     @classmethod
-    def prove_low_degree(cls, evals, rate, degree_bound, gen, num_verifier_queries, transcript, debug=False):
+    def prove_low_degree(cls, evals, rate, degree_bound, gen, num_verifier_queries, transcript, one=1, debug=False):
         assert is_power_of_two(degree_bound)
         assert len(evals[0]) == degree_bound * rate, f"evals[0]: {evals[0]}, degree_bound: {degree_bound}, rate: {rate}"
         assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
@@ -134,7 +136,8 @@ class BatchFRI:
         folded = evals[0]
         if debug:
             coeffs = UniPolynomial.compute_coeffs_from_evals_fast(folded, [gen ** i for i in range(len(folded))])
-            assert len(coeffs) <= len(folded) // rate, f"coeffs: {coeffs}, folded: {folded}, rate: {rate}"
+            for i in range(len(coeffs), len(folded) // rate):
+                assert coeffs[i] == one - one, f"coeffs: {coeffs}, folded: {folded}, rate: {rate}"
         first_tree = MerkleTree(folded)
         transcript.append_message(b"first_oracle", first_tree.root.encode('ascii'))
 
@@ -153,8 +156,10 @@ class BatchFRI:
             if debug:
                 coeffs1 = UniPolynomial.compute_coeffs_from_evals_fast(folded, [gen ** (2 * i) for i in range(len(folded))])
                 coeffs2 = UniPolynomial.compute_coeffs_from_evals_fast(evals[i + 1], [gen ** (2 * i) for i in range(len(evals[i + 1]))])
-                assert len(coeffs1) <= len(folded) // rate, f"i: {i}, len(coeffs1): {len(coeffs1)}, len(folded): {len(folded)}, rate: {rate}"
-                assert len(coeffs2) <= len(evals[i + 1]) // rate, f"i: {i}, len(coeffs2): {len(coeffs2)}, len(evals[i + 1]): {len(evals[i + 1])}, rate: {rate}"
+                for j in range(len(coeffs1), len(folded) // rate):
+                    assert coeffs1[j] == one - one, f"i: {i}, coeffs1: {coeffs1}, folded: {folded}, rate: {rate}"
+                for j in range(len(coeffs2), len(evals[i + 1]) // rate):
+                    assert coeffs2[j] == one - one, f"i: {i}, coeffs2: {coeffs2}, evals[i + 1]: {evals[i + 1]}, rate: {rate}"
             assert len(folded) == len(evals[i + 1]), f"len(folded): {len(folded)}, len(evals[i + 1]): {len(evals[i + 1])}"
             folded = [x + y for x, y in zip(folded, evals[i + 1])]
             if i != log_2(degree_bound) - 1:

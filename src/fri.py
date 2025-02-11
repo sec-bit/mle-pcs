@@ -27,7 +27,7 @@ class FRI:
         assert is_power_of_two(N)
         degree_bound = N
         if debug: print("degree_bound:", degree_bound)
-        coeffs = UniPolynomial.ntt_coeffs_from_evals(evals, log_2(N), domain[1], BabyBear.one())
+        coeffs = UniPolynomial.ntt_coeffs_from_evals(evals, log_2(N), domain[1] ** rate, BabyBear.one())
         if debug: print("coeffs:", coeffs)
         code = UniPolynomial.ntt_evals_from_coeffs(coeffs + [0] * (N * rate - len(coeffs)), log_2(N * rate), domain[1])
         if debug: print("code:", code)
@@ -268,6 +268,7 @@ class FRI:
         for q, (cur_path, _), mps in zip(queries, proof['query_paths'], proof['merkle_paths']):
             if debug: print("cur_path:", cur_path)
             num_vars_copy = num_vars
+            f_code_folded = None
             # fold loop
             for i, mp in enumerate(mps):
                 x0 = int(q)
@@ -299,7 +300,8 @@ class FRI:
                     if debug: print("alpha:", alpha)
                     assert f_code_folded == left + right, f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, table: {table}"
                 else:
-                    assert proof["final_value"] == left + right, f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, table: {table}, final_value: {proof['final_value']}"
+                    if f_code_folded is not None:
+                        assert proof["final_value"] == f_code_folded, f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, table: {table}, final_value: {proof['final_value']}, f_code_folded: {f_code_folded}"
 
                 if i == 0:
                     assert verify_decommitment(x0, code_left, mp, proof['first_oracle']), "failed to check decommitment at first level"
