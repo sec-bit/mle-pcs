@@ -322,6 +322,7 @@ $$
 
 ![alt text](img/image-6.png)
 
+
 到此，我们可以得到 Zeromorph 协议的关键等式：
 
 $$
@@ -385,48 +386,52 @@ $$
 Prover 发送余数多项式的承诺
 
 - 计算 $n$ 个余数 MLE 多项式， $\{\tilde{q}_k\}_{k=0}^{n-1}$ 
-- 构造余数 MLE 多项式所映射到的 Univariate 多项式 $Q_k=[[\tilde{q}_k]]_k, \quad 0 \leq k < n$
-- 计算并发送它们的承诺：$\mathsf{cm}(Q_0), \mathsf{cm}(Q_1), \ldots, \mathsf{cm}(Q_{n-1})$
+- 构造余数 MLE 多项式所映射到的 Univariate 多项式 $\hat{q}_k=[[\tilde{q}_k]]_k, \quad 0 \leq k < n$
+- 计算并发送它们的承诺：$\mathsf{cm}(\hat{q}_0), \mathsf{cm}(\hat{q}_1), \ldots, \mathsf{cm}(\hat{q}_{n-1})$
 
 $$
 \tilde{f}(X_0,X_1,\ldots, X_{n-1}) - v = \sum_{k=0}^{n-1} (X_k-u_k) \cdot \tilde{q}_k(X_0,X_1,\ldots, X_{k-1})
 $$
 
-第二轮：Prover 计算，$\pi_k=\mathsf{cm}(X^{D_{max}-2^k}\cdot Q_k), \quad 0\leq k<n$ ，作为 $\deg(Q_k)<2^k$ 的 Degree Bound 证明 ，一并发送给 Verifier
+Prover 计算，$\pi_k=\mathsf{cm}(X^{D_{max}-2^k+1}\cdot \hat{q}_k), \quad 0\leq k<n$ ，作为 $\deg(\hat{q}_k)<2^k$ 的 Degree Bound 证明 ，一并发送给 Verifier
 
-第三轮：Verifier 发送随机数 $\zeta\in \mathbb{F}_p^*$
+#### Round 2
 
-第四轮：Prover 计算辅助多项式 $R(X)$ 与商多项式 $H(X)$，并发送 $\mathsf{cm}(H)$ 
-- 计算 $R(X)$ ，
+1. Verifier 发送随机数 $\zeta\in \mathbb{F}_p^*$
 
-$$
-R(X) = F(X) - v\cdot \Phi_{n}(\zeta) - \sum_{k=0}^{n-1} \Big(\zeta^{2^k}\cdot \Phi_{n-k-1}(\zeta^{2^{k+1}}) - u_k\cdot \Phi_{n-k}(\zeta^{2^{k}})\Big)\cdot Q_k(X)
-$$
-
-- 计算 $H(X)$ 及其承诺 $\mathsf{cm}(H)$， 作为 $R(X)$ 在 $X=\zeta$ 点取值为零的证明
+2. Prover 计算辅助多项式 $r(X)$ 与商多项式 $h(X)$，并发送 $\mathsf{cm}(h)$ 
+- 计算 $r(X)$ ，
 
 $$
-H(X) = \frac{R(X)}{X-\zeta}
+r(X) = [[\tilde{f}]]_{n} - v\cdot \Phi_{n}(\zeta) - \sum_{k=0}^{n-1} \Big(\zeta^{2^k}\cdot \Phi_{n-k-1}(\zeta^{2^{k+1}}) - u_k\cdot \Phi_{n-k}(\zeta^{2^{k}})\Big)\cdot \hat{q}_k(X)
 $$
 
-第五轮：Verifier 验证下面的等式
-
-- 构造 $\mathsf{cm}(R)$ 的承诺：
+- 计算 $h(X)$ 及其承诺 $\mathsf{cm}(h)$， 作为 $r(X)$ 在 $X=\zeta$ 点取值为零的证明
 
 $$
-\mathsf{cm}(R) = \mathsf{cm}(F) - \mathsf{cm}(v\cdot \Phi_{n}(\zeta)) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot \mathsf{cm}(Q_i)
+h(X) = \frac{r(X)}{X-\zeta}
 $$
 
-- 验证 $R(\zeta) = 0$
+#### Verification 
+
+Verifier 验证下面的等式
+
+- 构造 $\mathsf{cm}(r)$ 的承诺：
 
 $$
-e(\mathsf{cm}(R), \ [1]_2) = e(\mathsf{cm}(H), [\tau]_2 - \zeta\cdot [1]_2)
+\mathsf{cm}(r) = \mathsf{cm}([[\tilde{f}]]_{n}) - \mathsf{cm}(v\cdot \Phi_{n}(\zeta)) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot \mathsf{cm}(\hat{q}_i)
 $$
 
-- 验证 $(\pi_0, \pi_1, \ldots, \pi_{n-1})$ 是否正确，即验证所有的余数多项式的 Degree Bound： $\deg(Q_i)<2^i$ ，对于 $0\leq i<n$
+- 验证 $r(\zeta) = 0$
 
 $$
-e(\mathsf{cm}(Q_i), [\tau^{D_{max}-2^i+1}]_2) = e(\pi_i, [1]_2), \quad 0\leq i<n
+e(\mathsf{cm}(r), \ [1]_2) = e(\mathsf{cm}(h), [\tau]_2 - \zeta\cdot [1]_2)
+$$
+
+- 验证 $(\pi_0, \pi_1, \ldots, \pi_{n-1})$ 是否正确，即验证所有的余数多项式的 Degree Bound： $\deg(\hat{q}_i)<2^i$ ，对于 $0\leq i<n$
+
+$$
+e(\mathsf{cm}(\hat{q}_i), [\tau^{D_{max}-2^i+1}]_2) = e(\pi_i, [1]_2), \quad 0\leq i<n
 $$
 
 ### 效率概述
@@ -439,40 +444,41 @@ $$
 朴素协议中有 $n$ 个商多项式，它们的 Degree Bound 有 $2n$ 个 $\mathbb{G}_1$ ，这显然不够高效。不过，我们可以批量地证明这 $n$ 个 degree bound。下面是传统的批量证明的思路：
 
 - Verifer 先发送一个随机数 $\beta$
-- Prover 把 $n$ 个商多项式聚合在一起，得到 $\bar{q}(X)$，聚合的时候把这些商多项式的 Degree 补齐到同一个值，即最大的那个商多项式 Degree $2^{n-1}$ ：
+- Prover 把 $n$ 个商多项式聚合在一起，得到 $\bar{q}(X)$，聚合的时候把这些商多项式的 Degree 补齐到同一个值，即  $2^n - 1$ ：
 
 $$
-\bar{q}(X) = \sum_{k=0}^{n-1} \beta^k \cdot X^{2^n-2^k}\cdot q_i(X)
+\bar{q}(X) = \sum_{k=0}^{n-1} \beta^k \cdot X^{2^n-2^k}\cdot \hat{q}_k(X)
 $$
+
 - Prover 发送 $\bar{q}(X)$ 的承诺 $\mathsf{cm}(\bar{q})$
 - Verifier 发送随机数 $\zeta$
 - Prover 构造多项式 $s(X)$，它在 $X=\zeta$ 处取值为零，即 $s(\zeta)=0$
 
 $$
-s(X) = \bar{q}(X) - \sum_{k=0}^{n-1} \beta^k \cdot \zeta^{2^n-2^k}\cdot q_i(X)
+s(X) = \bar{q}(X) - \sum_{k=0}^{n-1} \beta^k \cdot \zeta^{2^n-2^k}\cdot \hat{q}_k(X)
 $$
 
 - Prover 构造商多项式 $h_1(X)$ 并将其 Degree 对齐到最大的 Degree Bound $D$，然后证明 $s(\zeta)=0$ ，并发送承诺 $\mathsf{cm}(h_1)$ 
 
 $$
-h_1(X) = \frac{s(X)}{X-\zeta}\cdot X^{D-2^n+1}
+h_1(X) = \frac{s(X)}{X-\zeta}\cdot X^{D-2^n+2}
 $$
 
-- Verifier 手里有 $\mathsf{cm}(\bar{q})$ 与 $\mathsf{cm}(q_i)$，他可以根据下面的等式，还原出 $\mathsf{cm}(s)$ 的承诺：
+- Verifier 手里有 $\mathsf{cm}(\bar{q})$ 与 $\mathsf{cm}(\hat{q}_i)$，他可以根据下面的等式，还原出 $\mathsf{cm}(s)$ 的承诺：
 
 $$
-\mathsf{cm}(s) = \mathsf{cm}(\bar{q}) - \sum_{i=0}^{n-1} \beta^i \cdot \zeta^{2^n-2^k}\cdot q_i(X)
+\mathsf{cm}(s) = \mathsf{cm}(\bar{q}) - \sum_{i=0}^{n-1} \beta^i \cdot \zeta^{2^n-2^k}\cdot \mathsf{cm}(\hat{q}_i)
 $$
 
 - Verifier 只需要两个 Pairing 运算即可验证 $s(\zeta)=0$，从而得到 $n$ 个 Degree Bound 证明成立
 
 $$
-e\big(\mathsf{cm}(s), \ [\tau^{D_{max}-2^n+1}]_2\big) = e\big(\mathsf{cm}(h_1), [\tau]_2 - \zeta\cdot [1]_2\big)
+e\big(\mathsf{cm}(s), \ [\tau^{D_{max}-2^n+2}]_2\big) = e\big(\mathsf{cm}(h_1), [\tau]_2 - \zeta\cdot [1]_2\big)
 $$
 
 此外，Verfier 还可以发一个随机数 $\alpha$，进一步聚合 $r(X)$ 与 $s(X)$ 的取值证明，因为它们两个在 $X=\zeta$ 处的取值都为零。
 
-下面是优化版本的 Zeromorph 协议，参见 Zeromorph 论文 [KT23] Section 6。优化的技术主要是将多个 Degree Bound 证明聚合在一起，同时将 $R(X)$ 的求值证明也聚合在一起。这样可以仅使用两个 Pairing 运算来验证验证（这个版本暂时不考虑 Zero-knowledge 的性质）。
+下面是优化版本的 Zeromorph 协议，参见 Zeromorph 论文 [KT23] Section 6。优化的技术主要是将多个 Degree Bound 证明聚合在一起，同时将 $r(X)$ 的求值证明也聚合在一起。这样可以仅使用两个 Pairing 运算来验证验证（这个版本暂时不考虑 Zero-knowledge 的性质）。
 
 ### Evaluation 证明协议
 
@@ -491,39 +497,37 @@ $$
 第一轮：Prover 发送余数多项式的承诺
 
 - 计算 $n$ 个余数 MLE 多项式， $\{q_i\}_{i=0}^{n-1}$ 
-- 构造余数 MLE 多项式所映射到的 Univariate 多项式 $Q_i=[[q_i]]_i, \quad 0 \leq i < n$
-- 计算并发送它们的承诺：$\mathsf{cm}(q_0), \mathsf{cm}(q_1), \ldots, \mathsf{cm}(q_{n-1})$
+- 构造余数 MLE 多项式所映射到的 Univariate 多项式 $\hat{q}_i=[[q_i]]_i, \quad 0 \leq i < n$
+- 计算并发送它们的承诺：$\mathsf{cm}(\hat{q}_0), \mathsf{cm}(\hat{q}_1), \ldots, \mathsf{cm}(\hat{q}_{n-1})$
 
 $$
 \tilde{f}(X_0,X_1,\ldots, X_{n-1}) - v = \sum_{i=0}^{n-1} (X_k-u_k) \cdot q_i(X_0,X_1,\ldots, X_{k-1})
 $$
-
 #### Round 2
 
 1. Verifier 发送随机数 $\beta\in \mathbb{F}_p^*$ 用来聚合多个 Degree Bound 证明
 
-2. Prover 构造 $\bar{q}(X)$ 作为聚合商多项式 $\{q_i(X)\}$ 的多项式，并发送其承诺 $\mathsf{cm}(\bar{q})$ 
+2. Prover 构造 $\bar{q}(X)$ 作为聚合商多项式 $\{\hat{q}_i(X)\}$ 的多项式，并发送其承诺 $\mathsf{cm}(\bar{q})$ 
 
 $$
-\bar{q}(X) = \sum_{i=0}^{n-1} \beta^i \cdot X^{2^n-2^k}q_i(X)
+\bar{q}(X) = \sum_{i=0}^{n-1} \beta^i \cdot X^{2^n-2^i}\hat{q}_i(X)
 $$
 
 #### Round 3
 
 1. Verifier 发送随机数 $\zeta\in \mathbb{F}_p^*$ ，用来挑战多项式在 $X=\zeta$ 处的取值
 
-2. Prover 计算 $H_0(X)$ 与 $H_1(X)$
+2. Prover 计算 $h_0(X)$ 与 $h_1(X)$
 
 - 计算 $r(X)$ ，
 
 $$
-r(X) = f(X) - v\cdot \Phi_{n}(\zeta) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot q_i(X)
+r(X) = \hat{f}(X) - v\cdot \Phi_{n}(\zeta) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot\hat{q}_i(X)
 $$
-
 - 计算 $s(X)$ ，
 
 $$
-s(X) = \bar{q}(X) - \sum_{k=0}^{n-1} \beta^k \cdot \zeta^{2^n-2^k}\cdot q_i(X)
+s(X) = \bar{q}(X) - \sum_{k=0}^{n-1} \beta^k \cdot \zeta^{2^n-2^k}\cdot \hat{q}_k(X)
 $$
 
 - 计算商多项式 $h_0(X)$ 与 $h_1(X)$ 
@@ -539,7 +543,7 @@ $$
 2. Prover 计算 $h(X)$ 并发送其承诺 $\mathsf{cm}(h)$ 
 
 $$
-h(X)=(h_0(X) + \alpha\cdot h_1(X))\cdot X^{D_{max}-2^n+1}
+h(X)=(h_0(X) + \alpha\cdot h_1(X))\cdot X^{D_{max}-2^n+2}
 $$ 
 
 #### Verification 
@@ -549,19 +553,18 @@ Verifier
 - 构造 $\mathsf{cm}(r)$ 的承诺：
 
 $$
-\mathsf{cm}(r) = \mathsf{cm}(f) - \mathsf{cm}(v\cdot \Phi_{n}(\zeta)) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot \mathsf{cm}(q_i)
+\mathsf{cm}(r) = \mathsf{cm}(f) - \mathsf{cm}(v\cdot \Phi_{n}(\zeta)) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot \mathsf{cm}(\hat{q}_i)
 $$
 
 - 构造 $\mathsf{cm}(s)$ 的承诺：
 
 $$
-\mathsf{cm}(s) = \mathsf{cm}(\bar{q}) - \sum_{i=0}^{n-1} \beta^i \cdot \zeta^{2^n-2^k}\cdot \mathsf{cm}(q_i)
+\mathsf{cm}(s) = \mathsf{cm}(\bar{q}) - \sum_{i=0}^{n-1} \beta^i \cdot \zeta^{2^n-2^i}\cdot \mathsf{cm}(\hat{q}_i)
 $$
-
 - 验证 $r(\zeta) = 0$ 与 $s(\zeta) = 0$
 
 $$
-e(\mathsf{cm}(r) + \alpha\cdot \mathsf{cm}(s), \ [\tau^{D-2^n+1}]_2) = e(\mathsf{cm}(h),\ [\tau]_2 - \zeta\cdot [1]_2)
+e(\mathsf{cm}(r) + \alpha\cdot \mathsf{cm}(s), \ [\tau^{D-2^n+2}]_2) = e(\mathsf{cm}(h),\ [\tau]_2 - \zeta\cdot [1]_2)
 $$
 
 

@@ -136,7 +136,7 @@ Obviously, the messages in steps 1 and 3 are probabilistically indistinguishable
 Next, we only need to show that the tensor product check protocol run by $S$ and $V^*$ in step 4 also satisfies this property. Specifically, because the protocol satisfies soundness, for each oracle $h^{(j)}, j=0,...,n-1$, it satisfies
 
 $$
-h^{(j)}(X^2)=\frac{h^{(j-1)}(X)+f^{(j-1)}(-X)}{2} + \rho \cdot \frac{h^{(j-1)}(X)-h^{(j-1)}(-X)}{2X}
+h^{(j)}(X^2)=\frac{h^{(j-1)}(X)+h^{(j-1)}(-X)}{2} + \rho \cdot \frac{h^{(j-1)}(X)-h^{(j-1)}(-X)}{2X}
 $$
 
 Note that for $h^{(j-1)}(X)$ on the right side of the equation, its corresponding oracle also satisfies an equation related to $h^{(j-2)}(X)$. Therefore, we can always expand the right expression satisfied by any $h^{(j)}(X^2)$ into a form that only includes $h^{(0)}(X), h^{(0)}(-X), h^{(0)}(X^2)$. Thus, the response obtained by $V^*$ querying the oracle $h^{(j)}$ at any point $\beta$ must be a linearly independent constraint on $\vec{h}$.

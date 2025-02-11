@@ -15,6 +15,12 @@ jobs:
     name: Notify Telegram
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Make escape script executable
+        run: chmod +x .github/workflows/escape_markdown.sh
+
       - name: Send Telegram Message on Push
         if: github.event_name == 'push'
         uses: appleboy/telegram-action@master
@@ -35,6 +41,12 @@ jobs:
             
             🔗 [View Commit](https://github.com/${{ github.repository }}/commit/${{github.sha}})
 
+      - name: Escape PR title
+        if: github.event_name == 'pull_request'
+        id: escape_pr
+        run: |
+          echo "title=$(echo '${{ github.event.pull_request.title }}' | .github/workflows/escape_markdown.sh)" >> $GITHUB_OUTPUT
+
       - name: Send Telegram Message on Pull Request
         if: github.event_name == 'pull_request'
         uses: appleboy/telegram-action@master
@@ -45,12 +57,18 @@ jobs:
           message: |
             🚀 *Pull Request ${{ github.event.action }} in ${{ github.repository }}*
             
-            📌 *Title:* ${{ github.event.pull_request.title }}
+            📌 *Title:* ${{ steps.escape_pr.outputs.title }}
             🔢 *PR #:* ${{ github.event.pull_request.number }}
             🚦 *State:* ${{ github.event.pull_request.state }}
             👤 *Author:* ${{ github.event.pull_request.user.login }}
             
             🔗 [View PR](${{ github.event.pull_request.html_url }})
+
+      - name: Escape issue title
+        if: github.event_name == 'issues'
+        id: escape_issue
+        run: |
+          echo "title=$(echo '${{ github.event.issue.title }}' | .github/workflows/escape_markdown.sh)" >> $GITHUB_OUTPUT
 
       - name: Send Telegram Message on Issue
         if: github.event_name == 'issues'
@@ -62,12 +80,19 @@ jobs:
           message: |
             🎫 *Issue ${{ github.event.action }} in ${{ github.repository }}*
             
-            📌 *Title:* ${{ github.event.issue.title }}
+            📌 *Title:* ${{ steps.escape_issue.outputs.title }}
             🔢 *Issue #:* ${{ github.event.issue.number }}
             🚦 *State:* ${{ github.event.issue.state }}
             👤 *Author:* ${{ github.event.issue.user.login }}
             
             🔗 [View Issue](${{ github.event.issue.html_url }})
+
+      - name: Escape release info
+        if: github.event_name == 'release'
+        id: escape_release
+        run: |
+          echo "name=$(echo '${{ github.event.release.name }}' | .github/workflows/escape_markdown.sh)" >> $GITHUB_OUTPUT
+          echo "body=$(echo '${{ github.event.release.body }}' | .github/workflows/escape_markdown.sh)" >> $GITHUB_OUTPUT
 
       - name: Send Telegram Message on Release
         if: github.event_name == 'release'
@@ -80,12 +105,12 @@ jobs:
             🚀 *New Release Published in ${{ github.repository }}*
             
             🏷️ *Tag:* ${{ github.event.release.tag_name }}
-            📛 *Name:* ${{ github.event.release.name }}
+            📛 *Name:* ${{ steps.escape_release.outputs.name }}
             👤 *Author:* ${{ github.event.release.author.login }}
             
             📝 *Description:*
             ```
-            ${{ github.event.release.body }}
+            ${{ steps.escape_release.outputs.body }}
             ```
             
             🔗 [View Release](${{ github.event.release.html_url }})

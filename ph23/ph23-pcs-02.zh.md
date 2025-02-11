@@ -442,8 +442,10 @@ $$
 1. Verifier 计算 $c^*(\xi)$ 使用预计算的 Barycentric Weights $\{\hat{w}_i\}$
 
 $$
-c^*(\xi)=\frac{\sum_i c_i\frac{w_i}{\xi-x_i}}{\sum_i \frac{w_i}{\xi-x_i}}
+c^*(\xi)=\frac{\sum_i c_i^*\frac{\hat{w}_i}{\xi-x_i}}{\sum_i \frac{\hat{w}_i}{\xi-x_i}}
 $$
+
+再计算对应的承诺 $C^*(\xi)=[c^*(\xi)]_1$ 。
 
 2. Verifier 计算 $v_H(\zeta), L_0(\zeta), L_{N-1}(\zeta)$ 
 
@@ -491,7 +493,7 @@ $$
 $$
 \begin{split}
 e(C_l + \zeta\cdot Q_\zeta, [1]_2)\overset{?}{=}e(Q_\zeta, [\tau]_2)\\
-e(C - C^*(\xi) - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi, [1]_2) \overset{?}{=} e(Q_\xi, [\tau]_2)\\
+e(C_c - C^*(\xi) - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi, [1]_2) \overset{?}{=} e(Q_\xi, [\tau]_2)\\
 e(C_z + \zeta\cdot Q_{\omega\zeta} - z(\omega^{-1}\cdot\zeta)\cdot[1]_1, [1]_2) \overset{?}{=} e(Q_{\omega\zeta}, [\tau]_2)\\
 \end{split}
 $$
@@ -501,7 +503,7 @@ $$
 $$
 \begin{split}
 P &= \Big(C_l + \zeta\cdot Q_\zeta\Big) \\
-& + \eta\cdot \Big(C - C^* - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi\Big) \\
+& + \eta\cdot \Big(C_c - C^*(\xi) - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi\Big) \\
 & + \eta^2\cdot\Big(C_z + \zeta\cdot Q_{\omega\zeta} - z(\omega^{-1}\cdot\zeta)\cdot[1]_1\Big)
 \end{split}
 $$

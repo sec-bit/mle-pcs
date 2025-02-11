@@ -374,63 +374,69 @@ Here, the role of $X^{D-2^k+1}\cdot \hat{q}_k(X)$ is to align the Degree of $\ha
 
 Below, we first give a simple and naive protocol implementation for easy understanding.
 
-**Public Input**
+#### Public Input
 
 - Commitment of MLE polynomial $\tilde{f}$: $\mathsf{cm}([[\tilde{f}]]_n)$
 - Evaluation point $\mathbf{u}=(u_0, u_1, \ldots, u_{n-1})$
 - Evaluation result $v = \tilde{f}(\mathbf{u})$
 
-**Witness** 
+#### Witness
 
 - Point value vector of MLE polynomial $\tilde{f}$ on $n$-dimensional HyperCube $\mathbf{a} = (a_0, a_1, \ldots, a_{2^n-1})$
 
-**Interactive Process**
+#### Round 1
 
-Round 1: Prover sends commitments of remainder polynomials
+Prover sends commitments of remainder polynomials
 
 - Calculate $n$ remainder MLE polynomials, $\{\tilde{q}_k\}_{k=0}^{n-1}$ 
-- Construct Univariate polynomials mapped from remainder MLE polynomials $Q_k=[[\tilde{q}_k]]_k, \quad 0 \leq k < n$
-- Calculate and send their commitments: $\mathsf{cm}(Q_0), \mathsf{cm}(Q_1), \ldots, \mathsf{cm}(Q_{n-1})$
+- Construct Univariate polynomials mapped from remainder MLE polynomials$\hat{q}_k=[[\tilde{q}_k]]_k, \quad 0 \leq k < n$
+- Calculate and send their commitments: $\mathsf{cm}(\hat{q}_0), \mathsf{cm}(\hat{q}_1), \ldots, \mathsf{cm}(\hat{q}_{n-1})$
 
 $$
 \tilde{f}(X_0,X_1,\ldots, X_{n-1}) - v = \sum_{k=0}^{n-1} (X_k-u_k) \cdot \tilde{q}_k(X_0,X_1,\ldots, X_{k-1})
 $$
 
-Round 2: Prover calculates, $\pi_k=\mathsf{cm}(X^{D_{max}-2^k}\cdot Q_k), \quad 0\leq k<n$, as the Degree Bound proof of $\deg(Q_k)<2^k$, and sends them to the Verifier
+Prover calculates, $\pi_k=\mathsf{cm}(X^{D_{max}-2^k+1}\cdot \hat{q}_k), \quad 0\leq k<n$, as the Degree Bound proof of $\deg(\hat{q}_k)<2^k$, and sends them to the Verifier
 
-Round 3: Verifier sends a random number $\zeta\in \mathbb{F}_p^*$
 
-Round 4: Prover calculates auxiliary polynomial $R(X)$ and quotient polynomial $H(X)$, and sends $\mathsf{cm}(H)$ 
-- Calculate $R(X)$,
+#### Round 2
 
-$$
-R(X) = F(X) - v\cdot \Phi_{n}(\zeta) - \sum_{k=0}^{n-1} \Big(\zeta^{2^k}\cdot \Phi_{n-k-1}(\zeta^{2^{k+1}}) - u_k\cdot \Phi_{n-k}(\zeta^{2^{k}})\Big)\cdot Q_k(X)
-$$
+1. Verifier sends a random number $\zeta\in \mathbb{F}_p^*$
 
-- Calculate $H(X)$ and its commitment $\mathsf{cm}(H)$, as proof that $R(X)$ takes the value zero at $X=\zeta$
+2. Prover calculates auxiliary polynomial $r(X)$ and quotient polynomial $h(X)$, and sends $\mathsf{cm}(h)$ 
+
+- Calculate $r(X)$,
 
 $$
-H(X) = \frac{R(X)}{X-\zeta}
+r(X) = [[\tilde{f}]]_{n} - v\cdot \Phi_{n}(\zeta) - \sum_{k=0}^{n-1} \Big(\zeta^{2^k}\cdot \Phi_{n-k-1}(\zeta^{2^{k+1}}) - u_k\cdot \Phi_{n-k}(\zeta^{2^{k}})\Big)\cdot \hat{q}_k(X)
 $$
 
-Round 5: Verifier verifies the following equations
-
-- Construct the commitment of $\mathsf{cm}(R)$:
+- Calculate $h(X)$ and its commitment $\mathsf{cm}(h)$, as proof that $r(X)$ takes the value zero at $X=\zeta$
 
 $$
-\mathsf{cm}(R) = \mathsf{cm}(F) - \mathsf{cm}(v\cdot \Phi_{n}(\zeta)) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot \mathsf{cm}(Q_i)
+h(X) = \frac{r(X)}{X-\zeta}
 $$
 
-- Verify $R(\zeta) = 0$
+#### Verification
+
+Verifier verifies the following equations
+
+- Construct the commitment of $\mathsf{cm}(r)$:
 
 $$
-e(\mathsf{cm}(R), \ [1]_2) = e(\mathsf{cm}(H), [\tau]_2 - \zeta\cdot [1]_2)
+\mathsf{cm}(r) = \mathsf{cm}([[\tilde{f}]]_{n}) - \mathsf{cm}(v\cdot \Phi_{n}(\zeta)) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot \mathsf{cm}(\hat{q}_i)
 $$
 
-- Verify if $(\pi_0, \pi_1, \ldots, \pi_{n-1})$ are correct, i.e., verify the Degree Bound of all remainder polynomials: $\deg(Q_i)<2^i$, for $0\leq i<n$
+- Verify $r(\zeta) = 0$
 
 $$
-e(\mathsf{cm}(Q_i), [\tau^{D_{max}-2^i}]_2) = e(\pi_i, [1]_2), \quad 0\leq i<n
+e(\mathsf{cm}(r), \ [1]_2) = e(\mathsf{cm}(h), [\tau]_2 - \zeta\cdot [1]_2)
+$$
+
+- Verify if $(\pi_0, \pi_1, \ldots, \pi_{n-1})$ are correct, i.e., verify the Degree Bound of all remainder polynomials: $\deg(\hat{q}_i)<2^i$, for $0\leq i<n$
+
+$$
+e(\mathsf{cm}(\hat{q}_i), [\tau^{D_{max}-2^i+1}]_2) = e(\pi_i, [1]_2), \quad 0\leq i<n
 $$
 
 ### Efficiency Overview
@@ -443,119 +449,132 @@ $$
 In the naive protocol, there are $n$ quotient polynomials, and their Degree Bound proofs have $2n$ $\mathbb{G}_1$ elements, which is obviously not efficient enough. However, we can prove these $n$ degree bounds in batch. Here's the traditional batch proof approach:
 
 - Verifier first sends a random number $\beta$
-- Prover aggregates the $n$ quotient polynomials together to get $P(X)$, and when aggregating, aligns the Degree of these quotient polynomials to the same value, which is the Degree of the largest quotient polynomial $2^{n-1}$:
+- Prover aggregates the $n$ quotient polynomials together to get $\bar{q}(X)$, and when aggregating, aligns the Degree of these quotient polynomials to the same value, which is  $2^{n} - 1$:
 
 $$
-P(X) = \sum_{k=0}^{n-1} \beta^k \cdot X^{2^n-2^k}\cdot Q_i(X)
+\bar{q}(X) = \sum_{k=0}^{n-1} \beta^k \cdot X^{2^n-2^k}\cdot \hat{q}_k(X)
 $$
-- Prover sends the commitment of $P(X)$, $\mathsf{cm}(P)$
+
+- Prover sends the commitment of $\bar{q}(X)$, $\mathsf{cm}(\bar{q})$
 - Verifier sends a random number $\zeta$
-- Prover constructs polynomial $S(X)$, which takes the value zero at $X=\zeta$, i.e., $S(\zeta)=0$
+- Prover constructs polynomial $s(X)$, which takes the value zero at $X=\zeta$, i.e., $s(\zeta)=0$
 
 $$
-S(X) = P(X) - \sum_{k=0}^{n-1} \beta^k \cdot \zeta^{2^n-2^k}\cdot Q_i(X)
+s(X) = \bar{q}(X) - \sum_{k=0}^{n-1} \beta^k \cdot \zeta^{2^n-2^k}\cdot \hat{q}_k(X)
 $$
 
-- Prover constructs quotient polynomial $H_1(X)$ and aligns its Degree to the maximum Degree Bound $D$, then proves $S(\zeta)=0$, and sends the commitment $\mathsf{cm}(H_1)$ 
+- Prover constructs quotient polynomial $h_1(X)$ and aligns its Degree to the maximum Degree Bound $D$, then proves $s(\zeta)=0$, and sends the commitment $\mathsf{cm}(h_1)$ 
 
 $$
-H_1(X) = \frac{S(X)}{X-\zeta}\cdot X^{D-2^n+1}
+h_1(X) = \frac{s(X)}{X-\zeta}\cdot X^{D-2^n+2}
 $$
 
-- Verifier has $\mathsf{cm}(P)$ and $\mathsf{cm}(Q_i)$, he can restore the commitment of $\mathsf{cm}(S)$ based on the following equation:
+- Verifier has $\mathsf{cm}(\bar{q})$ and $\mathsf{cm}(\hat{q}_i)$, he can restore the commitment of $\mathsf{cm}(s)$ based on the following equation:
 
 $$
-\mathsf{cm}(S) = \mathsf{cm}(P) - \sum_{i=0}^{n-1} \beta^i \cdot \zeta^{2^n-2^k}\cdot Q_i(X)
+\mathsf{cm}(s) = \mathsf{cm}(\bar{q}) - \sum_{i=0}^{n-1} \beta^i \cdot \zeta^{2^n-2^k}\cdot \mathsf{cm}(\hat{q}_i)
 $$
 
-- Verifier only needs two Pairing operations to verify $S(\zeta)=0$, thus obtaining the proof that $n$ Degree Bounds hold
+- Verifier only needs two Pairing operations to verify $s(\zeta)=0$, thus obtaining the proof that $n$ Degree Bounds hold
 
 $$
-e\big(\mathsf{cm}(S), \ [\tau^{D_{max}-2^n+1}]_2\big) = e\big(\mathsf{cm}(H), [\tau]_2 - \zeta\cdot [1]_2\big)
+e\big(\mathsf{cm}(s), \ [\tau^{D_{max}-2^n+2}]_2\big) = e\big(\mathsf{cm}(h_1), [\tau]_2 - \zeta\cdot [1]_2\big)
 $$
 
-Moreover, Verifier can send a random number $\alpha$ to further aggregate the evaluation proofs of $R(X)$ and $S(X)$, because they both take the value zero at $X=\zeta$.
+Moreover, Verifier can send a random number $\alpha$ to further aggregate the evaluation proofs of $r(X)$ and $s(X)$, because they both take the value zero at $X=\zeta$.
 
 Below is the optimized version of the Zeromorph protocol, refer to Zeromorph paper [KT23] Section 6. The main optimization technique is to aggregate multiple Degree Bound proofs together, and also aggregate the evaluation proof of $R(X)$ together. This way, only two Pairing operations are needed for verification (this version does not consider the Zero-knowledge property for now).
 
-**Public Input**
+### Evaluation Proof Protocol
+
+#### Public Input
 
 - Commitment of MLE polynomial $\tilde{f}$ mapped to Univariate polynomial $F(X)=[[\tilde{f}]]_n$: $\mathsf{cm}([[\tilde{f}]]_n)$
 - Evaluation point $\mathbf{u}=(u_0, u_1, \ldots, u_{n-1})$
 - Evaluation result $v = \tilde{f}(\mathbf{u})$
 
-**Witness** 
+#### Witness
 
 - Evaluation vector of MLE polynomial $\tilde{f}$: $\mathbf{a} = (a_0, a_1, \ldots, a_{2^n-1})$
 
-**Protocol**
+#### Round 1
 
 Round 1: Prover sends commitments of remainder polynomials
 
 - Calculate $n$ remainder MLE polynomials, $\{q_i\}_{i=0}^{n-1}$ 
-- Construct Univariate polynomials mapped from remainder MLE polynomials $Q_i=[[q_i]]_i, \quad 0 \leq i < n$
-- Calculate and send their commitments: $\mathsf{cm}(Q_0), \mathsf{cm}(Q_1), \ldots, \mathsf{cm}(Q_{n-1})$
+- Construct Univariate polynomials mapped from remainder MLE polynomials $\hat{q}_i=[[q_i]]_i, \quad 0 \leq i < n$
+- Calculate and send their commitments: $\mathsf{cm}(\hat{q}_0), \mathsf{cm}(\hat{q}_1), \ldots, \mathsf{cm}(\hat{q}_{n-1})$
 
 $$
 \tilde{f}(X_0,X_1,\ldots, X_{n-1}) - v = \sum_{i=0}^{n-1} (X_k-u_k) \cdot q_i(X_0,X_1,\ldots, X_{k-1})
 $$
 
-Round 2: Verifier sends a random number $\beta\in \mathbb{F}_p^*$ to aggregate multiple Degree Bound proofs
+#### Round 2
 
-Round 3: Prover calculates $P(X)$ and sends its commitment $\mathsf{cm}(P)$ 
+1. Verifier sends a random number $\beta\in \mathbb{F}_p^*$ to aggregate multiple Degree Bound proofs
 
-- Calculate $P(X)$,
+2. Prover calculates $\bar{q}(X)$ and sends its commitment  $\mathsf{cm}(\bar{q})$ 
 
-$$
-P(X) = \sum_{i=0}^{n-1} \beta^i \cdot X^{2^n-2^k}Q_i(X)
-$$
-
-Round 4: Verifier sends a random number $\zeta\in \mathbb{F}_p^*$ to challenge the polynomial evaluation at $X=\zeta$
-
-Round 5: Prover calculates $H_0(X)$ and $H_1(X)$
-
-- Calculate $R(X)$,
+- Calculate $\bar{q}(X)$,
 
 $$
-R(X) = F(X) - v\cdot \Phi_{n}(\zeta) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot Q_i(X)
+\bar{q}(X) = \sum_{i=0}^{n-1} \beta^i \cdot X^{2^n-2^i}\hat{q}_i(X)
 $$
 
-- Calculate $S(X)$,
+#### Round 3
+
+1. Verifier sends a random number $\zeta\in \mathbb{F}_p^*$ to challenge the polynomial evaluation at $X=\zeta$
+
+2. Prover calculates $h_0(X)$ and $h_1(X)$
+
+- Calculate $r(X)$,
 
 $$
-S(X) = P(X) - \sum_{k=0}^{n-1} \beta^k \cdot \zeta^{2^n-2^k}\cdot Q_i(X)
+r(X) = \hat{f}(X) - v\cdot \Phi_{n}(\zeta) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot\hat{q}_i(X)
 $$
 
-- Calculate quotient polynomials $H_0(X)$ and $H_1(X)$ 
+- Calculate $s(X)$,
 
 $$
-H_0(X) = \frac{R(X)}{X-\zeta}, \qquad H_1(X) = \frac{S(X)}{X-\zeta}
+s(X) = \bar{q}(X) - \sum_{k=0}^{n-1} \beta^k \cdot \zeta^{2^n-2^k}\cdot \hat{q}_k(X)
 $$
 
-Round 6: Verifier sends a random number $\alpha\in \mathbb{F}_p^*$ to aggregate $H_0(X)$ and $H_1(X)$
-
-Round 7: Prover calculates $H(X)$ and sends its commitment $\mathsf{cm}(H)$ 
-
-- Calculate $H(X)=(H_0(X) + \alpha\cdot H_1(X))\cdot X^{D_{max}-2^n+1}$ 
-
-Round 8: Verifier verifies the following equations
-
-- Restore the commitment of $\mathsf{cm}(R)$:
+- Calculate quotient polynomials $h_0(X)$ and $h_1(X)$ 
 
 $$
-\mathsf{cm}(R) = \mathsf{cm}(F) - \mathsf{cm}(v\cdot \Phi_{n}(\zeta)) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot \mathsf{cm}(Q_i)
+h_0(X) = \frac{r(X)}{X-\zeta}, \qquad h_1(X) = \frac{s(X)}{X-\zeta}
 $$
 
-- Restore the commitment of $\mathsf{cm}(S)$:
+#### Round 4
+
+1. Verifier sends a random number $\alpha\in \mathbb{F}_p^*$ to aggregate $h_0(X)$ and $h_1(X)$
+
+2. Prover calculates $h(X)$ and sends its commitment $\mathsf{cm}(h)$ 
 
 $$
-\mathsf{cm}(S) = \mathsf{cm}(P) - \sum_{i=0}^{n-1} \beta^i \cdot \zeta^{2^n-2^k}\cdot Q_i(X))
+h(X)=(h_0(X) + \alpha\cdot h_1(X))\cdot X^{D_{max}-2^n+2}
+$$ 
+
+#### Verification 
+
+Verifier verifies the following equations
+
+- Restore the commitment of $\mathsf{cm}(r)$:
+
+$$
+\mathsf{cm}(r) = \mathsf{cm}(f) - \mathsf{cm}(v\cdot \Phi_{n}(\zeta)) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot \mathsf{cm}(\hat{q}_i)
 $$
 
-- Verify $R(\zeta) = 0$ and $S(\zeta) = 0$
+- Restore the commitment of $\mathsf{cm}(s)$:
 
 $$
-e(\mathsf{cm}(R) + \alpha\cdot \mathsf{cm}(S), \ [\tau^{D-2^n+1}]_2) = e(\mathsf{cm}(H), [\tau]_2 - \zeta\cdot [1]_2)
+\mathsf{cm}(s) = \mathsf{cm}(\bar{q}) - \sum_{i=0}^{n-1} \beta^i \cdot \zeta^{2^n-2^i}\cdot \mathsf{cm}(\hat{q}_i)
+$$
+
+- Verify $r(\zeta) = 0$ and $s(\zeta) = 0$
+
+$$
+e(\mathsf{cm}(r) + \alpha\cdot \mathsf{cm}(s), \ [\tau^{D-2^n+2}]_2) = e(\mathsf{cm}(h),\ [\tau]_2 - \zeta\cdot [1]_2)
 $$
 
 

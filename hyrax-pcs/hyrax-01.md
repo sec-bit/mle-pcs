@@ -174,7 +174,7 @@ $$
 The result of this matrix calculation is as follows:
 
 $$
-\tilde{f}(X_0, X_1, X_2, X_3) = c_0 + c_1X_0 + c_2X_1 + c_3X_2 + c_4X_0X_1 + \cdots + c_{14}X_1X_2X_3 + c_{15}X_0X_1X_2X_3
+\tilde{f}(X_0, X_1, X_2, X_3) = c_0 + c_1X_0 + c_2X_1 + c_3X_0X_1 + c_4X2 + \cdots + c_{14}X_1X_2X_3 + c_{15}X_0X_1X_2X_3
 $$
 
 We first split $\vec{u}$ into two short vectors:

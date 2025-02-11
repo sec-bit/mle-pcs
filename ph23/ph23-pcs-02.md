@@ -442,8 +442,10 @@ $$
 1. Verifier calculates $c^*(\xi)$ using precomputed Barycentric Weights $\{\hat{w}_i\}$
 
 $$
-c^*(\xi)=\frac{\sum_i c_i\frac{w_i}{\xi-x_i}}{\sum_i \frac{w_i}{\xi-x_i}}
+c^*(\xi)=\frac{\sum_i c_i^*\frac{\hat{w}_i}{\xi-x_i}}{\sum_i \frac{\hat{w}_i}{\xi-x_i}}
 $$
+
+Then compute the corresponding commitment $C^(\xi)=[c^(\xi)]_1$."
 
 2. Verifier calculates $v_H(\zeta), L_0(\zeta), L_{N-1}(\zeta)$ 
 
@@ -462,30 +464,36 @@ $$
 
 3. Verifier calculates $s_0(\zeta), \ldots, s_{n-1}(\zeta)$, which can be calculated using the recursive method mentioned earlier.
 
-4. Verifier calculates the commitment of the linearized polynomial $C_l$ 
+4. Verifier calculates $z_{D_\zeta}(\xi)$ ，
+   
+$$
+z_{D_{\zeta}}(\xi) = (\xi-\zeta\omega)\cdots (\xi-\zeta\omega^{2^{n-1}})(\xi-\zeta)
+$$
+
+5. Verifier calculates the commitment of the linearized polynomial $C_l$ 
 
 $$
 \begin{split}
 C_l & = 
-\Big( (c(\zeta) - c_0)s_0(\zeta) \\
+\Big( \Big((c(\zeta) - c_0)s_0(\zeta) \\
 & + \alpha \cdot (u_{n-1}\cdot c(\zeta) - (1-u_{n-1})\cdot c(\omega^{2^{n-1}}\cdot\zeta))\cdot s_0(\zeta)\\
   & + \alpha^2\cdot (u_{n-2}\cdot c(\zeta) - (1-u_{n-2})\cdot c(\omega^{2^{n-2}}\cdot\zeta))\cdot s_1(\zeta)  \\
   & + \cdots \\
   & + \alpha^{n-1}\cdot (u_{1}\cdot c(\zeta) - (1-u_{1})\cdot c(\omega^2\cdot\zeta))\cdot s_{n-2}(\zeta)\\
-  & + \alpha^n\cdot (u_{0}\cdot c(\zeta) - (1-u_{0})\cdot c(\omega\cdot\zeta))\cdot s_{n-1}(\zeta) \\
+  & + \alpha^n\cdot (u_{0}\cdot c(\zeta) - (1-u_{0})\cdot c(\omega\cdot\zeta))\cdot s_{n-1}(\zeta) \Big) \cdot [1]_1 \\
   & + \alpha^{n+1}\cdot L_0(\zeta)\cdot(C_z - c_0\cdot C_a)\\
-  & + \alpha^{n+2}\cdot (\zeta-1)\cdot\big(C_z - z(\omega^{-1}\cdot \zeta)-c(\zeta)\cdot C_{a} ) \\
-  & + \alpha^{n+3}\cdot L_{N-1}(\zeta)\cdot(C_z - v) \\
+  & + \alpha^{n+2}\cdot (\zeta-1)\cdot\big(C_z - z(\omega^{-1}\cdot \zeta) \cdot [1]_1 -c(\zeta)\cdot C_{a} ) \\
+  & + \alpha^{n+3}\cdot L_{N-1}(\zeta)\cdot(C_z - v \cdot [1]_1) \\
   & - v_H(\zeta)\cdot C_t \Big)
 \end{split}
 $$
 
-5. Verifier generates a random number $\eta$ to merge the following Pairing verifications:
+6. Verifier generates a random number $\eta$ to merge the following Pairing verifications:
 
 $$
 \begin{split}
 e(C_l + \zeta\cdot Q_\zeta, [1]_2)\overset{?}{=}e(Q_\zeta, [\tau]_2)\\
-e(C - C^*(\xi) - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi, [1]_2) \overset{?}{=} e(Q_\xi, [\tau]_2)\\
+e(C_c - C^*(\xi) - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi, [1]_2) \overset{?}{=} e(Q_\xi, [\tau]_2)\\
 e(C_z + \zeta\cdot Q_{\omega\zeta} - z(\omega^{-1}\cdot\zeta)\cdot[1]_1, [1]_2) \overset{?}{=} e(Q_{\omega\zeta}, [\tau]_2)\\
 \end{split}
 $$
@@ -495,7 +503,7 @@ After merging, the verification only needs two Pairing operations.
 $$
 \begin{split}
 P &= \Big(C_l + \zeta\cdot Q_\zeta\Big) \\
-& + \eta\cdot \Big(C - C^* - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi\Big) \\
+& + \eta\cdot \Big(C_c - C^*(\xi) - z_{D_\zeta}(\xi)\cdot Q_c + \xi\cdot Q_\xi\Big) \\
 & + \eta^2\cdot\Big(C_z + \zeta\cdot Q_{\omega\zeta} - z(\omega^{-1}\cdot\zeta)\cdot[1]_1\Big)
 \end{split}
 $$

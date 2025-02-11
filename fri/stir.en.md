@@ -262,8 +262,8 @@ We can see that, strictly speaking, this converts the test of $f$ to testing the
 
 Generally, let's assume that the function we want to perform degree correction on is $f: \mathcal{L} \rightarrow \mathbb{F}$, its initial degree is $d$, and the target corrected degree is $d^* \ge d$. We want to construct an efficient degree correction algorithm that can output a function $f^*$ satisfying:
 
-1. If $f \in \mathrm{RS}[\mathbb{F},\mathcal{L},d/k]$, then $f^* \in \mathrm{RS}[\mathbb{F},\mathcal{L},d/k]$.
-2. If $f$ is $\delta$-far from $\mathrm{RS}[\mathbb{F},\mathcal{L},d/k]$, then with high probability, $f^*$ is also $\delta$-far from $\mathrm{RS}[\mathbb{F},\mathcal{L},d/k]$.
+1. If $f \in \mathrm{RS}[\mathbb{F},\mathcal{L},d]$, then $f^* \in \mathrm{RS}[\mathbb{F},\mathcal{L},d^*]$.
+2. If $f$ is $\delta$-far from $\mathrm{RS}[\mathbb{F},\mathcal{L},d]$, then with high probability, $f^*$ is also $\delta$-far from $\mathrm{RS}[\mathbb{F},\mathcal{L},d^*]$.
 3. Queries to $f^*$ can be efficiently computed through queries to $f$.
 
 The STIR paper ([ACFY24], Section 2.3) proposes a method that not only satisfies the above three conditions but also uses the method of summing geometric series to make the calculation in item 3 more efficient.
