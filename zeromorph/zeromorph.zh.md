@@ -124,7 +124,7 @@ $$
 
 ### 映射的加法同态
 
-对于任意的两个 MLE 多项式，如果它们具有相同的维度，比如 $\tilde{f}_1(X_0, X_1)$ 和 $\tilde{f}_2(X_0, X_1)$ ，假如前者的点值式表示为
+对于任意两个维度相同的 MLE 多项式，比如 $\tilde{f}_1(X_0, X_1)$ 和 $\tilde{f}_2(X_0, X_1)$ ，假如两者的点值式表示为
 
 $$
 \tilde{f}_1(X_0, X_1) = v_0\cdot eq(0,0, X_0, X_1) + v_1\cdot eq(0,1, X_0, X_1) + v_2\cdot eq(1,0, X_0, X_1) + v_3\cdot eq(1,1, X_0, X_1)
@@ -144,12 +144,13 @@ $$
 $$
 
 于是下面的等式成立：
+> TODO: 这里要展开推导
 
 $$
 [[\tilde{f}_1(X_0, X_1) + \tilde{f}_2(X_0, X_1)]]_2 = [[\tilde{f}_1(X_0, X_1)]]_2 + [[\tilde{f}_2(X_0, X_1)]]_2
 $$
 
-同时不难证明，上面的等式对任意的同样维度的 MLE 多项式都成立。另外也不难证明：
+同时不难证明，上面的等式对任意的维度相同的 MLE 多项式都成立。另外也不难证明：
 
 $$
 [[\alpha\cdot \tilde{f}]]_n = \alpha\cdot [[\tilde{f}]]_n,\quad \forall \alpha \in \mathbb{F}_q
@@ -285,16 +286,16 @@ $$
 看下等式右边的 $[[\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_n$，这一项是将 $k$ 维的 Hypercube填充到 $n$ 维的 Hypercube 上，然后再进行映射。根据前面的讨论，我们需要将 $k$ 维的 Hypercube 连续复制 $2^{n-k}$ 次，从而填满 $n$ 维 Hypercube：
 
 $$
-[[f(X_0, X_1, \ldots, X_{k-1})]]_n = \Phi_{n-k}(X^{2^k})\cdot [[f(X_0, X_1, \ldots, X_{k-1})]]_{k}
+[[\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_n = \Phi_{n-k}(X^{2^k})\cdot [[\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_{k}
 $$
 
-再解释下，因为 $\Phi_{n-k}(X^{2^k})$ 表示了一个间隔为 $2^k$ 的系数向量，其定义展开如下：
+再解释下, $\Phi_{n-k}(X^{2^k})$ 定义展开如下：
 
 $$
 \Phi_{n-k}(X^{2^k}) = 1 + X^{2^k} + X^{2\cdot 2^k} + \ldots + X^{(2^{n-k}-1)\cdot 2^k}
 $$
 
-它的系数向量为：
+它的系数为一个若干个 $0,1$ 组成，并且每两个 $1$ 之间位置间隔为 $2^k$：
 
 $$
 (1, 0, 0 ,\ldots, 0, \quad 1, 0 ,\ldots, 0, \quad 1, 0 ,\ldots, 0, \quad 1)
@@ -302,18 +303,18 @@ $$
 
 假设有一个次数受限的多项式 $g(X)\in\mathbb{F}_q[X]$，满足 $\deg(g)<2^k$ ，那么多项式 $\Phi_{n-k}(X^{2^k})\cdot g$ 就表示了一个 $2^k-1$ 次多项式 $g(X)$ 被 $2^k$ 间隔的系数向量重复了 $2^{n-k}$ 次，最终得到了一个 $2^n-1$ 次的多项式。
 
-最后还剩下 $[[X_k\cdot \tilde{f}(X_0, X_1, \ldots, X_{k-1})]]_n$ 这项，如何继续化简它呢？
+最后还剩下 $[[X_k\cdot \tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_n$ 这项，如何继续化简它呢？
 
-我们可以分两步来构造它的映射，首先看 $\tilde{f}(X_0, X_1, \ldots, X_{k-1})$ 可以由一个 k 维 Boolean Hypercube 表示，然后当乘以一个新的未知数 $X_k$，它就变成了一个需要 $k+1$ 维的 Boolean Hypercube 表示的 MLE 多项式。而这个新 Boolean Hypercube 可以分为两部分，一部分都是零（当 $X_k=0$ 时），另一部分正是 $\tilde{f}(X_0, X_1, \ldots, X_{k-1})$ （当 $X_k=1$ 时）。所以我们先利用 $\Phi_n(X)$ 函数，构造一个 Boolean Hypercube 的重复模式，其中间隔为 $2^{k+1}$，然后把 $k$ 维 Boolean Hypercube 进行 $2^{n-k-1}$ 次复制，于是我们得到了下面的多项式。
-
-$$
-\Phi_{n-k-1}(X^{2^{k+1}})\cdot [[\tilde{f}(X_0, X_1, \ldots, X_{k-1})]]_{k}
-$$
-
-不过这只是第一步。上面这个 Univariate 多项式和 $[[X_k\cdot \tilde{f}(X_0, X_1, \ldots, X_{k-1})]]_n$ 还不相等，因为前者在每一个重复的 $k+1$ 维 Boolean Hypercube 中，$X_k=1$ 部分为零，而 $X_k=0$ 部分放的则是 $k$ 维 Boolean Hybercube $\tilde{f}(X_0, X_1, \ldots, X_{k-1})$，这与我们想要的 Boolean Hypercube 不同。我们需要再为它补上 $X^{2^k}$ 这样的移位因子，这样就可以调换 $X_k$ 所对应的 $k$ 维的 Boolean Hypercube 的位置（从低位区域转移到高位区域）。映射后的结果为：o
+我们可以分两步来构造它的映射，首先看 $\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})$ 可以由一个 k 维 Boolean Hypercube 表示，然后当乘以一个新的未知数 $X_k$，它就变成了一个需要 $k+1$ 维的 Boolean Hypercube 表示的 MLE 多项式。而这个新 Boolean Hypercube 可以分为两部分，一部分都是零（当 $X_k=0$ 时），另一部分正是 $\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})$ （当 $X_k=1$ 时）。所以我们先利用 $\Phi_n(X)$ 函数，构造一个 Boolean Hypercube 的重复模式，其中间隔为 $2^{k+1}$，然后把 $k$ 维 Boolean Hypercube 进行 $2^{n-k-1}$ 次复制，于是我们得到了下面的多项式。
 
 $$
-[[X_k\cdot \tilde{f}(X_0, X_1, \ldots, X_{k-1})]]_n = X^{2^k}\cdot \Phi_{n-k-1}(X^{2^{k+1}})\cdot [[\tilde{f}(X_0, X_1, \ldots, X_{k-1})]]_{k}
+\Phi_{n-k-1}(X^{2^{k+1}})\cdot [[\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_{k}
+$$
+
+不过这只是第一步。上面这个 Univariate 多项式和 $[[X_k\cdot \tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_n$ 还不相等，因为前者在每一个重复的 $k+1$ 维 Boolean Hypercube 中，$X_k=1$ 部分为零，而 $X_k=0$ 部分放的则是 $k$ 维 Boolean Hybercube $\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})$，这与我们想要的 Boolean Hypercube 不同。我们需要再为它补上 $X^{2^k}$ 这样的移位因子，这样就可以调换 $X_k$ 所对应的 $k$ 维的 Boolean Hypercube 的位置（从低位区域转移到高位区域）。映射后的结果为：
+
+$$
+[[X_k\cdot \tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_n = X^{2^k}\cdot \Phi_{n-k-1}(X^{2^{k+1}})\cdot [[\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_{k}
 $$
 
 下图用一个特定的例子演示，其中 $k=3, n=5$， 左边为移位前的 $5$ 维 Boolean Hypercube，其中上下两半场表示第五个维度，每个半场有两个三维立方体，表示第四个维度。我们可以看到，仅当 $X_3=0$ 的三维立方体恰好对应 $\tilde{f}(X_0, X_1, X_2)$，而当 $X_3=1$ 时，三维立方体上全为零。而下图右边为移位后的 $5$ 维 Boolean Hypercube，其中的 $\tilde{f}(X_0, X_1, X_2)$ 立方体被移位到了右边，也就是 $X_3=1$ 所对应的区域。
@@ -541,7 +542,7 @@ $$
 2. Prover 计算 $h(X)$ 并发送其承诺 $\mathsf{cm}(h)$ 
 
 $$
-h(X)=(h_0(X) + \alpha\cdot h_1(X))\cdot X^{D_{max}-2^n+1}
+h(X)=(h_0(X) + \alpha\cdot h_1(X))\cdot X^{D_{max}-2^n+2}
 $$
 
 #### Verification 
