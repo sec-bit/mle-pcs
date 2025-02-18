@@ -37,10 +37,10 @@ $$
 对于 FRI 协议，选取 $\mathbb{F}$ 中的一个大小为 $2$ 的幂次的乘法子群 $D = D_0$ ，并且有
 
 $$
-D_r \subseteq D_{r - 1} \subseteq \ldots \subseteq D_0
+D_n \subseteq D_{n - 1} \subseteq \ldots \subseteq D_0
 $$
 
-其中 $|D_{i - 1}|/|D_{i}| = 2$ ，码率 $\rho = N / |D_0|$ 。那么 FRI 协议对函数 $\hat{f}$ 的承诺为承诺 $\hat{f}(X)$ 在 $D$ 上的 Reed-Solomon 编码，即
+其中 $|D_{i - 1}|/|D_{i}| = 2$ ，码率 $\rho = N / |D_0|$ 。下面的协议中以折叠 $n$ 次，即最后折叠到常数多项式来描述，实际中也可以折叠到一个次数比较小的多项式，协议流程会有细微差别。那么 FRI 协议对函数 $\hat{f}$ 的承诺为承诺 $\hat{f}(X)$ 在 $D$ 上的 Reed-Solomon 编码，即
 
 $$
 \mathsf{cm}(\hat{f}(X)) = \mathsf{cm}([\hat{f}(x)|_{x \in D}])
@@ -61,6 +61,8 @@ Prover 发送的是这棵 Merkle 树的根节点值，作为 $[\hat{f}(x)|_{x \i
 - 求值点 $\mathbf{u}=(u_0, u_1, \ldots, u_{n-1})$
 - 求值结果 $v = \tilde{f}(\mathbf{u})$
 - 码率参数：$\rho$
+- FRI 协议中进行 low degree test 查询阶段的重复查询的次数参数: $l$ （实际中 $l$ 的取值与安全性参数，安全假设以及码率相关）
+- FRI 协议中编码的乘法子群：$D, D^{(0)}, \ldots, D^{(n - 1)}$ 
 
 #### Witness
 
@@ -99,153 +101,283 @@ $$
 [q_{f_\zeta}(x)|_{x \in D}] = \big[\frac{\hat{f}(x) - \hat{f}(\zeta)}{ x - \zeta} \big|_{x \in D} \big]
 $$
 
-4. Prover 发送 $q_{f_\zeta}(X)$ 的承诺，$\mathsf{cm}(q_{f_\zeta}(X))$
-
-$$
-\mathsf{cm}(q_{f_\zeta}(X)) = \mathsf{cm}([q_{f_\zeta}(x)|_{x \in D}]) = \mathsf{MT.commit}([q_{f_\zeta}(x)|_{x \in D}])
-$$
-5. Prover 计算并发送 $\hat{q}_k(\zeta), \, 0 \le k < n$ 。
-6. Prover 计算
+4. Prover 计算并发送 $\hat{q}_k(\zeta), \, 0 \le k < n$ 。
+5. 对于 $0 \le k < n$ ，Prover 计算
 
 $$
 q_{\hat{q}_k}(X) = \frac{\hat{q_k}(X) - \hat{q}_k(\zeta)}{X - \zeta}
 $$
 
-其中 $0 \le k < n$ 。
-
-7. Prover 发送 $q_{\hat{q}_k}(X)$ 的承诺，$\mathsf{cm}(q_{\hat{q}_k}(X))$ ，$0 \le k < n$
-
-$$
-\mathsf{cm}(q_{\hat{q}_k}(X)) = [q_{\hat{q}_k}(x)|_{x \in D^{(k)}}] = \mathsf{MT.commit}([q_{\hat{q}_k}(x)|_{x \in D^{(k)}}])
-$$
+在 $D^{(k)}$ 上的值。
 
 #### Round 3
 
-1. Verifier 发送随机数 $\gamma \stackrel{\$}{\leftarrow} D$
-2. Prover 发送 $q_{f_\zeta}(\gamma)$ 以及 $\hat{f}(\gamma)$
-3. Prover 发送 $q_{f_\zeta}(\gamma)$ 以及 $\hat{f}(\gamma)$ 在 Merkle Tree 上的打开路径，作为 $q_{f_\zeta}$ 与 $\hat{f}$ 在 $\gamma$ 点值的证明，记为
+Prover 与 Verifier 进行 FRI 协议的 low degree test 交互，证明 $q_{f_\zeta}(X)$ 的次数小于 $2^n$ ，
 
 $$
-\mathsf{MT.open}([\hat{f}(x)|_{x \in D}], \gamma)
+\pi_{q_{f_\zeta}} \leftarrow \mathsf{FRI.LDT}(q_{f_\zeta}(X), 2^n)
 $$
 
-$$
-\mathsf{MT.open}([q_{f_\zeta}(x)|_{x \in D}], \gamma)
-$$
+- 记 $q_{f_\zeta}^{(0)}(x)|_{x \in D} := q_{f_\zeta}(x)|_{x \in D}$
+- 对于 $i = 1,\ldots, n$ ，
+  - Verifier 发送随机数 $\alpha^{(i)}$
+  - 对于任意的 $y \in D_i$ ，在 $D_{i - 1}$ 中找到 $x$ 满足 $y^2 = x$，Prover 计算
+
+  $$
+    q_{f_\zeta}^{(i)}(y) = \frac{q_{f_\zeta}^{(i - 1)}(x) + q_{f_\zeta}^{(i - 1)}(-x)}{2} + \alpha^{(i)} \cdot \frac{q_{f_\zeta}^{(i - 1)}(x) + q_{f_\zeta}^{(i - 1)}(-x)}{2x}
+  $$
+
+  
+  - 如果 $i < n$ ，Prover 发送 $[q_{f_\zeta}^{(i)}(x)|_{x \in D_{i}}]$ 的 Merkle Tree 承诺，
+  
+  $$
+  \mathsf{cm}(q_{f_\zeta}^{(i)}(X)) = \mathsf{MT.commit}([q_{f_\zeta}^{(i)}(x)|_{x \in D_{i}}])
+  $$
+
+  - 如果 $i = n$ ，任选 $x_0 \in D_{n}$ ，Prover 发送 $q_{f_\zeta}^{(i)}(x_0)$ 的值。
+
+> 📝 **Notes**
+>
+> 如果折叠次数 $r < n$ ，那么最后不会折叠到常数多项式，因此 Prover 在第 $r$ 轮时会发送一个 Merkle Tree 承诺，而不是发送一个值。
 
 #### Round 4
 
-1. Verifier 发送 $k$ 个随机数 $\gamma_k \stackrel{\$}{\leftarrow} D^{(k)}, 0 \le k < n$
-2. Prover 发送  $\{ \hat{q}_k(\gamma_k) \}_{k = 0}^{n - 1}$  以及 $\{ q_{\hat{q}_k}(\gamma_k) \}_{k = 0}^{n - 1}$ 
+这一轮是接着 Prover 与 Verifier 进行 FRI 协议的 low degree test 交互的查询阶段，Verifier 重复查询 $l$ 次：
+- Verifier 从 $D_0$ 中随机选取一个数 $s^{(0)} \stackrel{\$}{\leftarrow} D_0$ 
+- Prover 发送 $\hat{f}(s^{(0)}), \hat{f}(- s^{(0)})$ 的值，并附上 Merkle Path。
+  
+  $$
+  \{(\hat{f}(s^{(0)}), \pi_{\hat{f}}(s^{(0)}))\} \leftarrow \mathsf{MT.open}([\hat{f}(x)|_{x \in D_0}], s^{(0)})
+  $$
 
-> 📝 **Notes**
->
-> 实际实现中，$D^{(k)}$ 的生成元满足 $\omega_k^2 = \omega_{k - 1}$ ，那么这里 Verifier 只需要发送一个随机数 $\gamma_{n - 1} \stackrel{\$}{\leftarrow} D^{(n - 1)}$ 即可，下一个随机数 $\gamma_{n - 2} = \gamma_{n - 1}^2$ ，以此类推。
+  $$
+  \{(\hat{f}(-s^{(0)}), \pi_{\hat{f}}(-s^{(0)}))\} \leftarrow \mathsf{MT.open}([\hat{f}(x)|_{x \in D_0}], -s^{(0)})
+  $$
+- Prover 计算 $s^{(1)} = (s^{(0)})^2$ 
+- 对于 $i = 1, \ldots, n - 1$
+  - Prover 发送 $q_{f_\zeta}^{(i)}(s^{(i)}), q_{f_\zeta}^{(i)}(-s^{(i)})$ 的值，并附上 Merkle Path。
+  
+  $$
+  \{(q_{f_\zeta}^{(i)}(s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(s^{(i)}))\} \leftarrow \mathsf{MT.open}([q_{f_\zeta}^{(i)}(x)|_{x \in D_i}], s^{(i)})
+  $$
 
-3. Prover 发送  $\{ \hat{q}_k(\gamma_k) \}_{k = 0}^{n - 1}$ 以及 $\{ q_{\hat{q}_k}(\gamma_k) \}_{k = 0}^{n - 1}$ 对应的 Merkle Path，
+  $$
+  \{(q_{f_\zeta}^{(i)}(-s^{(i)}), \pi_{q_{f_\zeta}}^{(i)}(-s^{(i)}))\} \leftarrow \mathsf{MT.open}([q_{f_\zeta}^{(i)}(x)|_{x \in D_i}], -s^{(i)})
+  $$
+  - Prover 计算 $s^{(i + 1)} = (s^{(i)})^2$
 
-$$
-\mathsf{MT.open}([\hat{q}_k(x)|_{x \in D^{(k)}}],\gamma_k)
-$$
-
-$$
-\mathsf{MT.open}([q_{\hat{q}_k}(x)|_{x \in D^{(k)}}],\gamma_k)
-$$
+> 如果折叠次数 $r < n$ ，那么最后一步就要发送 $q_{f_\zeta}^{(r)}(s^{(r)})$ 的值，并附上 Merkle Path。
 
 #### Round 5
-
-1. Prover 与 Verifier 进行 FRI 协议的 low degree test 交互，证明 $q_{f_\zeta}(X)$ 的次数小于 $2^n$ ，
-
-$$
-\mathsf{FRI.LDT}(q_{f_\zeta}(X), 2^n)
-$$
-
-2. Prover 发送 $q_{f_\zeta}(X)$ 的 low degree test 证明，
-
-$$
-\pi(\mathsf{FRI.LDT}(q_{f_\zeta}(X), 2^n))
-$$
-
-> 📝 **Notes**
->
-> 在一般的 FRI 协议中进行 low degree test 时，会首先对对应的多项式进行 Merkle Tree 承诺，由于在 Round 2 已经承诺过了，因此这里在 $\mathsf{FRI.LDT}$ 的第一步中可以不用再重复进行承诺。
-
-#### Round 6
 
 1. Prover 与 Verifier 进行 FRI 协议的 low degree test 交互，对于 $0 \le k < n$ ，证明 $q_{\hat{q}_k}(X)$ 的次数小于 $2^k$ ，
 
 $$
-\mathsf{FRI.LDT}(q_{\hat{q}_k}(X), 2^k)
+\pi_{q_{\hat{q}_k}} \leftarrow \mathsf{FRI.LDT}(q_{\hat{q}_k}(X), 2^k)
 $$
 
-2. Prover 发送 $q_{\hat{q}_k}(X)$ 的 low degree test 证明，
+- 记 $q_{\hat{q}_k}^{(0)}(x)|_{x \in D^{(k)}} := q_{f_\zeta}(x)|_{x \in D^{(k)}}$
+- 对于 $i = 1,\ldots, k$ ，
+  - Verifier 发送随机数 $\beta_k^{(i)}$
+  - 对于任意的 $y \in D_i^{(k)}$ ，在 $D_{i - 1}^{(k)}$ 中找到 $x$ 满足 $y^2 = x$，Prover 计算
 
-$$
-\pi(\mathsf{FRI.LDT}(q_{\hat{q}_k}(X), 2^k))
-$$
+  $$
+    q_{\hat{q}_k}^{(i)}(y) = \frac{q_{\hat{q}_k}^{(i - 1)}(x) + q_{\hat{q}_k}^{(i - 1)}(-x)}{2} + \beta_k^{(i)} \cdot \frac{q_{\hat{q}_k}^{(i - 1)}(x) + q_{\hat{q}_k}^{(i - 1)}(-x)}{2x}
+  $$
+  - 如果 $i < k$ ，Prover 发送 $[q_{\hat{q}_k}^{(i)}(x)|_{x \in D_i^{(k)}}]$ 的 Merkle Tree 承诺，
+  
+  $$
+  \mathsf{cm}(q_{\hat{q}_k}^{(i)}(X)) = \mathsf{MT.commit}([q_{\hat{q}_k}^{(i)}(x)|_{x \in D_{i}^{(k)}}])
+  $$
+
+  - 如果 $i = k$ ，任选 $y_0^{(k)} \in D_{n}$ ，Prover 发送 $q_{\hat{q}_k}^{(i)}(y_0^{(k)})$ 的值。
 
 > 📝 **Notes**
 >
-> 这里的原因和 Round 4 一样，在 $\mathsf{FRI.LDT}$ 的第一步中可以不用再对 $q_{\hat{q}_k}(X)$ 重复进行承诺。
+> 如果折叠次数 $r < k$ ，那么最后不会折叠到常数多项式，因此 Prover 在第 $r$ 轮时会发送一个 Merkle Tree 承诺，而不是发送一个值。
+
+#### Round 6
+
+这一轮是接着 Prover 与 Verifier 进行 FRI 协议的 low degree test 交互的查询阶段，对于 $k = 0, \ldots, n - 1$， Verifier 重复查询 $l$ 次：
+- Verifier 从 $D_0^{(k)}$ 中随机选取一个数 $s_k^{(0)} \stackrel{\$}{\leftarrow} D_0^{(k)}$ 
+- Prover 发送 $\hat{q}_k(s_k^{(0)}), \hat{q}_k(- s_k^{(0)})$ 的值，并附上 Merkle Path。
+  
+  $$
+  \{(\hat{q}_k(s_k^{(0)}), \pi_{\hat{q}_k}(s_k^{(0)}))\} \leftarrow \mathsf{MT.open}([\hat{q}_k(x)|_{x \in D_0^{(k)}}], s^{(0)})
+  $$
+
+  $$
+  \{(\hat{q}_k(-s_k^{(0)}), \pi_{\hat{q}_k}(-s_k^{(0)}))\} \leftarrow \mathsf{MT.open}([\hat{q}_k(x)|_{x \in D_0^{(k)}}], -s^{(0)})
+  $$
+- Prover 计算 $s_k^{(1)} = (s_k^{(0)})^2$ 
+- 对于 $i = 1, \ldots, k - 1$
+  - Prover 发送 $q_{\hat{q}_k}^{(i)}(s_k^{(i)}), q_{\hat{q}_k}^{(i)}(-s_k^{(i)})$ 的值，并附上 Merkle Path。
+  
+  $$
+  \{(q_{\hat{q}_k}^{(i)}(s_k^{(i)}), \pi_{q_{\hat{q}_k}^{(i)}}(s_k^{(i)}))\} \leftarrow \mathsf{MT.open}([q_{\hat{q}_k}^{(i)}(x)|_{x \in D_i^{(k)}}], s_k^{(i)})
+  $$
+
+  $$
+  \{(q_{\hat{q}_k}^{(i)}(-s_k^{(i)}), \pi_{q_{\hat{q}_k}^{(i)}}(-s_k^{(i)}))\} \leftarrow \mathsf{MT.open}([q_{\hat{q}_k}^{(i)}(x)|_{x \in D_i^{(k)}}], -s_k^{(i)})
+  $$
+  - Prover 计算 $s_k^{(i + 1)} = (s_k^{(i)})^2$
+
+> 如果折叠次数 $r < k$ ，那么最后一步就要发送 $q_{\hat{q}_k}^{(r)}(s^{(r)})$ 的值，并附上 Merkle Path。
 
 #### Proof
 
-Prover 发送的证明有
+Prover 发送的证明为
 
 $$
-\pi = \big(\{\mathsf{cm}(\hat{q}_k(X))\}_{k = 0}^{n - 1}, \hat{f}(\zeta), \mathsf{cm}(q_{f_\zeta}(X)), \{\hat{q}_k(\zeta)\}_{k =0}^{n - 1}, \{\mathsf{cm}(q_{\hat{q}_k}(X))\}_{k =0}^{n-1}, \big)
+\begin{aligned}
+  \pi = \left(\mathsf{cm}(\hat{q}_0(X)), \ldots \mathsf{cm}(\hat{q}_{n - 1}(X)), \hat{f}(\zeta), \hat{q}_0(\zeta), \ldots, \hat{q}_{n - 1}(\zeta), \pi_{q_{f_\zeta}}, \pi_{q_{\hat{q}_0}}, \ldots, \pi_{q_{\hat{q}_{n - 1}}}\right)
+\end{aligned}
 $$
 
-- [ ] 待协议确定后完善
+用符号 $\{\cdot\}^l$ 表示在 FRI low degree test 的查询阶段重复查询 $l$ 次产生的证明，由于每次查询是随机选取的，因此花括号中的证明也是随机的。那么 FRI 进行 low degree test 的 $n + 1$ 个证明为
+
+$$
+\begin{aligned}
+  \pi_{q_{f_\zeta}} = &  ( \mathsf{cm}(q_{f_\zeta}^{(1)}(X)), \ldots, \mathsf{cm}(q_{f_\zeta}^{(n - 1)}(X)),q_{f_\zeta}^{(n)}(x_0),  \\
+  & \, \{\hat{f}(s^{(0)}), \pi_{\hat{f}}(s^{(0)})), \hat{f}(- s^{(0)}), \pi_{\hat{f}}(-s^{(0)})), \\
+  & \quad q_{f_\zeta}^{(1)}(s^{(1)}), \pi_{q_{f_\zeta}^{(1)}}(s^{(1)}),q_{f_\zeta}^{(1)}(-s^{(1)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(1)}), \ldots, \\
+  & \quad q_{f_\zeta}^{(n - 1)}(s^{(n - 1)}), \pi_{q_{f_\zeta}^{(n - 1)}}(s^{(n - 1)}),q_{f_\zeta}^{(n - 1)}(-s^{(n - 1)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(n - 1)})\}^l)
+\end{aligned}
+$$
+
+对于 $k = 0, \ldots, n - 1$，
+
+$$
+\begin{aligned}
+  \pi_{q_{\hat{q}_k}} = &  ( \mathsf{cm}(q_{\hat{q}_k}^{(1)}(X)), \ldots, \mathsf{cm}(q_{\hat{q}_k}^{(k - 1)}(X)),q_{\hat{q}_k}^{(k)}(y_0^{(k)}),  \\
+  & \, \{\hat{q}_k(s_k^{(0)}), \pi_{\hat{q}_k}(s_k^{(0)}), \hat{q}_k(-s_k^{(0)}), \pi_{\hat{q}_k}(-s_k^{(0)}),\\
+  & \quad q_{\hat{q}_k}^{(1)}(s_k^{(1)}), \pi_{q_{\hat{q}_k}^{(1)}}(s_k^{(1)}), q_{\hat{q}_k}^{(1)}(s_k^{(1)}), \pi_{q_{\hat{q}_k}^{(1)}}(s_k^{(1)}) \ldots, \\
+  & \quad q_{\hat{q}_k}^{(k - 1)}(s_k^{(1)}), \pi_{q_{\hat{q}_k}^{(k - 1)}}(s_k^{(k - 1)}), q_{\hat{q}_k}^{(k - 1)}(s_k^{(k - 1)}), \pi_{q_{\hat{q}_k}^{(k - 1)}}(s_k^{(k - 1)})\}^l)
+\end{aligned}
+$$
 
 #### Verification
 
 Verifier
 
-1. 验证 $q_{f_\zeta}(\gamma)$ 以及 $\hat{f}(\gamma)$ 发送过来值的正确性，通过 Prover 发送的 Merkle Tree Path 来进行验证，记为
+1. 验证 $q_{f_\zeta}(X)$ 的 low degree test 证明，
 
 $$
-\mathsf{MT.verify}(\mathsf{MT.Commit}([\hat{f}(x)|_{x \in D}]), \mathsf{MT.open}([\hat{f}(x)|_{x \in D}], \gamma))
+\mathsf{FRI.LDT.verify}(\pi_{q_{f_\zeta}}, 2^n) \stackrel{?}{=} 1
 $$
 
-$$
-\mathsf{MT.verify}(\mathsf{MT.commit}([q_{f_\zeta}(x)|_{x \in D}]), \mathsf{MT.open}([q_{f_\zeta}(x)|_{x \in D}], \gamma))
-$$
-
-2. 验证 $q_{f_\zeta}$ 商式的正确性
+具体验证过程为，重复 $l$ 次：
+- 验证 $\hat{f}(s^{(0)}), \hat{f}(-s^{(0)})$ 的正确性
 
 $$
-q_{f_\zeta}(\gamma) \cdot (\gamma - \zeta)= \hat{f}(\gamma) - \hat{f}(\zeta)
-$$
-
-3. 验证 $\{ \hat{q}_k(\gamma_k) \}_{k = 0}^{n - 1}$  以及 $\{ q_{\hat{q}_k}(\gamma_k) \}_{k = 0}^{n - 1}$  发送过来值的正确性，通过 Prover 发送的 Merkle Tree Path 来进行验证，记为
-
-$$
-\mathsf{MT.verify}(\mathsf{MT.commit}([\hat{q}_k(x)|_{x \in D^{(k)}}]), \mathsf{MT.open}([\hat{q}_k(x)|_{x \in D^{(k)}}],\gamma_k))
+\mathsf{MT.verify}(\mathsf{cm}(\hat{f}(X), \hat{f}(s^{(0)}), \pi_{\hat{f}}(s^{(0)})) \stackrel{?}{=} 1
 $$
 
 $$
-\mathsf{MT.verify}(\mathsf{MT.commit}([q_{\hat{q}_k}(x)|_{x \in D^{(k)}}]), \mathsf{MT.open}([q_{\hat{q}_k}(x)|_{x \in D^{(k)}}],\gamma_k))
+\mathsf{MT.verify}(\mathsf{cm}(\hat{f}(X), \hat{f}(-s^{(0)}), \pi_{\hat{f}}(-s^{(0)})) \stackrel{?}{=} 1
 $$
+- Verifier 计算
+  $$
+  q_{f_\zeta}^{(0)}(s^{(0)}) = \frac{\hat{f}(s^{(0)}) - \hat{f}(\zeta)}{s^{(0)} - \zeta}
+  $$
 
-4. 验证 $q_{\hat{q}_k}$ 商式的正确性，对于 $k = 0, 1, \ldots, n - 1$ ，验证
-
-$$
-q_{\hat{q}_k}(\gamma_k) \cdot (\gamma_k - \zeta) = \hat{q}_k(\gamma_k) - \hat{q}_k(\zeta)
-$$
-
-
-5.  验证 FRI 协议 low degree test 的正确性
-
-$$
-\mathsf{FRI.verify}(\pi(\mathsf{FRI.LDT}(q_{f_\zeta}(X), 2^n)))
-$$
+  $$
+  q_{f_\zeta}^{(0)}(- s^{(0)}) = \frac{\hat{f}(-s^{(0)}) - \hat{f}(\zeta)}{-s^{(0)} - \zeta}
+  $$
+- 验证 $q_{f_\zeta}^{(1)}(s^{(1)}), q_{f_\zeta}^{(1)}(-s^{(1)})$ 的正确性
 
 $$
-\mathsf{FRI.verify}(\pi(\mathsf{FRI.LDT}(q_{\hat{q}_k}(X), 2^k))), \, 0 \le k < n
+\mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(1)}(X)), q_{f_\zeta}^{(1)}(s^{(1)}), \pi_{q_{f_\zeta}^{(1)}}(s^{(1)})) \stackrel{?}{=} 1
 $$
 
-6. 计算 $\Phi_n(\zeta)$ 以及 $\Phi_{n - k}(\zeta^{2^k})(0 \le k < n)$ ，满足
+
+$$
+\mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(1)}(X)), q_{f_\zeta}^{(1)}(-s^{(1)}), \pi_{q_{f_\zeta}^{(1)}}(-s^{(1)})) \stackrel{?}{=} 1
+$$
+
+- 验证第 $1$ 轮的折叠是否正确
+
+$$
+q_{f_\zeta}^{(1)}(s^{(1)}) \stackrel{?}{=} \frac{q_{f_\zeta}^{(0)}(s^{(0)}) + q_{f_\zeta}^{(0)}(- s^{(0)})}{2} + \alpha^{(1)} \cdot \frac{q_{f_\zeta}^{(0)}(s^{(0)}) - q_{f_\zeta}^{(0)}(- s^{(0)})}{2 \cdot s^{(0)}}
+$$
+- 对于 $i = 2, \ldots, n - 1$
+  - 验证 $q_{f_\zeta}^{(i)}(s^{(i)}), q_{f_\zeta}^{(i)}(-s^{(i)})$ 的正确性
+
+  $$
+  \mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(i)}(X)), q_{f_\zeta}^{(i)}(s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(s^{(i)}) \stackrel{?}{=} 1
+  $$
+
+  $$
+  \mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(i)}(X)), q_{f_\zeta}^{(i)}(-s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(i)}) \stackrel{?}{=} 1
+  $$
+  - 验证第 $i$ 轮的折叠是否正确
+  $$
+  q_{f_\zeta}^{(i)}(s^{(i)}) \stackrel{?}{=} \frac{q_{f_\zeta}^{(0)}(s^{(i - 1)}) + q_{f_\zeta}^{(i - 1)}(- s^{(i - 1)})}{2} + \alpha^{(i)} \cdot \frac{q_{f_\zeta}^{(i - 1)}(s^{(i - 1)}) - q_{f_\zeta}^{(i - 1)}(- s^{(i - 1)})}{2 \cdot s^{(i - 1)}}
+  $$
+- 验证最后是否折叠到常数多项式
+  $$
+  q_{f_\zeta}^{(n)}(x_0) \stackrel{?}{=} \frac{q_{f_\zeta}^{(n-1)}(s^{(n - 1)}) + q_{f_\zeta}^{(n - 1)}(- s^{(n - 1)})}{2} + \alpha^{(n)} \cdot \frac{q_{f_\zeta}^{(n - 1)}(s^{(n - 1)}) - q_{f_\zeta}^{(n - 1)}(- s^{(n - 1)})}{2 \cdot s^{(n - 1)}}
+  $$
+
+2. 对于 $k = 0, \ldots, n - 1$ ，验证 $q_{\hat{q}_k}(X)$ 的 low degree test 证明，
+
+$$
+\mathsf{FRI.LDT.verify}(\pi_{q_{\hat{q}_k}}, 2^k) \stackrel{?}{=} 1
+$$
+
+具体验证过程为，重复 $l$ 次：
+- 验证 $\hat{q}_k(s_k^{(0)}), \hat{q}_k(-s_k^{(0)})$ 的正确性
+
+$$
+\mathsf{MT.verify}(\mathsf{cm}(\hat{q}_k(X)), \hat{q}_k(s_k^{(0)}), \pi_{\hat{q}_k}(s_k^{(0)})) \stackrel{?}{=} 1
+$$
+
+$$
+\mathsf{MT.verify}(\mathsf{cm}(\hat{q}_k(X)), \hat{q}_k(-s_k^{(0)}), \pi_{\hat{q}_k}(-s_k^{(0)})) \stackrel{?}{=} 1
+$$
+- Verifier 计算
+  $$
+  q_{\hat{q}_k}^{(0)}(s_k^{(0)}) = \frac{\hat{q}_k(s_k^{(0)})- \hat{q}_k(\zeta)}{s_k^{(0)} - \zeta}
+  $$
+
+  $$
+  q_{\hat{q}_k}^{(0)}(-s_k^{(0)}) = \frac{\hat{q}_k(-s_k^{(0)})- \hat{q}_k(\zeta)}{-s_k^{(0)} - \zeta}
+  $$
+- 验证 $q_{\hat{q}_k}^{(1)}(s_k^{(1)}),q_{\hat{q}_k}^{(1)}(-s_k^{(1)}),$ 的正确性
+
+$$
+\mathsf{MT.verify}(\mathsf{cm}(q_{\hat{q}_k}^{(1)}(X)), q_{\hat{q}_k}^{(1)}(s_k^{(1)}), \pi_{q_{\hat{q}_k}^{(1)}}(s_k^{(1)})) \stackrel{?}{=} 1
+$$
+
+$$
+\mathsf{MT.verify}(\mathsf{cm}(q_{\hat{q}_k}^{(1)}(X)), q_{\hat{q}_k}^{(1)}(-s_k^{(1)}), \pi_{q_{\hat{q}_k}^{(1)}}(-s_k^{(1)})) \stackrel{?}{=} 1
+$$
+
+- 验证第 $1$ 轮的折叠是否正确
+
+$$
+q_{\hat{q}_k}^{(1)}(s_k^{(1)}) \stackrel{?}{=} \frac{q_{\hat{q}_k}^{(0)}(s_k^{(0)}) + q_{\hat{q}_k}^{(0)}(- s_k^{(0)})}{2} + \beta_k^{(1)} \cdot \frac{q_{\hat{q}_k}^{(0)}(s_k^{(0)}) - q_{\hat{q}_k}^{(0)}(- s_k^{(0)})}{2 \cdot s_k^{(0)}}
+$$
+- 对于 $i = 2, \ldots, k - 1$
+  - 验证 $q_{\hat{q}_k}^{(i)}(s_k^{(i)}), q_{\hat{q}_k}^{(i)}(-s_k^{(i)})$ 的正确性
+  
+  $$
+  \mathsf{MT.verify}(\mathsf{cm}(q_{\hat{q}_k}^{(i)}(X)), q_{\hat{q}_k}^{(i)}(s_k^{(i)}), \pi_{q_{\hat{q}_k}^{(i)}}(s_k^{(i)}) \stackrel{?}{=} 1
+  $$
+
+  $$
+  \mathsf{MT.verify}(\mathsf{cm}(q_{\hat{q}_k}^{(i)}(X)), q_{\hat{q}_k}^{(i)}(-s_k^{(i)}), \pi_{q_{\hat{q}_k}^{(i)}}(-s_k^{(i)}) \stackrel{?}{=} 1
+  $$
+  - 验证第 $i$ 轮的折叠是否正确
+  $$
+  q_{\hat{q}_k}^{(i)}(s_k^{(i)}) \stackrel{?}{=} \frac{q_{\hat{q}_k}^{(i - 1)}(s_k^{(i - 1)}) + q_{\hat{q}_k}^{(i - 1)}(- s_k^{(i - 1)})}{2} + \beta_k^{(i)} \cdot \frac{q_{\hat{q}_k}^{(i - 1)}(s_k^{(i - 1)}) - q_{\hat{q}_k}^{(i - 1)}(- s_k^{(i - 1)})}{2 \cdot s_k^{(i - 1)}}
+  $$
+- 验证最后是否折叠到常数多项式
+  $$
+  q_{\hat{q}_k}^{(k)}(y_0^{(k)}) \stackrel{?}{=} \frac{q_{\hat{q}_k}^{(k - 1)}(s_k^{(k - 1)}) + q_{\hat{q}_k}^{(k - 1)}(- s_k^{(k - 1)})}{2} + \beta_k^{(k)} \cdot \frac{q_{\hat{q}_k}^{(k - 1)}(s_k^{(k - 1)}) - q_{\hat{q}_k}^{(k - 1)}(- s_k^{(k - 1)})}{2 \cdot s_k^{(k - 1)}}
+  $$
+
+3. 计算 $\Phi_n(\zeta)$ 以及 $\Phi_{n - k}(\zeta^{2^k})(0 \le k < n)$ ，满足
 
 $$
 \Phi_n(\zeta) = 1 + \zeta + \zeta^2 + \ldots + \zeta^{2^n-1}
@@ -255,7 +387,7 @@ $$
 \Phi_{n-k}(\zeta^{2^k}) = 1 + \zeta^{2^k} + \zeta^{2\cdot 2^k} + \ldots + \zeta^{(2^{n-k}-1)\cdot 2^k}
 $$
 
-7. 验证下述等式的正确性
+4. 验证下述等式的正确性
 
 $$
 \hat{f}(\zeta) - v\cdot\Phi_n(\zeta) = \sum_{k = 0}^{n - 1} \Big(\zeta^{2^k}\cdot \Phi_{n-k-1}(\zeta^{2^{k+1}}) - u_k\cdot\Phi_{n-k}(\zeta^{2^k})\Big)\cdot \hat{q}_k(\zeta)
@@ -302,7 +434,7 @@ $$
 这种承诺方式记为
 
 $$
-\mathsf{MMCS.commit}(\hat{q}_2(X), \hat{q}_1(X), \hat{q}_0(X))
+\mathsf{cm}(\hat{q}_2(X), \hat{q}_1(X), \hat{q}_0(X)) = \mathsf{MMCS.commit}(\hat{q}_2(X), \hat{q}_1(X), \hat{q}_0(X))
 $$
 
 下面依然以 $n = 3$ 为例来说明 rolling batch 的技巧，对于商多项式 $q_{\hat{q}_2}(X), q_{\hat{q}_1}(X), q_{\hat{q}_0}(X)$ ，如果用 FRI 的 low degree test 来证明它们的 degree bound ，需要 3 个相应的证明，而 rolling batch 技巧可以让我们用一次 low degree test 来证明这 3 个多项式的 degree bound，协议过程如下图所示。
@@ -372,7 +504,7 @@ $$
 其中 $|D^{(k)}| = 2^k / \rho$ ，再用 mmcs 对这 $(2^{n - 1} + 2^{n - 2} + \ldots + 2^0)/\rho$ 个值一次进行承诺，记为
 
 $$
-\mathsf{MMCS.commit}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0)
+\mathsf{cm}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0) = \mathsf{MMCS.commit}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0)
 $$
 
 #### Round 2
@@ -391,20 +523,8 @@ $$
 [q_{f_\zeta}(x)|_{x \in D}] = \big[\frac{\hat{f}(x) - \hat{f}(\zeta)}{ x - \zeta} \big|_{x \in D} \big]
 $$
 
-4. Prover 发送 $q_{f_\zeta}(X)$ 的承诺，$\mathsf{cm}(q_{f_\zeta}(X))$
-
-$$
-\mathsf{cm}(q_{f_\zeta}(X)) = \mathsf{cm}([q_{f_\zeta}(x)|_{x \in D}])
-$$
-
-这里用 Merkle Tree 进行承诺，即
-
-$$
-\mathsf{MT.commit}([q_{f_\zeta}(x)|_{x \in D}])
-$$
-
-5. Prover 计算并发送 $\{\hat{q}_k(\zeta)\}_{k = 0}^{n - 1}$ 。
-6. Prover 计算
+4. Prover 计算并发送 $\{\hat{q}_k(\zeta)\}_{k = 0}^{n - 1}$ 。
+5. Prover 计算
 
 $$
 q_{\hat{q}_k}(X) = \frac{\hat{q_k}(X) - \hat{q}_k(\zeta)}{X - \zeta}, \, 0 \le k < n
@@ -415,240 +535,322 @@ $$
 $$
 [q_{\hat{q}_k}(x)|_{x \in D^{(k)}}] = \big[\frac{\hat{q}_k(x) - \hat{q}_k(\zeta)}{ x - \zeta} \big|_{x \in D^{(k)}} \big]
 $$
-7. Prover 发送对应的承诺
 
-$$
-\mathsf{MMCS.commit}(q_{\hat{q}_{n - 1}}, q_{\hat{q}_{n - 2}}, \ldots, q_{\hat{q}_{0}})
-$$
 #### Round 3
 
-1. Verifier 发送随机数 $\gamma \stackrel{\$}{\leftarrow} D$
-2. Prover 发送 $q_{f_\zeta}(\gamma)$ 以及 $\hat{f}(\gamma)$
-3. Prover 发送 $q_{f_\zeta}(\gamma)$ 以及 $\hat{f}(\gamma)$ 在 Merkle Tree 上的打开路径，作为 $q_{f_\zeta}$ 与 $\hat{f}$ 在 $\gamma$ 点值的证明，记为
+Prover 与 Verifier 进行 FRI 协议的 low degree test 交互，证明 $q_{f_\zeta}(X)$ 的次数小于 $2^{n}$ ，
 
 $$
-\mathsf{MT.open}([\hat{f}(x)|_{x \in D}], \gamma)
+\pi_{q_{f_\zeta}} \leftarrow \mathsf{FRI.LDT}(q_{f_\zeta}(X), 2^n)
 $$
 
-$$
-\mathsf{MT.open}([q_{f_\zeta}(x)|_{x \in D}], \gamma)
-$$
+- 记 $q_{f_\zeta}^{(0)}(x)|_{x \in D} := q_{f_\zeta}(x)|_{x \in D}$
+- 对于 $i = 1,\ldots, n$ ，
+  - Verifier 发送随机数 $\alpha^{(i)}$
+  - 对于任意的 $y \in D_i$ ，在 $D_{i - 1}$ 中找到 $x$ 满足 $y^2 = x$，Prover 计算
+
+  $$
+    q_{f_\zeta}^{(i)}(y) = \frac{q_{f_\zeta}^{(i - 1)}(x) + q_{f_\zeta}^{(i - 1)}(-x)}{2} + \alpha^{(i)} \cdot \frac{q_{f_\zeta}^{(i - 1)}(x) + q_{f_\zeta}^{(i - 1)}(-x)}{2x}
+  $$
+
+  
+  - 如果 $i < n$ ，Prover 发送 $[q_{f_\zeta}^{(i)}(x)|_{x \in D_{i}}]$ 的 Merkle Tree 承诺，
+  
+  $$
+  \mathsf{cm}(q_{f_\zeta}^{(i)}(X)) = \mathsf{MT.commit}([q_{f_\zeta}^{(i)}(x)|_{x \in D_{i}}])
+  $$
+
+  - 如果 $i = n$ ，任选 $x_0 \in D_{n}$ ，Prover 发送 $q_{f_\zeta}^{(i)}(x_0)$ 的值。
+
+> 📝 **Notes**
+>
+> 如果折叠次数 $r < n$ ，那么最后不会折叠到常数多项式，因此 Prover 在第 $r$ 轮时会发送一个 Merkle Tree 承诺，而不是发送一个值。
 
 #### Round 4
 
-1. Verifier 发送 $k$ 个随机数 $\gamma_k \stackrel{\$}{\leftarrow} D^{(k)}, 0 \le k < n$
-2. Prover 发送  $\{ \hat{q}_k(\gamma_k) \}_{k = 0}^{n - 1}$  以及 $\{ q_{\hat{q}_k}(\gamma_k) \}_{k = 0}^{n - 1}$ 
+这一轮是接着 Prover 与 Verifier 进行 FRI 协议的 low degree test 交互的查询阶段，Verifier 重复查询 $l$ 次：
+- Verifier 从 $D_0$ 中随机选取一个数 $s^{(0)} \stackrel{\$}{\leftarrow} D_0$ 
+- Prover 发送 $\hat{f}(s^{(0)}), \hat{f}(- s^{(0)})$ 的值，并附上 Merkle Path。
+  
+  $$
+  \{(\hat{f}(s^{(0)}), \pi_{\hat{f}}(s^{(0)}))\} \leftarrow \mathsf{MT.open}([\hat{f}(x)|_{x \in D_0}], s^{(0)})
+  $$
 
-> 📝 **Notes**
->
-> 实际实现中，$D^{(k)}$ 的生成元满足 $\omega_k^2 = \omega_{k - 1}$ ，那么这里 Verifier 只需要发送一个随机数 $\gamma_{n - 1} \stackrel{\$}{\leftarrow} D^{(n - 1)}$ 即可，下一个随机数 $\gamma_{n - 2} = \gamma_{n - 1}^2$ ，以此类推。
+  $$
+  \{(\hat{f}(-s^{(0)}), \pi_{\hat{f}}(-s^{(0)}))\} \leftarrow \mathsf{MT.open}([\hat{f}(x)|_{x \in D_0}], -s^{(0)})
+  $$
+- Prover 计算 $s^{(1)} = (s^{(0)})^2$ 
+- 对于 $i = 1, \ldots, n - 1$
+  - Prover 发送 $q_{f_\zeta}^{(i)}(s^{(i)}), q_{f_\zeta}^{(i)}(-s^{(i)})$ 的值，并附上 Merkle Path。
+  
+  $$
+  \{(q_{f_\zeta}^{(i)}(s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(s^{(i)}))\} \leftarrow \mathsf{MT.open}([q_{f_\zeta}^{(i)}(x)|_{x \in D_i}], s^{(i)})
+  $$
 
-3. Prover 发送  $\{ \hat{q}_k(\gamma_k) \}_{k = 0}^{n - 1}$ 以及 $\{ q_{\hat{q}_k}(\gamma_k) \}_{k = 0}^{n - 1}$ 对应的 Merkle Path，
+  $$
+  \{(q_{f_\zeta}^{(i)}(-s^{(i)}), \pi_{q_{f_\zeta}}^{(i)}(-s^{(i)}))\} \leftarrow \mathsf{MT.open}([q_{f_\zeta}^{(i)}(x)|_{x \in D_i}], -s^{(i)})
+  $$
+  - Prover 计算 $s^{(i + 1)} = (s^{(i)})^2$
 
-$$
-\mathsf{MMCS.open}(\{[\hat{q}_k(x)|_{x \in D^{(k)}}]\}_{k = 0}^{n - 1},\gamma_k)
-$$
-
-$$
-\mathsf{MMCS.open}(\{[q_{\hat{q}_k}(x)|_{x \in D^{(k)}}]\}_{k = 0}^{n - 1},\gamma_k)
-$$
+> 如果折叠次数 $r < n$ ，那么最后一步就要发送 $q_{f_\zeta}^{(r)}(s^{(r)})$ 的值，并附上 Merkle Path。
 
 #### Round 5
 
-1. Prover 与 Verifier 进行 FRI 协议的 low degree test 交互，证明 $q_{f_\zeta}(X)$ 的次数小于 $2^{n}$ ，
+Prover 与 Verifier 进行 FRI 协议的 low degree test 交互，这里使用 rolling batch 技巧进行优化，对于 $k = 0, \ldots, n - 1$ ， 一次证明所有 $q_{\hat{q}_k}(X)$ 的次数小于 $2^k$ ，记为
 
 $$
-\mathsf{FRI.LDT}(q_{f_\zeta}(X), 2^n)
-$$
-
-2. Prover 发送 $q_{f_\zeta}(X)$ 的 low degree test 证明，
-
-$$
-\pi(\mathsf{FRI.LDT}(q_{f_\zeta}(X), 2^n))
-$$
-> 📝 **Notes**
->
-> 在一般的 FRI 协议中进行 low degree test 时，会首先对对应的多项式进行 Merkle Tree 承诺，由于在 Round 2 已经承诺过了，因此这里在 $\mathsf{FRI.LDT}$ 的第一步中可以不用再重复进行承诺。
-
-#### Round 6
-
-Prover 与 Verifier 进行 FRI 协议的 low degree test 交互，这里使用 rolling batch 技巧，对于 $0 \le k < n$ ， 一次证明 $q_{\hat{q}_k}(X)$ 的次数小于 $2^k$ ，记为
-
-$$
-\mathsf{OPFRI.LDT}(q_{\hat{q}_{n - 1}}, \ldots, q_{\hat{q}_{0}}, 2^{n - 1})
-$$
-Prover 发送 low degree test 的证明，
-
-$$
-\pi(\mathsf{OPFRI.LDT}(q_{\hat{q}_{n - 1}}, \ldots, q_{\hat{q}_{0}}, 2^{n - 1}))
+\pi_{q_{\hat{q}_{n - 1}}, \ldots, q_{\hat{q}_{0}}} \leftarrow \mathsf{OPFRI.LDT}(q_{\hat{q}_{n - 1}}, \ldots, q_{\hat{q}_{0}}, 2^{n - 1})
 $$
 
 具体过程如下：
 
-1. Prover 发送 $[q_{\hat{q}_{n - 1}}(x)|_{x\in D^{(n - 1)}}]$ 的承诺，即
-
-$$
-\mathsf{MT.commit}([q_{\hat{q}_{n - 1}}(x)|_{x\in D^{(n - 1)}}])
-$$
-
-2. Verifier 发送随机数 $\alpha^{(n - 1)}$
-
-3. 初始化 $i = n - 1$ ，对于 $x \in D^{(n - 1)}$ ，初始化
+1. 初始化 $i = n - 1$ ，对于 $x \in D^{(n - 1)}$ ，初始化
 
 $$
 \mathsf{fold}^{(i)}(x) = q_{\hat{q}_{n - 1}}(x)
 $$
 
-当 $i > 0$ 时：
+2. 当 $i = n - 2, \ldots, 0$ 时：
 
-- 对于 $x \in D^{(i - 1)}$ ，Prover 计算
+- Verifier 发送随机数 $\beta^{(i)}$
 
-$$
-\mathsf{fold}^{(i - 1)}(x) = \frac{\mathsf{fold}^{(i)}(x) + \mathsf{fold}^{(i)}(-x)}{2} + \alpha^{(i)} \cdot \frac{\mathsf{fold}^{(i)}(x) + \mathsf{fold}^{(i)}(-x)}{2x}
-$$
-
--  对于 $x \in D^{(i - 1)}$ ，Prover 更新 $\mathsf{fold}^{(i - 1)}(x)$
+- 对于 $y \in D^{(i)}$ ，在 $D^{(i + 1)}$ 中找到 $x$ 满足 $y = x^2$ ，Prover 计算
 
 $$
-\mathsf{fold}^{(i - 1)}(x) = \mathsf{fold}^{(i - 1)}(x) + q_{\hat{q}_{i - 1}}(x)
+\mathsf{fold}^{(i)}(y) = \frac{\mathsf{fold}^{(i + 1)}(x) + \mathsf{fold}^{(i + 1)}(-x)}{2} + \beta^{(i)} \cdot \frac{\mathsf{fold}^{(i + 1)}(x) + \mathsf{fold}^{(i + 1)}(-x)}{2x}
 $$
 
-- 当 $i > 1$ 时，
-  - Prover 发送 $\mathsf{fold}^{(i - 1)}(x)$ 的承诺，即
+-  对于 $x \in D^{(i)}$ ，Prover 更新 $\mathsf{fold}^{(i)}(x)$
+
+$$
+\mathsf{fold}^{(i)}(x) = \mathsf{fold}^{(i)}(x) + q_{\hat{q}_{i}}(x)
+$$
+
+- 当 $i > 0$ 时，
+  - Prover 发送 $\mathsf{fold}^{(i)}(x)$ 的承诺，即
 
     $$
-    \mathsf{MT.commit}([\mathsf{fold}^{(i - 1)}(x)|_{x \in D^{(i - 1)}}])
+    \mathsf{cm}(\mathsf{fold}^{(i)}(X)) = \mathsf{MT.commit}([\mathsf{fold}^{(i)}(x)|_{x \in D^{(i)}}])
     $$
-  - Verifier 发送随机数 $\alpha^{(i - 1)}$
-- 当 $i = 1$ 时，由于最后折叠到常数多项式，Prover 选取 $D^{(0)}$ 中的任意一个点 $x_0 \in D^{(0)}$，发送折叠到最后的值 $\mathsf{fold}^{(0)}(x_0)$ 。
-- 更新 $i = i - 1$ 。
+- 当 $i = 0$ 时，由于最后折叠到常数多项式，Prover 选取 $D^{(0)}$ 中的任意一个点 $y_0 \in D^{(0)}$，发送折叠到最后的值 $\mathsf{fold}^{(0)}(y_0)$ 。
 
-#### Round 7
+#### Round 6
 
-Verifier 重复查询 $l$ 次 ：
-- Verifier 从 $D^{(n - 1)}$ 中随机选取一个数 $s^{(n - 1)} \in D^{(n - 1)}$
-- Prover 发送 $q_{\hat{q}_{n - 1}}(s^{(n - 1)})$ 以及其 Merkle Tree 证明 
+这一轮是接着 Prover 与 Verifier 进行 FRI 协议的 low degree test 交互的查询阶段，Verifier 重复查询 $l$ 次 ：
+- Verifier 从 $D^{(n - 1)}$ 中随机选取一个数 $t^{(n - 1)} \in D^{(n - 1)}$
+- Prover 发送 $\hat{q}_{n-1}(t^{(n - 1)})$ 与 $\hat{q}_{n-1}(-t^{(n - 1)})$ 以及其 Merkle Path 
 
 $$
-\mathsf{MT.open}(q_{\hat{q}_{n - 1}}, s^{(n - 1)})
+\{(\hat{q}_{n-1}(t^{(n - 1)}), \pi_{\hat{q}_{n-1}}(t^{(n - 1)})\} \leftarrow \mathsf{MMCS.open}(\hat{q}_{n - 1}, t^{(n - 1)})
 $$
 
-- Prover 发送 $q_{\hat{q}_{n - 1}}(-s^{(n - 1)})$
+$$
+\{(\hat{q}_{n-1}(-t^{(n - 1)}), \pi_{\hat{q}_{n-1}}(-t^{(n - 1)})\} \leftarrow \mathsf{MMCS.open}(\hat{q}_{n - 1}, -t^{(n - 1)})
+$$
 
 - 对于 $i = n - 2, \ldots, 1$，
-  - Prover 计算 $s^{(i)} = (s^{(i + 1)})^2$
-  - Prover 发送 $q_{\hat{q}_{i}}(s^{(i)})$
-  - Prover 发送 $\mathsf{fold}^{(i)}(-s^{(i)})$
-  - Prover 发送 $\mathsf{fold}^{(i)}(s^{(i)})$ 的 Merkle Tree 证明
+  - Prover 计算 $t^{(i)} = (t^{(i + 1)})^2$
+  - Prover 发送 $\hat{q}_{i}(t^{(i)})$ 及其 Merkle Path
+      $$
+      \{(\hat{q}_{i}(t^{(i)}), \pi_{\hat{q}_{i}}(t^{(i)})\} \leftarrow \mathsf{MMCS.open}(\hat{q}_{i}, t^{(i)})
+      $$
 
-    $$
-        \mathsf{MT.open}(\mathsf{fold}^{(i)}, s^{(i)})
-    $$
+  - Prover 发送 $\mathsf{fold}^{(i)}(-t^{(i)})$ 及其 Merkle Path
+      $$
+      \{(\mathsf{fold}^{(i)}(-t^{(i)}), \pi_{\mathsf{fold}^{(i)}}(-t^{(i)})\} \leftarrow \mathsf{MT.open}(\mathsf{fold}^{(i)}, -t^{(i)})
+      $$ 
 - 对于 $i = 0$ 时，
-  - Prover 计算 $s^{(0)} = (s^{(1)})^2$
-  - Prover 发送 $q_{\hat{q}_0}(s^{(0)})$
+  - Prover 计算 $t^{(0)} = (t^{(1)})^2$
+  - Prover 发送 $\hat{q}_0(s^{(0)})$ 及其 Merkle Path
+      $$
+      \{(\hat{q}_0(t^{(0)}), \pi_{\hat{q}_0}(t^{(0)})\} \leftarrow \mathsf{MMCS.open}(\hat{q}_0, t^{(0)})
+      $$
 
 > 📝 **Notes**
 >
-> 例如对 3 个多项式进行 query，query 选取的是 $q_{\hat{q}_2}(X)$ 中的最后一个元素 $\omega_2^7$，那么 Prover 需要发送的值是下图中绿色部分，打开的 Merkle Tree 是橙色边框标记的部分，即 Prover 会发送
+> 例如对 3 个多项式进行 query，query 选取的是 $q_{\hat{q}_2}(X)$ 中的最后一个元素 $\omega_2^7$，那么 Prover 需要发送的值及其 Merkle Path 是下图中绿色部分，橙色边框标记的发送的并非商多项式本身的值和对应的 Merkle Path，而是 $\hat{q}_k(X)$ 的 Merkle Path，即 Prover 会发送
 >
 > $$
-> \{q_{\hat{q_2}}(\omega_2^7), q_{\hat{q_2}}(\omega_2^3), q_{\hat{q}_1}(\omega_1^3), \mathsf{fold}^{(1)}(\omega_1^1),  q_{\hat{q}_0}(\omega_0^1)\}
+> \{\hat{q_2}(\omega_2^7), \hat{q_2}(\omega_2^3), \hat{q}_1(\omega_1^3), \mathsf{fold}^{(1)}(\omega_1^1),  \hat{q}_0(\omega_0^1)\}
 > $$
 >
-> 以及
->
-> $$
-> \mathsf{MT.open}(q_{\hat{q}_2}, \omega_2^7), \,\mathsf{MT.open}(\mathsf{fold}^{(1)}, \omega_1^3)
-> $$
+> 以及这些值对应的 Merkle Path。
 > 
 > ![](./img/zeromorph-fri-query.svg)
 
 #### Proof
 
-- [ ] 待协议确定后完善
+Prover 发送的证明为
+
+$$
+\begin{aligned}
+  \pi = \left(\mathsf{cm}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0), \hat{f}(\zeta), \hat{q}_0(\zeta), \ldots, \hat{q}_{n - 1}(\zeta), \pi_{q_{f_\zeta}}, \pi_{q_{\hat{q}_{n - 1}}, \ldots, q_{\hat{q}_{0}}}\right)
+\end{aligned}
+$$
+
+用符号 $\{\cdot\}^l$ 表示在 FRI low degree test 的查询阶段重复查询 $l$ 次产生的证明，由于每次查询是随机选取的，因此花括号中的证明也是随机的。那么 FRI 进行 low degree test 的两个证明为
+
+$$
+\begin{aligned}
+  \pi_{q_{f_\zeta}} = &  ( \mathsf{cm}(q_{f_\zeta}^{(1)}(X)), \ldots, \mathsf{cm}(q_{f_\zeta}^{(n - 1)}(X)),q_{f_\zeta}^{(n)}(x_0),  \\
+  & \, \{\hat{f}(s^{(0)}), \pi_{\hat{f}}(s^{(0)})), \hat{f}(- s^{(0)}), \pi_{\hat{f}}(-s^{(0)})), \\
+  & \quad q_{f_\zeta}^{(1)}(s^{(1)}), \pi_{q_{f_\zeta}^{(1)}}(s^{(1)}),q_{f_\zeta}^{(1)}(-s^{(1)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(1)}), \ldots, \\
+  & \quad q_{f_\zeta}^{(n - 1)}(s^{(n - 1)}), \pi_{q_{f_\zeta}^{(n - 1)}}(s^{(n - 1)}),q_{f_\zeta}^{(n - 1)}(-s^{(n - 1)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(n - 1)})\}^l)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+  \pi_{q_{\hat{q}_{n - 1}}, \ldots, q_{\hat{q}_{0}}} = &  ( \mathsf{cm}(\mathsf{fold}^{(n - 2)}(X)), \ldots, \mathsf{cm}(\mathsf{fold}^{(1)}(X)),\mathsf{fold}^{(0)}(y_0),  \\
+  & \, \{\hat{q}_{n - 1}(t^{(n - 1)}), \pi_{\hat{q}_{n-1}}(t^{(n - 1)}), \hat{q}_{n - 1}(- t^{(n - 1)}), \pi_{\hat{q}_{n-1}}(- t^{(n - 1)}),\\
+  & \quad \hat{q}_{n - 2}(t^{(n - 2)}), \pi_{\hat{q}_{n - 2}}(t^{(n - 2)}), \mathsf{fold}^{(n - 2)}(-t^{(n - 2)}), \pi_{\mathsf{fold}^{(n - 2)}}(-t^{(n - 2)}), \ldots, \\
+  & \quad \hat{q}_{1}(t^{(1)}), \pi_{\hat{q}_{1}}(t^{(1)}), \mathsf{fold}^{(1)}(-t^{(1)}), \pi_{\mathsf{fold}^{(1)}}(-t^{(1)}), \hat{q}_0(t^{(0)}), \pi_{\hat{q}_0}(t^{(0)})\}^l)
+\end{aligned}
+$$
 
 #### Verification
 
-Verifier 
+Verifier
 
-1. 验证 $q_{f_\zeta}(\gamma)$ 以及 $\hat{f}(\gamma)$ 发送过来值的正确性，通过 Prover 发送的 Merkle Tree Path 来进行验证，记为
-
-$$
-\mathsf{MT.verify}(\mathsf{MT.Commit}([\hat{f}(x)|_{x \in D}]), \mathsf{MT.open}([\hat{f}(x)|_{x \in D}], \gamma))
-$$
+1. 验证 $q_{f_\zeta}(X)$ 的 low degree test 证明，
 
 $$
-\mathsf{MT.verify}(\mathsf{MT.commit}([q_{f_\zeta}(x)|_{x \in D}]), \mathsf{MT.open}([q_{f_\zeta}(x)|_{x \in D}], \gamma))
+\mathsf{FRI.LDT.verify}(\pi_{q_{f_\zeta}}, 2^n) \stackrel{?}{=} 1
 $$
 
-2. 验证 $q_{f_\zeta}$ 商式的正确性
+具体验证过程为，重复 $l$ 次：
+- 验证 $\hat{f}(s^{(0)}), \hat{f}(-s^{(0)})$ 的正确性
 
 $$
-q_{f_\zeta}(\gamma) \cdot (\gamma - \zeta)= \hat{f}(\gamma) - \hat{f}(\zeta)
-$$
-3. 验证 $\{ \hat{q}_k(\gamma_k) \}_{k = 0}^{n - 1}$  以及 $\{ q_{\hat{q}_k}(\gamma_k) \}_{k = 0}^{n - 1}$  发送过来值的正确性，通过 Prover 发送的 Merkle Tree Path 来进行验证，记为
-
-$$
-\mathsf{MMCS.verify}(\mathsf{MMCS.commit}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0), \mathsf{MMCS.open}(\{[\hat{q}_k(x)|_{x \in D^{(k)}}]\}_{k = 0}^{n - 1},\gamma_k))
+\mathsf{MT.verify}(\mathsf{cm}(\hat{f}(X), \hat{f}(s^{(0)}), \pi_{\hat{f}}(s^{(0)})) \stackrel{?}{=} 1
 $$
 
 $$
-\mathsf{MMCS.verify}(\mathsf{MMCS.commit}(q_{\hat{q}_{n - 1}}, q_{\hat{q}_{n - 2}}, \ldots, q_{\hat{q}_{0}}), \mathsf{MMCS.open}(\{[q_{\hat{q}_k}(x)|_{x \in D^{(k)}}]\}_{k = 0}^{n - 1},\gamma_k))
+\mathsf{MT.verify}(\mathsf{cm}(\hat{f}(X), \hat{f}(-s^{(0)}), \pi_{\hat{f}}(-s^{(0)})) \stackrel{?}{=} 1
 $$
+- Verifier 计算
+  $$
+  q_{f_\zeta}^{(0)}(s^{(0)}) = \frac{\hat{f}(s^{(0)}) - \hat{f}(\zeta)}{s^{(0)} - \zeta}
+  $$
 
-4. 验证 $q_{\hat{q}_k}$ 商式的正确性，对于 $k = 0, 1, \ldots, n - 1$ ，验证
-
-$$
-q_{\hat{q}_k}(\gamma_k) \cdot (\gamma_k - \zeta) = \hat{q}_k(\gamma_k) - \hat{q}_k(\zeta)
-$$
-
-5. 对 $n$ 个商多项式 $\{q_{\hat{q}_k}\}_{k = 0}^{n - 1}$ 一次进行 low degree test 的验证，记为
-
-$$
-\mathsf{OPFRI.verify}(\pi(\mathsf{OPFRI.LDT}(q_{\hat{q}_{n - 1}}, \ldots, q_{\hat{q}_{0}}, 2^{n - 1})))
-$$
-
-具体过程如下：
-
-Verifier 重复 $l$ 次：
-
-- Verifier 验证 $\hat{q}_{n - 1}(s^{(n - 1)})$ 的 Merkle Tree 证明
+  $$
+  q_{f_\zeta}^{(0)}(- s^{(0)}) = \frac{\hat{f}(-s^{(0)}) - \hat{f}(\zeta)}{-s^{(0)} - \zeta}
+  $$
+- 验证 $q_{f_\zeta}^{(1)}(s^{(1)}), q_{f_\zeta}^{(1)}(-s^{(1)})$ 的正确性
 
 $$
-\mathsf{MT.verify}(\mathsf{MT.commit}([q_{\hat{q}_{n - 1}}(x)|_{x\in D^{(n - 1)}}]),\mathsf{MT.open}(q_{\hat{q}_{n - 1}}, s^{(n - 1)}))
+\mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(1)}(X)), q_{f_\zeta}^{(1)}(s^{(1)}), \pi_{q_{f_\zeta}^{(1)}}(s^{(1)})) \stackrel{?}{=} 1
+$$
+
+
+$$
+\mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(1)}(X)), q_{f_\zeta}^{(1)}(-s^{(1)}), \pi_{q_{f_\zeta}^{(1)}}(-s^{(1)})) \stackrel{?}{=} 1
+$$
+
+- 验证第 $1$ 轮的折叠是否正确
+
+$$
+q_{f_\zeta}^{(1)}(s^{(1)}) \stackrel{?}{=} \frac{q_{f_\zeta}^{(0)}(s^{(0)}) + q_{f_\zeta}^{(0)}(- s^{(0)})}{2} + \alpha^{(1)} \cdot \frac{q_{f_\zeta}^{(0)}(s^{(0)}) - q_{f_\zeta}^{(0)}(- s^{(0)})}{2 \cdot s^{(0)}}
+$$
+- 对于 $i = 2, \ldots, n - 1$
+  - 验证 $q_{f_\zeta}^{(i)}(s^{(i)}), q_{f_\zeta}^{(i)}(-s^{(i)})$ 的正确性
+
+  $$
+  \mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(i)}(X)), q_{f_\zeta}^{(i)}(s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(s^{(i)}) \stackrel{?}{=} 1
+  $$
+
+  $$
+  \mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(i)}(X)), q_{f_\zeta}^{(i)}(-s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(i)}) \stackrel{?}{=} 1
+  $$
+  - 验证第 $i$ 轮的折叠是否正确
+  $$
+  q_{f_\zeta}^{(i)}(s^{(i)}) \stackrel{?}{=} \frac{q_{f_\zeta}^{(0)}(s^{(i - 1)}) + q_{f_\zeta}^{(i - 1)}(- s^{(i - 1)})}{2} + \alpha^{(i)} \cdot \frac{q_{f_\zeta}^{(i - 1)}(s^{(i - 1)}) - q_{f_\zeta}^{(i - 1)}(- s^{(i - 1)})}{2 \cdot s^{(i - 1)}}
+  $$
+- 验证最后是否折叠到常数多项式
+  $$
+  q_{f_\zeta}^{(n)}(x_0) \stackrel{?}{=} \frac{q_{f_\zeta}^{(n-1)}(s^{(n - 1)}) + q_{f_\zeta}^{(n - 1)}(- s^{(n - 1)})}{2} + \alpha^{(n)} \cdot \frac{q_{f_\zeta}^{(n - 1)}(s^{(n - 1)}) - q_{f_\zeta}^{(n - 1)}(- s^{(n - 1)})}{2 \cdot s^{(n - 1)}}
+  $$
+
+2. 对 $n$ 个商多项式 $\{q_{\hat{q}_k}\}_{k = 0}^{n - 1}$ 一次进行 low degree test 的验证，记为
+
+$$
+\mathsf{OPFRI.verify}( \pi_{q_{\hat{q}_{n - 1}}, \ldots, q_{\hat{q}_{0}}}, 2^{n - 1}))) \stackrel{?}{=} 1
+$$
+
+具体过程为，Verifier 重复 $l$ 次：
+
+- Verifier 验证 $\hat{q}_{n - 1}(t^{(n - 1)})$ 与 $\hat{q}_{n - 1}(-t^{(n - 1)})$ 值的正确性，
+
+
+$$
+\mathsf{MMCS.verify}(\mathsf{cm}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0), \hat{q}_{n - 1}(t^{(n - 1)}), \pi_{\hat{q}_{n-1}}(t^{(n - 1)})) \stackrel{?}{=} 1
+$$
+
+$$
+\mathsf{MMCS.verify}(\mathsf{cm}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0), \hat{q}_{n - 1}(-t^{(n - 1)}), \pi_{\hat{q}_{n-1}}(-t^{(n - 1)})) \stackrel{?}{=} 1
+$$
+
+- Verifier 计算
+
+$$
+q_{\hat{q}_{n - 1}}(t^{(n - 1)}) = \frac{\hat{q}_{n - 1}(t^{(n - 1)}) - \hat{q}_{n - 1}(\zeta)}{t^{(n - 1)} - \zeta}
+$$
+
+$$
+q_{\hat{q}_{n - 1}}(-t^{(n - 1)}) = \frac{\hat{q}_{n - 1}(-t^{(n - 1)}) - \hat{q}_{n - 1}(\zeta)}{-t^{(n - 1)} - \zeta}
 $$
 
 - 初始化 $\mathsf{fold}$ 的值为 
 
     $$
-        \mathsf{fold} = \frac{q_{\hat{q}_{n - 1}}(s^{(n - 1)}) + q_{\hat{q}_{n - 1}}(-s^{(n - 1)})}{2} + \alpha^{(n - 1)} \cdot \frac{q_{\hat{q}_{n - 1}}(s^{(n - 1)}) + q_{\hat{q}_{n - 1}}(-s^{(n - 1)})}{2 \cdot s^{(n - 1)}}
+        \mathsf{fold} = \frac{q_{\hat{q}_{n - 1}}(t^{(n - 1)}) + q_{\hat{q}_{n - 1}}(-t^{(n - 1)})}{2} + \beta^{(n - 2)} \cdot \frac{q_{\hat{q}_{n - 1}}(t^{(n - 1)}) + q_{\hat{q}_{n - 1}}(-t^{(n - 1)})}{2 \cdot t^{(n - 1)}}
     $$
 
 - 对于 $i = n - 2, \ldots , 1$
-  - Verifier 计算 $s^{(i)} = (s^{(i + 1)})^2$
-  - Verifier 验证 $\mathsf{fold}^{(i)}(s^{(i)})$ 的 Merkle Tree 证明
-    $$
-        \mathsf{MT.verify}(\mathsf{MT.commit}([\mathsf{fold}^{(i)}(x)|_{x \in D^{(i)}}]),\mathsf{MT.open}(\mathsf{fold}^{(i)}, s^{(i)}))
-    $$
+  - Verifier 计算 $t^{(i)} = (t^{(i + 1)})^2$
+  - 验证 $\hat{q}_{i}(t^{(i)})$ 值的正确性，
+  
+      $$
+      \mathsf{MMCS.verify}(\mathsf{cm}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0), \hat{q}_{i}(t^{(i)}), \pi_{\hat{q}_{i}}(t^{(i)}) \stackrel{?}{=} 1
+      $$ 
+  - Verifier 计算
+  
+      $$
+      q_{\hat{q}_{i}}(t^{(i)}) = \frac{\hat{q}_{i}(t^{(i)}) - \hat{q}_{i}(\zeta)}{t^{(i)} - \zeta}
+      $$
   - 更新 $\mathsf{fold}$ 的值为
 
     $$
-    \mathsf{fold} = \mathsf{fold} + q_{\hat{q}_{i}}(s^{(i)})
+    \mathsf{fold} = \mathsf{fold} + q_{\hat{q}_{i}}(t^{(i)})
     $$ 
+  - Verifier 验证 $\mathsf{fold}^{(i)}(-t^{(i)})$ 值的正确性，
+  
+      $$
+      \mathsf{MT.verify}(\mathsf{cm}(\mathsf{fold}^{(i)}(X)), \mathsf{fold}^{(i)}(-t^{(i)}), \pi_{\mathsf{fold}^{(i)}}(-t^{(i)}) \stackrel{?}{=} 1
+      $$
 
   - 更新 $\mathsf{fold}$ 的值
   
     $$
-        \mathsf{fold} = \frac{\mathsf{fold}^{(i)}(-s^{(i)}) + \mathsf{fold}}{2} + \alpha^{(i)} \cdot \frac{\mathsf{fold}^{(i)}(-s^{(i)}) - \mathsf{fold}}{2 \cdot s^{(i)}}
+        \mathsf{fold} = \frac{\mathsf{fold}^{(i)}(-t^{(i)}) + \mathsf{fold}}{2} + \beta^{(i - 1)} \cdot \frac{\mathsf{fold}^{(i)}(-t^{(i)}) - \mathsf{fold}}{2 \cdot t^{(i)}}
     $$
 
 - 对于 $i = 0$ 时
-  - Verifier 计算 $s^{(0)} = (s^{(1)})^2$
+  - Verifier 计算 $t^{(0)} = (t^{(1)})^2$
+  - 验证 $\hat{q}_0(t^{(0)})$ 值的正确性，
+  
+      $$
+      \mathsf{MMCS.verify}(\mathsf{cm}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0), \hat{q}_0(t^{(0)}), \pi_{\hat{q}_0}(t^{(0)}) \stackrel{?}{=} 1
+      $$
+  - Verifier 计算
+  
+      $$
+      q_{\hat{q}_0}(t^{(0)}) = \frac{\hat{q}_0(t^{(0)}) - \hat{q}_0(\zeta)}{t^{(0)} - \zeta}
+      $$
   - Verifier 验证下面式子的正确性
   
     $$    
-        \mathsf{fold}^{(0)}(x_0) = \mathsf{fold} + q_{\hat{q}_0}(s^{(0)})
+        \mathsf{fold}^{(0)}(y_0) \stackrel{?}{=} \mathsf{fold} + q_{\hat{q}_0}(t^{(0)})
     $$
 
 > 📝 **Notes**
@@ -657,7 +859,7 @@ $$
 > 
 > ![](./img/zeromorph-fri-verify.svg)
 
-6. 计算 $\Phi_n(\zeta)$ 以及 $\Phi_{n - k}(\zeta^{2^k})(0 \le k < n)$ ，满足
+3. 计算 $\Phi_n(\zeta)$ 以及 $\Phi_{n - k}(\zeta^{2^k})(0 \le k < n)$ ，满足
 
 $$
 \Phi_n(\zeta) = 1 + \zeta + \zeta^2 + \ldots + \zeta^{2^n-1}
@@ -667,7 +869,7 @@ $$
 \Phi_{n-k}(\zeta^{2^k}) = 1 + \zeta^{2^k} + \zeta^{2\cdot 2^k} + \ldots + \zeta^{(2^{n-k}-1)\cdot 2^k}
 $$
 
-7. 验证下述等式的正确性
+4. 验证下述等式的正确性
 
 $$
 \hat{f}(\zeta) - v\cdot\Phi_n(\zeta) = \sum_{k = 0}^{n - 1} \Big(\zeta^{2^k}\cdot \Phi_{n-k-1}(\zeta^{2^{k+1}}) - u_k\cdot\Phi_{n-k}(\zeta^{2^k})\Big)\cdot \hat{q}_k(\zeta)
