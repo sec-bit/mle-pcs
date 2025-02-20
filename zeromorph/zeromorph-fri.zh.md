@@ -251,8 +251,8 @@ $$
 \begin{aligned}
   \pi_{q_{\hat{q}_k}} = &  ( \mathsf{cm}(q_{\hat{q}_k}^{(1)}(X)), \ldots, \mathsf{cm}(q_{\hat{q}_k}^{(k - 1)}(X)),q_{\hat{q}_k}^{(k)}(y_0^{(k)}),  \\
   & \, \{\hat{q}_k(s_k^{(0)}), \pi_{\hat{q}_k}(s_k^{(0)}), \hat{q}_k(-s_k^{(0)}), \pi_{\hat{q}_k}(-s_k^{(0)}),\\
-  & \quad q_{\hat{q}_k}^{(1)}(s_k^{(1)}), \pi_{q_{\hat{q}_k}^{(1)}}(s_k^{(1)}), q_{\hat{q}_k}^{(1)}(s_k^{(1)}), \pi_{q_{\hat{q}_k}^{(1)}}(s_k^{(1)}) \ldots, \\
-  & \quad q_{\hat{q}_k}^{(k - 1)}(s_k^{(1)}), \pi_{q_{\hat{q}_k}^{(k - 1)}}(s_k^{(k - 1)}), q_{\hat{q}_k}^{(k - 1)}(s_k^{(k - 1)}), \pi_{q_{\hat{q}_k}^{(k - 1)}}(s_k^{(k - 1)})\}^l)
+  & \quad q_{\hat{q}_k}^{(1)}(s_k^{(1)}), \pi_{q_{\hat{q}_k}^{(1)}}(s_k^{(1)}), q_{\hat{q}_k}^{(1)}(-s_k^{(1)}), \pi_{q_{\hat{q}_k}^{(1)}}(-s_k^{(1)}) \ldots, \\
+  & \quad q_{\hat{q}_k}^{(k - 1)}(s_k^{(k-1)}), \pi_{q_{\hat{q}_k}^{(k - 1)}}(s_k^{(k - 1)}), q_{\hat{q}_k}^{(k - 1)}(-s_k^{(k - 1)}), \pi_{q_{\hat{q}_k}^{(k - 1)}}(-s_k^{(k - 1)})\}^l)
 \end{aligned}
 $$
 
@@ -438,6 +438,7 @@ $$
 $$
 
 下面依然以 $n = 3$ 为例来说明 rolling batch 的技巧，对于商多项式 $q_{\hat{q}_2}(X), q_{\hat{q}_1}(X), q_{\hat{q}_0}(X)$ ，如果用 FRI 的 low degree test 来证明它们的 degree bound ，需要 3 个相应的证明，而 rolling batch 技巧可以让我们用一次 low degree test 来证明这 3 个多项式的 degree bound，协议过程如下图所示。
+- [ ] rolling batch 加随机数，安全性如何？
 
 ![](./img/zeromorph-fri-fold.svg)
 
