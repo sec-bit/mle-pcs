@@ -239,7 +239,7 @@ $$
 $$
 \begin{aligned}
   \pi_{q_{f_\zeta}} = &  ( \mathsf{cm}(q_{f_\zeta}^{(1)}(X)), \ldots, \mathsf{cm}(q_{f_\zeta}^{(n - 1)}(X)),q_{f_\zeta}^{(n)}(x_0),  \\
-  & \, \{\hat{f}(s^{(0)}), \pi_{\hat{f}}(s^{(0)})), \hat{f}(- s^{(0)}), \pi_{\hat{f}}(-s^{(0)})), \\
+  & \, \{\hat{f}(s^{(0)}), \pi_{\hat{f}}(s^{(0)}), \hat{f}(- s^{(0)}), \pi_{\hat{f}}(-s^{(0)}), \\
   & \quad q_{f_\zeta}^{(1)}(s^{(1)}), \pi_{q_{f_\zeta}^{(1)}}(s^{(1)}),q_{f_\zeta}^{(1)}(-s^{(1)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(1)}), \ldots, \\
   & \quad q_{f_\zeta}^{(n - 1)}(s^{(n - 1)}), \pi_{q_{f_\zeta}^{(n - 1)}}(s^{(n - 1)}),q_{f_\zeta}^{(n - 1)}(-s^{(n - 1)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(n - 1)})\}^l)
 \end{aligned}
@@ -304,11 +304,11 @@ $$
   - 验证 $q_{f_\zeta}^{(i)}(s^{(i)}), q_{f_\zeta}^{(i)}(-s^{(i)})$ 的正确性
 
   $$
-  \mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(i)}(X)), q_{f_\zeta}^{(i)}(s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(s^{(i)}) \stackrel{?}{=} 1
+  \mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(i)}(X)), q_{f_\zeta}^{(i)}(s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(s^{(i)})) \stackrel{?}{=} 1
   $$
 
   $$
-  \mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(i)}(X)), q_{f_\zeta}^{(i)}(-s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(i)}) \stackrel{?}{=} 1
+  \mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(i)}(X)), q_{f_\zeta}^{(i)}(-s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(i)})) \stackrel{?}{=} 1
   $$
   - 验证第 $i$ 轮的折叠是否正确
   $$
@@ -362,11 +362,11 @@ $$
   - 验证 $q_{\hat{q}_k}^{(i)}(s_k^{(i)}), q_{\hat{q}_k}^{(i)}(-s_k^{(i)})$ 的正确性
   
   $$
-  \mathsf{MT.verify}(\mathsf{cm}(q_{\hat{q}_k}^{(i)}(X)), q_{\hat{q}_k}^{(i)}(s_k^{(i)}), \pi_{q_{\hat{q}_k}^{(i)}}(s_k^{(i)}) \stackrel{?}{=} 1
+  \mathsf{MT.verify}(\mathsf{cm}(q_{\hat{q}_k}^{(i)}(X), q_{\hat{q}_k}^{(i)}(s_k^{(i)}), \pi_{q_{\hat{q}_k}^{(i)}}(s_k^{(i)})) \stackrel{?}{=} 1
   $$
 
   $$
-  \mathsf{MT.verify}(\mathsf{cm}(q_{\hat{q}_k}^{(i)}(X)), q_{\hat{q}_k}^{(i)}(-s_k^{(i)}), \pi_{q_{\hat{q}_k}^{(i)}}(-s_k^{(i)}) \stackrel{?}{=} 1
+  \mathsf{MT.verify}(\mathsf{cm}(q_{\hat{q}_k}^{(i)}(X), q_{\hat{q}_k}^{(i)}(-s_k^{(i)}), \pi_{q_{\hat{q}_k}^{(i)}}(-s_k^{(i)})) \stackrel{?}{=} 1
   $$
   - 验证第 $i$ 轮的折叠是否正确
   $$
@@ -642,29 +642,29 @@ $$
 - Prover 发送 $\hat{q}_{n-1}(t^{(n - 1)})$ 与 $\hat{q}_{n-1}(-t^{(n - 1)})$ 以及其 Merkle Path 
 
 $$
-\{(\hat{q}_{n-1}(t^{(n - 1)}), \pi_{\hat{q}_{n-1}}(t^{(n - 1)})\} \leftarrow \mathsf{MMCS.open}(\hat{q}_{n - 1}, t^{(n - 1)})
+\{(\hat{q}_{n-1}(t^{(n - 1)}), \pi_{\hat{q}_{n-1}}(t^{(n - 1)}))\} \leftarrow \mathsf{MMCS.open}(\hat{q}_{n - 1}, t^{(n - 1)})
 $$
 
 $$
-\{(\hat{q}_{n-1}(-t^{(n - 1)}), \pi_{\hat{q}_{n-1}}(-t^{(n - 1)})\} \leftarrow \mathsf{MMCS.open}(\hat{q}_{n - 1}, -t^{(n - 1)})
+\{(\hat{q}_{n-1}(-t^{(n - 1)}), \pi_{\hat{q}_{n-1}}(-t^{(n - 1)}))\} \leftarrow \mathsf{MMCS.open}(\hat{q}_{n - 1}, -t^{(n - 1)})
 $$
 
 - 对于 $i = n - 2, \ldots, 1$，
   - Prover 计算 $t^{(i)} = (t^{(i + 1)})^2$
   - Prover 发送 $\hat{q}_{i}(t^{(i)})$ 及其 Merkle Path
       $$
-      \{(\hat{q}_{i}(t^{(i)}), \pi_{\hat{q}_{i}}(t^{(i)})\} \leftarrow \mathsf{MMCS.open}(\hat{q}_{i}, t^{(i)})
+      \{(\hat{q}_{i}(t^{(i)}), \pi_{\hat{q}_{i}}(t^{(i)}))\} \leftarrow \mathsf{MMCS.open}(\hat{q}_{i}, t^{(i)})
       $$
 
   - Prover 发送 $\mathsf{fold}^{(i)}(-t^{(i)})$ 及其 Merkle Path
       $$
-      \{(\mathsf{fold}^{(i)}(-t^{(i)}), \pi_{\mathsf{fold}^{(i)}}(-t^{(i)})\} \leftarrow \mathsf{MT.open}(\mathsf{fold}^{(i)}, -t^{(i)})
+      \{(\mathsf{fold}^{(i)}(-t^{(i)}), \pi_{\mathsf{fold}^{(i)}}(-t^{(i)}))\} \leftarrow \mathsf{MT.open}(\mathsf{fold}^{(i)}, -t^{(i)})
       $$ 
 - 对于 $i = 0$ 时，
   - Prover 计算 $t^{(0)} = (t^{(1)})^2$
   - Prover 发送 $\hat{q}_0(s^{(0)})$ 及其 Merkle Path
       $$
-      \{(\hat{q}_0(t^{(0)}), \pi_{\hat{q}_0}(t^{(0)})\} \leftarrow \mathsf{MMCS.open}(\hat{q}_0, t^{(0)})
+      \{(\hat{q}_0(t^{(0)}), \pi_{\hat{q}_0}(t^{(0)}))\} \leftarrow \mathsf{MMCS.open}(\hat{q}_0, t^{(0)})
       $$
 
 > 📝 **Notes**
@@ -694,7 +694,7 @@ $$
 $$
 \begin{aligned}
   \pi_{q_{f_\zeta}} = &  ( \mathsf{cm}(q_{f_\zeta}^{(1)}(X)), \ldots, \mathsf{cm}(q_{f_\zeta}^{(n - 1)}(X)),q_{f_\zeta}^{(n)}(x_0),  \\
-  & \, \{\hat{f}(s^{(0)}), \pi_{\hat{f}}(s^{(0)})), \hat{f}(- s^{(0)}), \pi_{\hat{f}}(-s^{(0)})), \\
+  & \, \{\hat{f}(s^{(0)}), \pi_{\hat{f}}(s^{(0)}), \hat{f}(- s^{(0)}), \pi_{\hat{f}}(-s^{(0)}), \\
   & \quad q_{f_\zeta}^{(1)}(s^{(1)}), \pi_{q_{f_\zeta}^{(1)}}(s^{(1)}),q_{f_\zeta}^{(1)}(-s^{(1)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(1)}), \ldots, \\
   & \quad q_{f_\zeta}^{(n - 1)}(s^{(n - 1)}), \pi_{q_{f_\zeta}^{(n - 1)}}(s^{(n - 1)}),q_{f_\zeta}^{(n - 1)}(-s^{(n - 1)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(n - 1)})\}^l)
 \end{aligned}
@@ -757,11 +757,11 @@ $$
   - 验证 $q_{f_\zeta}^{(i)}(s^{(i)}), q_{f_\zeta}^{(i)}(-s^{(i)})$ 的正确性
 
   $$
-  \mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(i)}(X)), q_{f_\zeta}^{(i)}(s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(s^{(i)}) \stackrel{?}{=} 1
+  \mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(i)}(X)), q_{f_\zeta}^{(i)}(s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(s^{(i)})) \stackrel{?}{=} 1
   $$
 
   $$
-  \mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(i)}(X)), q_{f_\zeta}^{(i)}(-s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(i)}) \stackrel{?}{=} 1
+  \mathsf{MT.verify}(\mathsf{cm}(q_{f_\zeta}^{(i)}(X)), q_{f_\zeta}^{(i)}(-s^{(i)}), \pi_{q_{f_\zeta}^{(i)}}(-s^{(i)})) \stackrel{?}{=} 1
   $$
   - 验证第 $i$ 轮的折叠是否正确
   $$
@@ -775,7 +775,7 @@ $$
 2. 对 $n$ 个商多项式 $\{q_{\hat{q}_k}\}_{k = 0}^{n - 1}$ 一次进行 low degree test 的验证，记为
 
 $$
-\mathsf{OPFRI.verify}( \pi_{q_{\hat{q}_{n - 1}}, \ldots, q_{\hat{q}_{0}}}, 2^{n - 1}))) \stackrel{?}{=} 1
+\mathsf{OPFRI.verify}( \pi_{q_{\hat{q}_{n - 1}}, \ldots, q_{\hat{q}_{0}}}, 2^{n - 1}) \stackrel{?}{=} 1
 $$
 
 具体过程为，Verifier 重复 $l$ 次：
@@ -812,7 +812,7 @@ $$
   - 验证 $\hat{q}_{i}(t^{(i)})$ 值的正确性，
   
       $$
-      \mathsf{MMCS.verify}(\mathsf{cm}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0), \hat{q}_{i}(t^{(i)}), \pi_{\hat{q}_{i}}(t^{(i)}) \stackrel{?}{=} 1
+      \mathsf{MMCS.verify}(\mathsf{cm}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0), \hat{q}_{i}(t^{(i)}), \pi_{\hat{q}_{i}}(t^{(i)})) \stackrel{?}{=} 1
       $$ 
   - Verifier 计算
   
@@ -827,7 +827,7 @@ $$
   - Verifier 验证 $\mathsf{fold}^{(i)}(-t^{(i)})$ 值的正确性，
   
       $$
-      \mathsf{MT.verify}(\mathsf{cm}(\mathsf{fold}^{(i)}(X)), \mathsf{fold}^{(i)}(-t^{(i)}), \pi_{\mathsf{fold}^{(i)}}(-t^{(i)}) \stackrel{?}{=} 1
+      \mathsf{MT.verify}(\mathsf{cm}(\mathsf{fold}^{(i)}(X)), \mathsf{fold}^{(i)}(-t^{(i)}), \pi_{\mathsf{fold}^{(i)}}(-t^{(i)})) \stackrel{?}{=} 1
       $$
 
   - 更新 $\mathsf{fold}$ 的值
@@ -841,7 +841,7 @@ $$
   - 验证 $\hat{q}_0(t^{(0)})$ 值的正确性，
   
       $$
-      \mathsf{MMCS.verify}(\mathsf{cm}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0), \hat{q}_0(t^{(0)}), \pi_{\hat{q}_0}(t^{(0)}) \stackrel{?}{=} 1
+      \mathsf{MMCS.verify}(\mathsf{cm}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0), \hat{q}_0(t^{(0)}), \pi_{\hat{q}_0}(t^{(0)})) \stackrel{?}{=} 1
       $$
   - Verifier 计算
   
