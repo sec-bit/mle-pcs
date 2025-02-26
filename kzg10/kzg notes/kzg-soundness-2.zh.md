@@ -197,10 +197,17 @@ $$
 e({\color{red}C-[v_j]_1}, [1]_2)\cdot {\color{purple}L_j(\sigma)} = e({\color{blue}\pi_j}, [\sigma-r_j]_2) \cdot {\color{purple}L_j(\sigma)}
 $$
 
+$$
+e({\color{red}C-[v_j]_1}, [1]_2)\cdot {\color{purple}L_j(\sigma)} = e({\color{blue}\pi_j} \cdot {\color{purple} \frac{\prod_{i\in I/\{j\}} (\sigma-r_i)}{\prod_{i\in I/\{j\}} (r_j-r_i)}}, [\sigma-r_j]_2) $$
+
+$$
+
+e({\color{red}C-[v_j]_1}, [1]_2)\cdot {\color{purple}L_j(\sigma)} = e({\color{blue}\pi_j} \cdot {\color{purple} \frac{1}{\prod_{i\in I/\{j\}} (r_j-r_i)}}, [Z_S(\sigma)]_2) $$
+
 并将所有 $n+1$ 个等式相加，可以得到
 
 $$
-e(\sum_{j \in I}{\color{red}(C-[v_j]_1)}\cdot {\color{purple}L_j(\sigma)}, [1]_2) = e(\sum_{j \in I} {\color{blue}\pi_j} \cdot {\color{purple}L_j(\sigma)}, [\sigma-r_j]_2)
+e(\sum_{j \in I}{\color{red}(C-[v_j]_1)}\cdot {\color{purple}L_j(\sigma)}, [1]_2) = e(\sum_{j \in I} {\color{blue}\pi_j} \cdot {\color{purple} \frac{1}{\prod_{i\in I/\{j\}} (r_j-r_i)}}, [Z_S(\sigma)]_2)
 $$
 
 令 $\sum_{j \in I} {\color{red} [v_j]_1} \cdot {\color{purple} L_j(\sigma)} = [{\color{purple} L(\sigma)}]_1$，左式为
@@ -212,7 +219,7 @@ $$
 令 $\sum_{j\in I} \left( {\color{blue} \pi_j} / {\color{purple} \prod_{i\in I/\{j\}}(r_j -r_i)} \right) = {\color{blue} \varphi}$， 右式为
 
 $$
-RHS  = e(\sum_{j \in I} {\color{blue}\pi_j} \cdot {\color{purple}L_j(\sigma)}, [\sigma-r_j]_2) \\ = e([\sum_{j \in I} {\color{blue}q_j(\sigma)} \cdot {\color{purple}\frac{\prod_{i\in I/\{j\}} (\sigma-r_i)}{\prod_{i\in I/\{j\}} (r_j-r_i)}}]_1, [\sigma-r_j]_2) \\ = e([\sum_{j\in I} \frac{\color{blue} q_j(\sigma)}{\color{purple} \prod_{i \in I/\{j\}}(r_j-r_i)}]_1, [Z_S(\sigma)]_2) \\ = e([{\color{blue} \varphi}]_1, [Z_S(\sigma)]_2)
+RHS  = e(\sum_{j \in I} {\color{blue}\pi_j} \cdot {\color{purple} \frac{1}{\prod_{i\in I/\{j\}} (r_j-r_i)}}, [Z_S(\sigma)]_2) \\ = e([\sum_{j\in I} \frac{\color{blue} q_j(\sigma)}{\color{purple} \prod_{i \in I/\{j\}}(r_j-r_i)}]_1, [Z_S(\sigma)]_2) \\ = e([{\color{blue} \varphi}]_1, [Z_S(\sigma)]_2)
 $$
 
 最终得到等式

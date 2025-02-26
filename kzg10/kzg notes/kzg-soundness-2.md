@@ -191,28 +191,35 @@ $$
 \color{purple} L_j(X) = \frac{\prod_{i\in I/\{j\}} (X-r_i)}{\prod_{i\in I/\{j\}} (r_j-r_i)}
 $$
 
-Now, multiply both sides of each verification equation by the value of the Lagrange polynomial at $\sigma$, for example, the $j\in[0,n]$-th equation is
+Now, multiply both sides of each verification equation by the value of the Lagrange polynomial at $\sigma$, for example, the $j$-th equation $(j\in[0,n])$  is
 
 $$
 e({\color{red}C-[v_j]_1}, [1]_2)\cdot {\color{purple}L_j(\sigma)} = e({\color{blue}\pi_j}, [\sigma-r_j]_2) \cdot {\color{purple}L_j(\sigma)}
 $$
 
-And add all $n+1$ equations, we can get
+$$
+e({\color{red}C-[v_j]_1}, [1]_2)\cdot {\color{purple}L_j(\sigma)} = e({\color{blue}\pi_j} \cdot {\color{purple} \frac{\prod_{i\in I/\{j\}} (\sigma-r_i)}{\prod_{i\in I/\{j\}} (r_j-r_i)}}, [\sigma-r_j]_2) $$
 
 $$
-e(\sum_{j \in I}{\color{red}(C-[v_j]_1)}\cdot {\color{purple}L_j(\sigma)}, [1]_2) = e(\sum_{j \in I} {\color{blue}\pi_j} \cdot {\color{purple}L_j(\sigma)}, [\sigma-r_j]_2)
+
+e({\color{red}C-[v_j]_1}, [1]_2)\cdot {\color{purple}L_j(\sigma)} = e({\color{blue}\pi_j} \cdot {\color{purple} \frac{1}{\prod_{i\in I/\{j\}} (r_j-r_i)}}, [Z_S(\sigma)]_2) $$
+
+By adding all $n+1$ equations, we can get
+
+$$
+e(\sum_{j \in I}{\color{red}(C-[v_j]_1)}\cdot {\color{purple}L_j(\sigma)}, [1]_2) = e(\sum_{j \in I} {\color{blue}\pi_j} \cdot {\color{purple} \frac{1}{\prod_{i\in I/\{j\}} (r_j-r_i)}}, [Z_S(\sigma)]_2)
 $$
 
-Let $\sum_{j \in I} {\color{red} [v_j]_1} \cdot {\color{purple} L_j(\sigma)} = [{\color{purple} L(\sigma)}]_1$, the left side is
+Let $\sum_{j \in I} {\color{red} [v_j]_1} \cdot {\color{purple} L_j(\sigma)} = [{\color{purple} L(\sigma)}]_1$, the left-hand side is
 
 $$
 LHS = e({\color{red}C}-\sum_{j \in I}{\color{red} [v_j]_1}\cdot {\color{purple}L_j(\sigma)}, [1]_2)  \\ = e({\color{red}C}-{\color{purple}[L(\sigma)]_1}, [1]_2) 
 $$
 
-Let $\sum_{j\in I} \left( {\color{blue} \pi_j} / {\color{purple} \prod_{i\in I/\{j\}}(r_j -r_i)} \right) = {\color{blue} \varphi}$, the right side is
+Let $\sum_{j\in I} \left( {\color{blue} \pi_j} / {\color{purple} \prod_{i\in I/\{j\}}(r_j -r_i)} \right) = {\color{blue} \varphi}$, the right-hand side is
 
 $$
-RHS  = e(\sum_{j \in I} {\color{blue}\pi_j} \cdot {\color{purple}L_j(\sigma)}, [\sigma-r_j]_2) \\ = e([\sum_{j \in I} {\color{blue}q_j(\sigma)} \cdot {\color{purple}\frac{\prod_{i\in I/\{j\}} (\sigma-r_i)}{\prod_{i\in I/\{j\}} (r_j-r_i)}}]_1, [\sigma-r_j]_2) \\ = e([\sum_{j\in I} \frac{\color{blue} q_j(\sigma)}{\color{purple} \prod_{i \in I/\{j\}}(r_j-r_i)}]_1, [Z_S(\sigma)]_2) \\ = e([{\color{blue} \varphi}]_1, [Z_S(\sigma)]_2)
+RHS  = e(\sum_{j \in I} {\color{blue}\pi_j} \cdot {\color{purple} \frac{1}{\prod_{i\in I/\{j\}} (r_j-r_i)}}, [Z_S(\sigma)]_2) \\ = e([\sum_{j\in I} \frac{\color{blue} q_j(\sigma)}{\color{purple} \prod_{i \in I/\{j\}}(r_j-r_i)}]_1, [Z_S(\sigma)]_2) \\ = e([{\color{blue} \varphi}]_1, [Z_S(\sigma)]_2)
 $$
 
 Finally, we get the equation
