@@ -1,4 +1,7 @@
-# Zeromorph-PCS
+# Zeromorph-PCS : 对接 FRI 
+
+- Jade Xie  <jade@secbit.io>
+- Yu Guo <yu.guo@secbit.io>
 
 之前的文章介绍了 zeromorph 协议对接 KZG 做多元线性多项式的 PCS 协议，这里介绍 zeromorph 协议接 FRI 对应的 PCS 协议。
 
@@ -270,11 +273,11 @@ $$
 - 验证 $\hat{f}(s^{(0)}), \hat{f}(-s^{(0)})$ 的正确性
 
 $$
-\mathsf{MT.verify}(\mathsf{cm}(\hat{f}(X), \hat{f}(s^{(0)}), \pi_{\hat{f}}(s^{(0)})) \stackrel{?}{=} 1
+\mathsf{MT.verify}(\mathsf{cm}(\hat{f}(X)), \hat{f}(s^{(0)}), \pi_{\hat{f}}(s^{(0)})) \stackrel{?}{=} 1
 $$
 
 $$
-\mathsf{MT.verify}(\mathsf{cm}(\hat{f}(X), \hat{f}(-s^{(0)}), \pi_{\hat{f}}(-s^{(0)})) \stackrel{?}{=} 1
+\mathsf{MT.verify}(\mathsf{cm}(\hat{f}(X)), \hat{f}(-s^{(0)}), \pi_{\hat{f}}(-s^{(0)})) \stackrel{?}{=} 1
 $$
 - Verifier 计算
   $$
@@ -362,12 +365,13 @@ $$
   - 验证 $q_{\hat{q}_k}^{(i)}(s_k^{(i)}), q_{\hat{q}_k}^{(i)}(-s_k^{(i)})$ 的正确性
   
   $$
-  \mathsf{MT.verify}(\mathsf{cm}(q_{\hat{q}_k}^{(i)}(X), q_{\hat{q}_k}^{(i)}(s_k^{(i)}), \pi_{q_{\hat{q}_k}^{(i)}}(s_k^{(i)})) \stackrel{?}{=} 1
+  \mathsf{MT.verify}(\mathsf{cm}(q_{\hat{q}_k}^{(i)}(X)), q_{\hat{q}_k}^{(i)}(s_k^{(i)}), \pi_{q_{\hat{q}_k}^{(i)}}(s_k^{(i)})) \stackrel{?}{=} 1
   $$
 
   $$
-  \mathsf{MT.verify}(\mathsf{cm}(q_{\hat{q}_k}^{(i)}(X), q_{\hat{q}_k}^{(i)}(-s_k^{(i)}), \pi_{q_{\hat{q}_k}^{(i)}}(-s_k^{(i)})) \stackrel{?}{=} 1
+  \mathsf{MT.verify}(\mathsf{cm}(q_{\hat{q}_k}^{(i)}(X)), q_{\hat{q}_k}^{(i)}(-s_k^{(i)}), \pi_{q_{\hat{q}_k}^{(i)}}(-s_k^{(i)})) \stackrel{?}{=} 1
   $$
+  
   - 验证第 $i$ 轮的折叠是否正确
   $$
   q_{\hat{q}_k}^{(i)}(s_k^{(i)}) \stackrel{?}{=} \frac{q_{\hat{q}_k}^{(i - 1)}(s_k^{(i - 1)}) + q_{\hat{q}_k}^{(i - 1)}(- s_k^{(i - 1)})}{2} + \beta_k^{(i)} \cdot \frac{q_{\hat{q}_k}^{(i - 1)}(s_k^{(i - 1)}) - q_{\hat{q}_k}^{(i - 1)}(- s_k^{(i - 1)})}{2 \cdot s_k^{(i - 1)}}
@@ -875,3 +879,9 @@ $$
 $$
 \hat{f}(\zeta) - v\cdot\Phi_n(\zeta) = \sum_{k = 0}^{n - 1} \Big(\zeta^{2^k}\cdot \Phi_{n-k-1}(\zeta^{2^{k+1}}) - u_k\cdot\Phi_{n-k}(\zeta^{2^k})\Big)\cdot \hat{q}_k(\zeta)
 $$
+
+## Reference:
+
+- [KT23] Kohrita, Tohru, and Patrick Towa. "Zeromorph: Zero-knowledge multilinear-evaluation proofs from homomorphic univariate commitments." Cryptology ePrint Archive (2023). https://eprint.iacr.org/2023/917 
+- [H22] Haböck, Ulrich. "A summary on the FRI low degree test." _Cryptology ePrint Archive_ (2022).
+- Plonky3. https://github.com/Plonky3/Plonky3
