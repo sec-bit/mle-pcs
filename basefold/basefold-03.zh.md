@@ -439,7 +439,7 @@ $$
 $$
 h^{(0)}(X) = f(X_0, \alpha_1, \alpha_2)\cdot \tilde{eq}((X_0, \alpha_1, \alpha_2), (u_0, u_1, u_2))
 $$
-第六轮：Verifier 发送挑战数 $\alpha_0\leftarrow F$
+第六轮：Verifier 发送挑战数 $\alpha_0\leftarrow \mathbb{F}_p$
 
 第七轮：Prover 继续进行 Basefold-IOPP 协议：
 
