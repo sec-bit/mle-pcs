@@ -42,40 +42,19 @@ class FRI:
         assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
         
         quotient = [(code[i] - val) / (domain[i] - point) for i in range(len(code))]
-        
-        quotient_tree = MerkleTree(quotient)
-        transcript.append_message(b"quotient", quotient_tree.root.encode('ascii'))
-        transcript.append_message(b"value at z", str(val).encode('ascii'))
-
-        z = from_bytes(transcript.challenge_bytes(b"z", 4)) % len(code)
-        code_at_z_proof = code_tree.get_authentication_path(z)
-        quotient_at_z_proof = quotient_tree.get_authentication_path(z)
 
         if debug:
-            print('z:', z)
-            print('code[z]:', code[z])
-            print('quotient[z]:', quotient[z])
-            print('domain[z]:', domain[z])
             print('point:', point)
             print('value:', val)
-            assert code[z] - val == quotient[z] * (domain[z] - point), \
-                "failed to generate quotient, code: {}, quotient: {}, val: {}, z: {}, point: {}"\
-                    .format(code, quotient, val, z, point)
 
         num_verifier_queries = cls.security_level // log_2(rate)
         if cls.security_level % log_2(rate) != 0:
             num_verifier_queries += 1
 
-        low_degree_proof = cls.prove_low_degree(quotient, rate, degree_bound, gen, num_verifier_queries, transcript, debug)
+        proof = cls.prove_low_degree(code, code_tree, quotient, rate, degree_bound, gen, num_verifier_queries, point, val, transcript, debug)
 
         return {
-            'low_degree_proof': low_degree_proof,
-            'code_commitment': code_tree.root,
-            'quotient_commitment': quotient_tree.root,
-            'code_at_z_proof': code_at_z_proof,
-            'quotient_at_z_proof': quotient_at_z_proof,
-            'code_at_z': code[z],
-            'quotient_at_z': quotient[z],
+            'proof': proof,
             'degree_bound': degree_bound,
         }
 
@@ -87,44 +66,26 @@ class FRI:
 
         assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
 
-        code_commitment = proof['code_commitment']
-        quotient_commitment = proof['quotient_commitment']
-
-        # transcript.append_message(b"code", code_commitment.encode('ascii'))
-        transcript.append_message(b"quotient", quotient_commitment.encode('ascii'))
-        transcript.append_message(b"value at z", str(value).encode('ascii'))
-
-        z = from_bytes(transcript.challenge_bytes(b"z", 4)) % (degree_bound * rate)
-        code_at_z_proof = proof['code_at_z_proof']
-        quotient_at_z_proof = proof['quotient_at_z_proof']
-
         if debug:
-            print('z: ', z)
-            print('code_at_z: ', proof['code_at_z'])
-            print('quotient_at_z: ', proof['quotient_at_z'])
             print('point:', point)
             print('value:', value)
-
-        assert verify_decommitment(z, proof['code_at_z'], code_at_z_proof, code_commitment), f"failed to check decommitment at code_at_z, z: {z}, code_at_z: {proof['code_at_z']}, code_commitment: {code_commitment}"
-        assert verify_decommitment(z, proof['quotient_at_z'], quotient_at_z_proof, quotient_commitment), f"failed to check decommitment at quotient_at_z, z: {z}, quotient_at_z: {proof['quotient_at_z']}, quotient_commitment: {quotient_commitment}"
-
-        assert proof['code_at_z'] - value == proof['quotient_at_z'] * (domain[z] - point), f"failed to check quotient, code_at_z: {proof['code_at_z']}, value: {value}, quotient_at_z: {proof['quotient_at_z']}, domain[z]: {domain[z]}, point: {point}"
 
         num_verifier_queries = cls.security_level // log_2(rate)
         if cls.security_level % log_2(rate) != 0:
             num_verifier_queries += 1
         
-        cls.verify_low_degree(degree_bound, rate, proof['low_degree_proof'], gen, num_verifier_queries, transcript, debug)
+        cls.verify_low_degree(point, value, degree_bound, rate, proof['proof'], gen, num_verifier_queries, transcript, debug)
 
     @staticmethod
-    def prove_low_degree(evals, rate, degree_bound, gen, num_verifier_queries, transcript, debug=False):
+    def prove_low_degree(code, code_tree, evals, rate, degree_bound, gen, num_verifier_queries, point, val, transcript, debug=False):
         assert is_power_of_two(degree_bound)
 
-        first_tree = MerkleTree(evals)
-        evals_copy = evals
-        transcript.append_message(b"first_oracle", first_tree.root.encode('ascii'))
+        # transcript.append_message(b"first_oracle", code_tree.root.encode('ascii'))
 
         alpha = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))) for _ in range(4)])
+
+        for i in range(len(evals)):
+            assert code[i] - val == (gen ** i - point) * evals[i], f"code[i] - val: {code[i] - val}, (gen ** i - point) * evals[0][i]: {(gen ** i - point) * evals[0][i]}"
 
         trees = []
         tree_evals = []
@@ -149,13 +110,12 @@ class FRI:
                     assert evals[i] == evals[0], f"evals: {evals}"
 
         # query phase
-        assert len(evals_copy) == degree_bound * rate, f"evals_copy: {evals_copy}, degree_bound: {degree_bound}, rate: {rate}"
-        query_paths, merkle_paths = FRI.query_phase(transcript, first_tree, evals_copy, trees, tree_evals, degree_bound * rate, num_verifier_queries, debug)
+        query_paths, merkle_paths = FRI.query_phase(transcript, code_tree, code, trees, tree_evals, degree_bound * rate, num_verifier_queries, debug)
 
         return {
             'query_paths': query_paths,
             'merkle_paths': merkle_paths,
-            'first_oracle': first_tree.root,
+            'first_oracle': code_tree.root,
             'intermediate_oracles': [tree.root for tree in trees],
             'degree_bound': degree_bound,
             'final_value': evals[0],
@@ -187,12 +147,12 @@ class FRI:
 
 
     @staticmethod
-    def verify_low_degree(degree_bound, rate, proof, gen, num_verifier_queries, transcript, debug=False):
+    def verify_low_degree(point, value, degree_bound, rate, proof, gen, num_verifier_queries, transcript, debug=False):
         log_degree_bound = log_2(degree_bound)
         log_evals = log_2(degree_bound * rate)
         T = [[(gen**(2 ** j)) ** i for i in range(2 ** (log_evals - j - 1))] for j in range(0, log_evals)]
         if debug: print("T:", T)
-        FRI.verify_queries(proof, log_degree_bound, degree_bound * rate, num_verifier_queries, T, transcript, debug)
+        FRI.verify_queries(proof, log_degree_bound, degree_bound * rate, num_verifier_queries, T, point, value, transcript, debug)
 
     @staticmethod
     def query_phase(transcript: MerlinTranscript, first_tree: MerkleTree, first_oracle, trees: list, oracles: list, num_vars, num_verifier_queries, debug=False):
@@ -254,8 +214,8 @@ class FRI:
         return query_paths, merkle_paths
     
     @staticmethod
-    def verify_queries(proof, k, num_vars, num_verifier_queries, T, transcript, debug=False):
-        transcript.append_message(b"first_oracle", bytes(proof['first_oracle'], 'ascii'))
+    def verify_queries(proof, k, num_vars, num_verifier_queries, T, point, value, transcript, debug=False):
+        # transcript.append_message(b"first_oracle", bytes(proof['first_oracle'], 'ascii'))
         alpha = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))) for _ in range(4)])
 
         fold_challenges = [alpha]
@@ -277,6 +237,7 @@ class FRI:
                     x0, x1 = x1, x0
                     
                 code_left, code_right = cur_path[i][0], cur_path[i][1]
+                decheck = code_left
 
                 if debug: print("x0:", x0)
                 if debug: print("x1:", x1)
@@ -284,6 +245,9 @@ class FRI:
                 table = T[i]
                 if debug: print("table:", table)
                 if i != len(mps) - 1:
+                    if i == 0:
+                        code_left = (code_left - value) / (table[x0] - point)
+                        code_right = (code_right - value) / (-table[x0] - point)
                     f_code_folded = cur_path[i + 1][0 if x0 < num_vars_copy / 4 else 1]
                     alpha = fold_challenges[i]
                     left = (code_left + code_right)/BabyBear(2)
@@ -304,9 +268,9 @@ class FRI:
                         assert proof["final_value"] == f_code_folded, f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, table: {table}, final_value: {proof['final_value']}, f_code_folded: {f_code_folded}"
 
                 if i == 0:
-                    assert verify_decommitment(x0, code_left, mp, proof['first_oracle']), "failed to check decommitment at first level"
+                    assert verify_decommitment(x0, decheck, mp, proof['first_oracle']), "failed to check decommitment at first level"
                 else:
-                    assert verify_decommitment(x0, code_left, mp, proof['intermediate_oracles'][i - 1]), "failed to check decommitment at level " + str(i)
+                    assert verify_decommitment(x0, decheck, mp, proof['intermediate_oracles'][i - 1]), "failed to check decommitment at level " + str(i)
 
                 num_vars_copy >>= 1
                 q = x0

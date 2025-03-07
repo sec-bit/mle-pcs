@@ -194,8 +194,8 @@ class ZeroFRI:
         """
         assert isinstance(transcript, MerlinTranscript), "Transcript must be a MerlinTranscript"
 
-        if debug > 0: print(f"V> receive f_cm={str(f_proof['code_commitment'])}")
-        transcript.append_message(b"f_cm", bytes(str(f_proof['code_commitment']), encoding='ascii'))
+        if debug > 0: print(f"V> receive f_cm={str(f_proof['proof']['first_oracle'])}")
+        transcript.append_message(b"f_cm", bytes(str(f_proof['proof']['first_oracle']), encoding='ascii'))
 
         k = len(point)
         assert k == num_var, "Number of variables must match the point"
@@ -209,8 +209,8 @@ class ZeroFRI:
             transcript.append_message(b"q_cm", bytes(str(quotients_proof['code_commitment']), encoding='ascii'))
         else:
             for i in range(len(quotients_proof)):
-                if debug > 0: print(f"V> receive q_cm={str(quotients_proof[i]['code_commitment'])}")
-                transcript.append_message(b"q_cm", bytes(str(quotients_proof[i]['code_commitment']), encoding='ascii'))
+                if debug > 0: print(f"V> receive q_cm={str(quotients_proof[i]['proof']['first_oracle'])}")
+                transcript.append_message(b"q_cm", bytes(str(quotients_proof[i]['proof']['first_oracle']), encoding='ascii'))
 
         gen = g ** (g_order // ((1 << num_var) * rate))
 
