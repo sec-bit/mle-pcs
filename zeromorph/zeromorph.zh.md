@@ -6,11 +6,11 @@ Zeromorph [KT23] 是一个基于 KZG10 的 MLE 多项式承诺方案。事实上
 
 Zeromorph 的核心要点是将 MLE 多项式的 Evaluations 即「点值向量」作为 Univariate 多项式的「系数向量」。这个做法看起来有些奇怪，不过这个框架仍然不失清晰简洁性。
 
-理解 Zeromorph 的关键在于对高维的 Boolean HyperCube 上取值的变换的理解，以及它们如何对应于 Univariate 多项式的运算。
+理解 Zeromorph 的关键在于对高维的 Boolean Hypercube 上取值的变换的理解，以及它们如何对应于 Univariate 多项式的运算。
 
 ## MLE 多项式
 
-所谓的 MLE（Multilinear Extension） 多项式 $\tilde{f}$ 是定义在 Boolean HyperCube 上的一类 Multivariate 多项式。它的每一项中任何一个未知数的次数都不超过 $1$，例如 $\tilde{f}=1 + 2X_0 + 3X_1X_0$ 是一个 MLE 多项式，而 $\tilde{f}'=1 + 2X_0^2 + 3X_1X_0 + X_1$ 则不是，因为 $X_0^2$ 的次数大于 $1$。
+所谓的 MLE（Multilinear Extension） 多项式 $\tilde{f}$ 是定义在 Boolean Hypercube 上的一类 Multivariate 多项式。它的每一项中任何一个未知数的次数都不超过 $1$，例如 $\tilde{f}=1 + 2X_0 + 3X_1X_0$ 是一个 MLE 多项式，而 $\tilde{f}'=1 + 2X_0^2 + 3X_1X_0 + X_1$ 则不是，因为 $X_0^2$ 的次数大于 $1$。
 
 一个 MLE 多项式可以对应到一个从 Boolean 向量到一个有限域的函数，即 $f:\{0,1\}^n\to \mathbb{F}_q$，我们则称其维度为 $n$ 。下图是一个三维的 MLE 多项式 $\tilde{f}(X_0, X_1, X_2)$ 的示例，这个多项式可以唯一地被 $(a_0, a_1, \ldots, a_7)$ 这个「点值向量」来表示。这对应于 Univariate 多项式中的「点值式」表示，即 Evaluations form。
 
@@ -36,7 +36,7 @@ $$
 \tilde{f}(X_0, X_1, \ldots, X_{n-1}) = \sum_{i_0=0}^{1}\sum_{i_1=0}^{1}\cdots \sum_{i_{n-1}=0}^{1} a_{i_0i_1\cdots i_{n-1}}\cdot eq(i_0, i_1, \ldots, i_{n-1}, X_0, X_1, \ldots, X_{n-1})
 $$
 
-其中 $eq$ 为 一组关于 $n$ 维 Boolean HyperCube $\{0, 1\}^n$ 的 Lagrange Polynomial：
+其中 $eq$ 为 一组关于 $n$ 维 Boolean Hypercube $\{0, 1\}^n$ 的 Lagrange Polynomial：
 
 $$
 eq(i_0, i_1, \ldots, i_{n-1}, X_0, X_1, \ldots, X_{n-1}) = \prod_{j=0}^{n-1} \Big((1-i_j)\cdot (1-X_j)+ i_j\cdot X_j\Big)
@@ -44,7 +44,7 @@ $$
 
 MLE 多项式在「点值式」和「系数式」之间存在 $N\log(N)$ 的转换算法，这里不再深入讨论。
 
-我们可以使用 ZeroMorph 将一个 MLE 多项式映射到一个 Univariate 多项式，具体一点说，是将 MLE 多项式在 Boolean HyperCube 上的「点值向量」映射到一个 Univariate 多项式 的「系数向量」。
+我们可以使用 ZeroMorph 将一个 MLE 多项式映射到一个 Univariate 多项式，具体一点说，是将 MLE 多项式在 Boolean Hypercube 上的「点值向量」映射到一个 Univariate 多项式 的「系数向量」。
 
 ## MLE 多项式到 Univariate 多项式
 
@@ -54,7 +54,7 @@ $$
 \tilde{f}(X_0, X_1) = 2 + X_1 + X_0X_1
 $$
 
-容易验证，它在 Boolean HyperCube 上的点值表示为：
+容易验证，它在 Boolean Hypercube 上的点值表示为：
 
 $$
 \begin{split}
@@ -95,7 +95,7 @@ $$
 \tilde{c}(X_0, X_1, X_2) = c_0
 $$
 
-我们考虑下这样一个常数多项式会映射到一个什么样的 Univariate 多项式。首先我们要把它转换成点值式，考虑在一个三维的 Boolean HyperCube 上，无论 $X_0,X_1,X_2\in\{0, 1\}$ 如何取值，这个多项式在 Boolean HyperCube 上的取值都为 $c_0$，那么这也意味着它的点值式为 $(c_0, c_0, c_0, \ldots, c_0)$，于是它所对应的 Univariate 多项式为：
+我们考虑下这样一个常数多项式会映射到一个什么样的 Univariate 多项式。首先我们要把它转换成点值式，考虑在一个三维的 Boolean Hypercube 上，无论 $X_0,X_1,X_2\in\{0, 1\}$ 如何取值，这个多项式在 Boolean Hypercube 上的取值都为 $c_0$，那么这也意味着它的点值式为 $(c_0, c_0, c_0, \ldots, c_0)$，于是它所对应的 Univariate 多项式为：
 
 $$
 \begin{split}
@@ -113,7 +113,7 @@ $$
 \end{split}
 $$
 
-我们可以看到，虽然两个 MLE 多项式 $\tilde{c}$ 和 $\tilde{c}'$ 的系数式表示完全一样，但它们映射到的 Univariate 多项式并不一样。这是因为不管是 Univariate 还是 Multivariate 的多项式，它们的点值式表示都隐含了 Evaluation Domain 的选取。$\tilde{c}$ 的 Evaluation Domain 是 3 维的 Boolean HyperCube，而 $\tilde{c}'$ 的 Evaluation Domain 是 2 维的 Boolean HyperCube。因此，当我们计算多项式的点值式时，需要明确下 Evaluation Domain 的选择，对于 MLE 多项式来说，如果它的 Evaluation Domain 是 $n$ 维的 Boolean HyperCube，那么我们修改下映射记号表示，在映射括加上下标 $n$，即 $[[\tilde{f}]]_n$ 。下面是 $\tilde{c}$ 在两个不同的 Evaluation Domain 上的映射所产生的两个不同的 Univariate 多项式：
+我们可以看到，虽然两个 MLE 多项式 $\tilde{c}$ 和 $\tilde{c}'$ 的系数式表示完全一样，但它们映射到的 Univariate 多项式并不一样。这是因为不管是 Univariate 还是 Multivariate 的多项式，它们的点值式表示都隐含了 Evaluation Domain 的选取。$\tilde{c}$ 的 Evaluation Domain 是 3 维的 Boolean Hypercube，而 $\tilde{c}'$ 的 Evaluation Domain 是 2 维的 Boolean Hypercube。因此，当我们计算多项式的点值式时，需要明确下 Evaluation Domain 的选择，对于 MLE 多项式来说，如果它的 Evaluation Domain 是 $n$ 维的 Boolean Hypercube，那么我们修改下映射记号表示，在映射括加上下标 $n$，即 $[[\tilde{f}]]_n$ 。下面是 $\tilde{c}$ 在两个不同的 Evaluation Domain 上的映射所产生的两个不同的 Univariate 多项式：
 
 $$
 \begin{split}
@@ -124,7 +124,7 @@ $$
 
 ### 映射的加法同态
 
-对于任意的两个 MLE 多项式，如果它们具有相同的维度，比如 $\tilde{f}_1(X_0, X_1)$ 和 $\tilde{f}_2(X_0, X_1)$ ，假如前者的点值式表示为
+对于任意两个维度相同的 MLE 多项式，比如 $\tilde{f}_1(X_0, X_1)$ 和 $\tilde{f}_2(X_0, X_1)$ ，假如两者的点值式表示为
 
 $$
 \tilde{f}_1(X_0, X_1) = v_0\cdot eq(0,0, X_0, X_1) + v_1\cdot eq(0,1, X_0, X_1) + v_2\cdot eq(1,0, X_0, X_1) + v_3\cdot eq(1,1, X_0, X_1)
@@ -144,12 +144,13 @@ $$
 $$
 
 于是下面的等式成立：
+> TODO: 这里要展开推导
 
 $$
 [[\tilde{f}_1(X_0, X_1) + \tilde{f}_2(X_0, X_1)]]_2 = [[\tilde{f}_1(X_0, X_1)]]_2 + [[\tilde{f}_2(X_0, X_1)]]_2
 $$
 
-同时不难证明，上面的等式对任意的同样维度的 MLE 多项式都成立。另外也不难证明：
+同时不难证明，上面的等式对任意的维度相同的 MLE 多项式都成立。另外也不难证明：
 
 $$
 [[\alpha\cdot \tilde{f}]]_n = \alpha\cdot [[\tilde{f}]]_n,\quad \forall \alpha \in \mathbb{F}_q
@@ -159,7 +160,7 @@ $$
 
 ### 低维到高维的映射
 
-我们考虑更一般多项式的情况，假设一个二维的 MLE 多项式 $\tilde{c}(X_0, X_1)$，它在二维 Boolean HyperCube 上的取值为 $(v_0, v_1, v_2, v_3)$，那么它对应的 Univariate 多项式为：
+我们考虑更一般多项式的情况，假设一个二维的 MLE 多项式 $\tilde{c}(X_0, X_1)$，它在二维 Boolean Hypercube 上的取值为 $(v_0, v_1, v_2, v_3)$，那么它对应的 Univariate 多项式为：
 
 $$
 \begin{split}
@@ -167,7 +168,7 @@ $$
 \end{split}
 $$
 
-而 $X_2\cdot \tilde{c}(X_0, X_1)$ 也同样是一个 MLE 多项式，维度为 3 。它在 Boolean HyperCube 上的取值为： $(0, 0, 0, 0, v_0, v_1, v_2, v_3)$ ，即前四项为零，后四项等于 $\tilde{c}(X_0, X_1)$ 在二维 MLE 多项式在 的取值，如下图所示：
+而 $X_2\cdot \tilde{c}(X_0, X_1)$ 也同样是一个 MLE 多项式，维度为 3 。它在三维 Boolean Hypercube 上的取值为： $(0, 0, 0, 0, v_0, v_1, v_2, v_3)$ ，即前四项为零，后四项等于 $\tilde{c}(X_0, X_1)$ 在二维 Boolean Hypercube 上的取值，如下图所示：
 
 ![alt text](img/image-2.png)
 
@@ -183,13 +184,13 @@ $$
 [[X_2\cdot \tilde{c}]]_3 = v_0X^4 + v_1X^5 + v_2X^6 + v_3X^7 = X^4\cdot (v_0 + v_1X + v_2X^2 + v_3X^3) = X^4 \cdot [[\tilde{c}]]_2
 $$
 
-这里的 $X^4$ 推高了 $[[\tilde{c}]]_2$ 的次数，使得它能够刚好放在 3 维的 HyperCube 的高位区域（即 $X_2=1$ 的区域）。
- 
-接下来考虑下 $\tilde{c}$ 在三维 HyperCube 上的取值，我们会发现新增加的未知数 $X_2$，不管取值为 0 还是 1，多项式的取值只和 $X_0, X_1$ 有关，因此，它的点值式等于二维点值向量复制一份，从而填满 3 维的 HyperCube，如下图所示：
+这里的 $X^4$ 推高了 $[[\tilde{c}]]_2$ 的次数，使得它能够刚好放在三维的 Boolean Hypercube 的高位区域（即 $X_2=1$ 的区域）。
+
+然后考虑下 $\tilde{c}(X_0, X_1)$ 在三维 Boolean Hypercube 上的取值，我们会发现新增加的未知数 $X_2$，不管取值为 0 还是 1，多项式的取值只和 $X_0, X_1$ 有关，因此，它的点值式等于二维点值向量复制一份，从而填满 3 维的 Hypercube，如下图所示：
 
 <img src="img/image-3.png" alt="alt text" width="60%">
 
-换句话说，$\tilde{c}$ 在三维 HyperCube 上的点值式为 $(v_0, v_1, v_2, v_3, v_0, v_1, v_2, v_3)$，那么它所映射到的 Univariate 多项式为：
+换句话说，$\tilde{c}(X_0, X_1)$ 在三维 Hypercube 上的点值式为 $(v_0, v_1, v_2, v_3, v_0, v_1, v_2, v_3)$，因此它所映射到的 Univariate 多项式为：
 
 $$
 \begin{split}
@@ -199,9 +200,9 @@ $$
 \end{split}
 $$
 
-上面的等式可以这么解释：三维 HyperCube 上的取值由两部分拼接而成，$[[\tilde{c}]]_2$ 与由 $X^4$ 推高次数的 $[[\tilde{c}]]_2$。
+上面的等式可以这么解释：三维 Hypercube 上的取值由两部分拼接而成，$[[\tilde{c}]]_2$ 与由 $X^4$ 推高次数的 $[[\tilde{c}]]_2$。
 
-同理可推，$\tilde{c}$ 在四维 HyperCube 上的取值为 $(v_0, v_1, v_2, v_3, \quad v_0, v_1, v_2, v_3, \quad v_0, v_1, v_2, v_3, \quad v_0, v_1, v_2, v_3)$，那么它所映射到的 Univariate 多项式为：
+同理可推，$\tilde{c}(X_0, X_1)$ 在四维 Hypercube 上的取值为 $(v_0, v_1, v_2, v_3, \quad v_0, v_1, v_2, v_3, \quad v_0, v_1, v_2, v_3, \quad v_0, v_1, v_2, v_3)$，那么它所映射到的 Univariate 多项式为：
 
 $$
 \begin{split}
@@ -211,25 +212,23 @@ $$
 \end{split}
 $$
 
-把低维的 MLE 拉升到一个高维的 HyperCube 上，就会出现低维 HyperCube 不断复制自己的现象。我们可以定义一个新的多项式函数，$\Phi_k(X)$，来表示这种重复的操作：
+把低维的 MLE 拉升到一个高维的 Hypercube 上，就会出现低维 Hypercube 不断复制自己的现象。我们可以定义一个新的多项式函数，$\Phi_k(X)$，来表示这种周期性的复制操作：
 
 $$
 \Phi_k(X^h) = 1 + X^h + X^{2h} + \ldots + X^{(2^{k}-1)h}
 $$
 
-显然，$[[\tilde{c}]]_4=\Phi_2(X^4)\cdot [[\tilde{c}]]_2$。
+显然，$[[\tilde{c}]]_4=\Phi_1(X^4)\cdot [[\tilde{c}]]_2$。
 
-## MLE 多项式的余数定理
+## MLE 多项式的除法分解
 
-> TODO: 这个余数定理的正确称呼？
-
-接下来的问题是如何这个 MLE 到 Unvariate 多项式映射来实现 MLE 的 Evaluation Argument 协议。具体点说，问题是如何利用 $\mathsf{cm}(\tilde{f})$ 来验证 $\tilde{f}$ 在某个点的取值的正确性，比如 $\tilde{f}(u_0, u_1)$？我们虽然已经有一个基于 KZG10 的 Evaluation Argument 协议，可惜是基于 Univariate 多项式，而非 MLE 多项式。KZG10 利用了多项式余数定理，如下公式
+接下来的问题是：如何利用这个 MLE 到 Unvariate 多项式映射来实现 MLE 的 Evaluation 证明协议。具体点说，如何利用 $\mathsf{cm}(\tilde{f})$ 来验证 $\tilde{f}$ 在某个点的取值的正确性，比如 $\tilde{f}(u_0, u_1)$？我们虽然已经有了一个基于 KZG10 的 Evaluation Argument 协议，可惜是基于 Univariate 多项式，而非 MLE 多项式。KZG10 利用了 Univariate 多项式的除法分解性质，如下公式
 
 $$
 \hat{f}(X) -  \hat{f}(z) = q(X)\cdot (X-z)
 $$
 
-将商多项式 $q(X)$ 的承诺 $\mathsf{cm}(q)$ 作为 Evaluation Argument 的证明。那么我们如何将 MLE 在一个多维的点，比如 $(u_0, u_1, \ldots, u_{n-1})$ 上的求值证明问题，转化为 Univariate 多项式在一个点 或者多个点上的求值证明呢？
+将商多项式 $q(X)$ 的承诺 $\mathsf{cm}(q)$ 作为 Evaluation 的证明。那么我们如何将 MLE 在一个多维空间的点，比如 $(u_0, u_1, \ldots, u_{n-1})$ 上的 Evaluation 证明问题，转化为 Univariate 多项式在一个点或多个点上的 Evaluation 证明呢？
 
 论文 [PST13] 给出了一个上述定理的多元多项式版本：
 
@@ -284,19 +283,19 @@ $$
 [[v]]_n = v\cdot\Phi_n(X)
 $$
 
-看下等式右边的 $[[\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_n$，这一项是将 $k$ 维的 HyperCube填充到 $n$ 维的 HyperCube 上，然后再进行映射。根据前面的讨论，我们需要将 $k$ 维的 HyperCube 连续复制 $2^{n-k}$ 次，从而填满 $n$ 维 HyperCube：
+看下等式右边的 $[[\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_n$，这一项是将 $k$ 维的 Hypercube填充到 $n$ 维的 Hypercube 上，然后再进行映射。根据前面的讨论，我们需要将 $k$ 维的 Hypercube 连续复制 $2^{n-k}$ 次，从而填满 $n$ 维 Hypercube：
 
 $$
-[[f(X_0, X_1, \ldots, X_{k-1})]]_n = \Phi_{n-k}(X^{2^k})\cdot [[f(X_0, X_1, \ldots, X_{k-1})]]_{k}
+[[\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_n = \Phi_{n-k}(X^{2^k})\cdot [[\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_{k}
 $$
 
-再解释下，因为 $\Phi_{n-k}(X^{2^k})$ 表示了一个间隔为 $2^k$ 的系数向量，其定义展开如下：
+再解释下, $\Phi_{n-k}(X^{2^k})$ 定义展开如下：
 
 $$
 \Phi_{n-k}(X^{2^k}) = 1 + X^{2^k} + X^{2\cdot 2^k} + \ldots + X^{(2^{n-k}-1)\cdot 2^k}
 $$
 
-它的系数向量为：
+它的系数为一个若干个 $0,1$ 组成，并且每两个 $1$ 之间位置间隔为 $2^k$：
 
 $$
 (1, 0, 0 ,\ldots, 0, \quad 1, 0 ,\ldots, 0, \quad 1, 0 ,\ldots, 0, \quad 1)
@@ -304,21 +303,21 @@ $$
 
 假设有一个次数受限的多项式 $g(X)\in\mathbb{F}_q[X]$，满足 $\deg(g)<2^k$ ，那么多项式 $\Phi_{n-k}(X^{2^k})\cdot g$ 就表示了一个 $2^k-1$ 次多项式 $g(X)$ 被 $2^k$ 间隔的系数向量重复了 $2^{n-k}$ 次，最终得到了一个 $2^n-1$ 次的多项式。
 
-最后还剩下 $[[X_k\cdot \tilde{f}(X_0, X_1, \ldots, X_{k-1})]]_n$ 这项，如何继续化简它呢？
+最后还剩下 $[[X_k\cdot \tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_n$ 这项，如何继续化简它呢？
 
-我们可以分两步来构造它的映射，首先看 $\tilde{f}(X_0, X_1, \ldots, X_{k-1})$ 可以由一个 k 维 Hypercube 表示，然后当乘以一个新的未知数 $X_k$，它就变成了一个 $k+1$ 维的 HyperCube。而这个新 Hypercube 可以分为两部分，一部分都是零（当 $X_k=0$ 时），另一部分正是 $\tilde{f}(X_0, X_1, \ldots, X_{k-1})$ 。所以我们先利用 $\Phi_n(X)$ 函数，构造一个 HyperCube 的重复模式，其中间隔为 $2^{k+1}$，然后把 $k$ 维 HyperCube 进行 $2^{n-k-1}$ 次重复，于是我们得到了下面的多项式。
-
-$$
-\Phi_{n-k-1}(X^{2^{k+1}})\cdot [[\tilde{f}(X_0, X_1, \ldots, X_{k-1})]]_{k}
-$$
-
-不过这只是第一步。上面这个 Univariate 多项式和 $[[X_k\cdot \tilde{f}(X_0, X_1, \ldots, X_{k-1})]]_n$ 还不相等，因为前者在每一个重复的 $k+1$ 维 HyperCube 中，$X_k=1$ 部分为零，而 $X_k=0$ 部分放的是 $k$ 维 HyberCube $\tilde{f}(X_0, X_1, \ldots, X_{k-1})$，这与我们想要的 HyperCube 相反。我们需要再为它补上 $X^{2^k}$ 这样的移位因子，这样就可以调换 $X_k$ 所对应的 $k$ 维的 HyperCube 的位置（从低位区域转移到高位区域）：
+我们可以分两步来构造它的映射，首先看 $\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})$ 可以由一个 k 维 Boolean Hypercube 表示，然后当乘以一个新的未知数 $X_k$，它就变成了一个需要 $k+1$ 维的 Boolean Hypercube 表示的 MLE 多项式。而这个新 Boolean Hypercube 可以分为两部分，一部分都是零（当 $X_k=0$ 时），另一部分正是 $\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})$ （当 $X_k=1$ 时）。所以我们先利用 $\Phi_n(X)$ 函数，构造一个 Boolean Hypercube 的重复模式，其中间隔为 $2^{k+1}$，然后把 $k$ 维 Boolean Hypercube 进行 $2^{n-k-1}$ 次复制，于是我们得到了下面的多项式。
 
 $$
-[[X_k\cdot \tilde{f}(X_0, X_1, \ldots, X_{k-1})]]_n = X^{2^k}\cdot \Phi_{n-k-1}(X^{2^{k+1}})\cdot [[\tilde{f}(X_0, X_1, \ldots, X_{k-1})]]_{k}
+\Phi_{n-k-1}(X^{2^{k+1}})\cdot [[\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_{k}
 $$
 
-下图用一个特定的例子演示，其中 $k=3, n=5$， 左边为移位前的 $5$ 维 HyperCube，其中上下两半场表示第五个维度，每个半场有两个三维的立方体，表示第四个维度。我们可以看到，仅当 $X_3=0$ 的三维立方体恰好对应 $\tilde{f}(X_0, X_1, X_2)$，而当 $X_3=1$ 时，三维立方体上全为零。而下图右边为移位后的 $5$ 维 HyperCube，其中的 $\tilde{f}(X_0, X_1, X_2)$ 立方体被移位到了右边，也就是 $X_3=1$ 所对应的区域。
+不过这只是第一步。上面这个 Univariate 多项式和 $[[X_k\cdot \tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_n$ 还不相等，因为前者在每一个重复的 $k+1$ 维 Boolean Hypercube 中，$X_k=1$ 部分为零，而 $X_k=0$ 部分放的则是 $k$ 维 Boolean Hybercube $\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})$，这与我们想要的 Boolean Hypercube 不同。我们需要再为它补上 $X^{2^k}$ 这样的移位因子，这样就可以调换 $X_k$ 所对应的 $k$ 维的 Boolean Hypercube 的位置（从低位区域转移到高位区域）。映射后的结果为：
+
+$$
+[[X_k\cdot \tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_n = X^{2^k}\cdot \Phi_{n-k-1}(X^{2^{k+1}})\cdot [[\tilde{q}_k(X_0, X_1, \ldots, X_{k-1})]]_{k}
+$$
+
+下图用一个特定的例子演示，其中 $k=3, n=5$， 左边为移位前的 $5$ 维 Boolean Hypercube，其中上下两半场表示第五个维度，每个半场有两个三维立方体，表示第四个维度。我们可以看到，仅当 $X_3=0$ 的三维立方体恰好对应 $\tilde{f}(X_0, X_1, X_2)$，而当 $X_3=1$ 时，三维立方体上全为零。而下图右边为移位后的 $5$ 维 Boolean Hypercube，其中的 $\tilde{f}(X_0, X_1, X_2)$ 立方体被移位到了右边，也就是 $X_3=1$ 所对应的区域。
 
 ![alt text](img/image-6.png)
 
@@ -379,7 +378,7 @@ $$
 
 #### Witness
 
-- MLE 多项式  $\tilde{f}$ 在 $n$ 维 HyperCube 上的点值向量 $\mathbf{a} = (a_0, a_1, \ldots, a_{2^n-1})$
+- MLE 多项式  $\tilde{f}$ 在 $n$ 维 Hypercube 上的点值向量 $\mathbf{a} = (a_0, a_1, \ldots, a_{2^n-1})$
 
 #### Round 1
 
@@ -544,7 +543,7 @@ $$
 
 $$
 h(X)=(h_0(X) + \alpha\cdot h_1(X))\cdot X^{D_{max}-2^n+2}
-$$ 
+$$
 
 #### Verification 
 
@@ -576,5 +575,4 @@ Zeromorph 总体上来说是一个简洁的协议，它将 MLE 的点值式直�
 
 - [KT23] Kohrita, Tohru, and Patrick Towa. "Zeromorph: Zero-knowledge multilinear-evaluation proofs from homomorphic univariate commitments." Cryptology ePrint Archive (2023). https://eprint.iacr.org/2023/917 
 - [PST13] Papamanthou, Charalampos, Elaine Shi, and Roberto Tamassia. "Signatures of correct computation." Theory of Cryptography Conference. Berlin, Heidelberg: Springer Berlin Heidelberg, 2013. https://eprint.iacr.org/2011/587
-
 

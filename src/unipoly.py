@@ -886,11 +886,6 @@ def precompute_twiddles_for_fft(omega: F, domain_size: int, is_inversed: bool = 
     return twiddles
 
 
-# def test_precompute_twiddles_for_fft():
-#     Omega
-
-
-
 # Example usage
 if __name__ == "__main__":
     # f(X) = X^3 + 3X^2 + 2X + 5

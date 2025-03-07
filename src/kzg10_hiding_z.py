@@ -17,7 +17,6 @@ from kzg10_non_hiding import Commitment
 
 class KZG10_PCS:
     """KZG10 commitment scheme implementation."""
-    params: dict
 
     def __init__(self, G1, G2, Scalar, max_degree, debug=False):
         """
@@ -124,10 +123,12 @@ class KZG10_PCS:
                     a = lagrange_bases[r].ec_mul(w)
                     lagrange_bases[r] = lagrange_bases[l] - a
                     lagrange_bases[l] = lagrange_bases[l] + a
-                w = w * w_exp
-            sep *= 2
-        
-        self.params['lagrange_of_g'] = [lagrange_bases[i].ec_mul(domain_size_inv) for i in range(domain_size)]
+            x = self.kzg_pcs.commit(qi_poly)
+            print(f"P> x={x}")
+            qi_cm, qi_blinder = x
+            print(f"P> qi_cm={qi_cm}")
+            print(f"P> qi_blinder={qi_blinder}")
+
 
         return
 
@@ -182,15 +183,14 @@ class KZG10_PCS:
 
         return Commitment(cm), r
     
-
-    def commit(self, polynomial: UniPolynomial) -> tuple[Commitment, Field]:
+    def commit_with_blinder(self, polynomial: UniPolynomial, blinder: Field) -> Commitment:
         """
         Commit to a polynomial.
         
         Args:
             polynomial: The polynomial to commit to
                 * its coefficients have no leading zeros
-            hiding_bound: The upper bound for the hiding polynomial degree
+            blinder: The random scalar used for hiding
 
         Returns:
             tuple: (Commitment, random_ints)
@@ -204,10 +204,7 @@ class KZG10_PCS:
 
         cm = msm_basic(self.params['powers_of_tau_g'], polynomial.coeffs)
 
-        r = self.Scalar.rand()
-        assert r != self.Scalar.zero(), f"Random scalar is zero, r: {r}"
-
-        hiding_cm = self.params['xi_g'].ec_mul(r)
+        hiding_cm = self.params['xi_g'].ec_mul(blinder)
         cm += hiding_cm
 
         # Final debug assertion
@@ -215,9 +212,30 @@ class KZG10_PCS:
             assert isinstance(cm, self.G1)
 
         if self.debug:
-            return Commitment(cm, oob=(polynomial.coeffs)), r
+            return Commitment(cm, oob=(polynomial.coeffs))
 
-        return Commitment(cm), r
+        return Commitment(cm)
+    
+    def commit(self, polynomial: UniPolynomial) -> tuple[Commitment, Field]:
+        """
+        Commit to a polynomial.
+        
+        Args:
+            polynomial: The polynomial to commit to
+                * its coefficients have no leading zeros
+
+        Returns:
+            tuple: (Commitment, random_ints)
+                - Commitment: The commitment to the polynomial
+                - random_ints: The random integers used for hiding
+        """
+
+        r = self.Scalar.rand()
+        assert r != self.Scalar.zero(), f"Random scalar is zero, r: {r}"
+
+        cm = self.commit_with_blinder(polynomial, r)
+        print(f"KZG10> cm={cm}")
+        return cm, r
     
     def prove_evaluation(self, polynomial: UniPolynomial, point: Field, randomness: Field) -> tuple[Field, dict]:
         """

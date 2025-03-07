@@ -321,7 +321,6 @@ In fact, if we know that $f(X)$ will be opened at most $k<d$ times throughout it
 
 Take an extreme example where the Degree of $r(X)$ is 1, then when the Prover proves the value at a different point again, say $f(z')=v'$, the Verifier would have the ability to recover $r(X)$, thus breaking the Perfect Hiding property of the commitment to $f(X)$.
 
-
 ### Evaluation-with-degree-bound proof
 
 The next question is, in this Hiding-KZG10 scheme, can we prove $f(z)=v$ and $\deg{f}\leq d$ simultaneously like in the first scheme? The paper [CHMMVW19] provided a scheme, which is different from the first scheme. This scheme requires an interactive process (or using Fiat-Shamir transformation) when proving Evaluation with degree bound, that is, the Verifier needs to provide a public random challenge number.
