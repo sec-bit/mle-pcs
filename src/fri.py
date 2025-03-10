@@ -51,7 +51,7 @@ class FRI:
         if cls.security_level % log_2(rate) != 0:
             num_verifier_queries += 1
 
-        proof = cls.prove_low_degree(code, code_tree, quotient, rate, degree_bound, gen, num_verifier_queries, point, val, transcript, debug)
+        proof = cls.prove_low_degree(code, code_tree, quotient, rate, degree_bound, gen, num_verifier_queries, transcript, debug)
 
         return {
             'proof': proof,
@@ -77,10 +77,11 @@ class FRI:
         cls.verify_low_degree(point, value, degree_bound, rate, proof['proof'], gen, num_verifier_queries, transcript, debug)
 
     @staticmethod
-    def prove_low_degree(code, code_tree, evals, rate, degree_bound, gen, num_verifier_queries, point, val, transcript, debug=False):
+    def prove_low_degree(code, code_tree, evals, rate, degree_bound, gen, num_verifier_queries, transcript, debug=False):
         assert is_power_of_two(degree_bound)
 
-        # transcript.append_message(b"first_oracle", code_tree.root.encode('ascii'))
+        lambda_ = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"lambda", 4))) for _ in range(4)])
+        evals = [(BabyBearExtElem.one() + lambda_ * gen ** i) * evals[i] for i in range(len(evals))]
 
         alpha = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))) for _ in range(4)])
 
@@ -212,7 +213,9 @@ class FRI:
     
     @staticmethod
     def verify_queries(proof, k, num_vars, num_verifier_queries, T, point, value, transcript, debug=False):
-        # transcript.append_message(b"first_oracle", bytes(proof['first_oracle'], 'ascii'))
+
+        lambda_ = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"lambda", 4))) for _ in range(4)])
+
         alpha = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))) for _ in range(4)])
 
         fold_challenges = [alpha]
@@ -243,8 +246,8 @@ class FRI:
                 if debug: print("table:", table)
                 if i != len(mps) - 1:
                     if i == 0:
-                        code_left = (code_left - value) / (table[x0] - point)
-                        code_right = (code_right - value) / (-table[x0] - point)
+                        code_left = (BabyBearExtElem.one() + lambda_ * table[x0]) * (code_left - value) / (table[x0] - point)
+                        code_right = (BabyBearExtElem.one() - lambda_ * table[x0]) * (code_right - value) / (-table[x0] - point)
                     f_code_folded = cur_path[i + 1][0 if x0 < num_vars_copy / 4 else 1]
                     alpha = fold_challenges[i]
                     left = (code_left + code_right)/BabyBear(2)

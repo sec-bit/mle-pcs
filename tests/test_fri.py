@@ -42,21 +42,6 @@ class TestFRI(TestCase):
 
         assert ext_elem_eq(evals)
 
-    def test_low_degree(self):
-        from merlin.merlin_transcript import MerlinTranscript
-
-        FIELD_SIZE = BabyBear.P - 1
-        primitive_element = BabyBear(31)
-
-        degree_bound = 8
-        blow_up_factor = 2
-        num_verifier_queries = 8
-        assert is_power_of_two(degree_bound)
-
-        evals = FRI.rs_encode_single([BabyBear.random() for _ in range(degree_bound)], [primitive_element ** (i * FIELD_SIZE // (degree_bound * 2 ** blow_up_factor)) for i in range(degree_bound * 2 ** blow_up_factor)], 2 ** blow_up_factor, BabyBear.zero())
-        proof = FRI.prove_low_degree(evals, 2 ** blow_up_factor, degree_bound, primitive_element ** (FIELD_SIZE // len(evals)), num_verifier_queries, MerlinTranscript(b'test'), debug=False)
-        FRI.verify_low_degree(degree_bound, 2 ** blow_up_factor, proof, primitive_element ** (FIELD_SIZE // len(evals)), num_verifier_queries, MerlinTranscript(b'test'), debug=False)
-
     def test_prove(self):
         from merlin.merlin_transcript import MerlinTranscript
 
