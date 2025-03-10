@@ -16,7 +16,7 @@ class MMCS:
             return wrapped
         cls.hash = wrapper(hash)
         cls.compress = wrapper(compress)
-        cls.default_digest = default_digest
+        cls.default_digest = cls.hash(default_digest)
         cls.configured = True
 
     @classmethod

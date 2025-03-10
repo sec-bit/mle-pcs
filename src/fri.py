@@ -84,9 +84,6 @@ class FRI:
 
         alpha = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))) for _ in range(4)])
 
-        for i in range(len(evals)):
-            assert code[i] - val == (gen ** i - point) * evals[i], f"code[i] - val: {code[i] - val}, (gen ** i - point) * evals[0][i]: {(gen ** i - point) * evals[0][i]}"
-
         trees = []
         tree_evals = []
         for _ in range(log_2(degree_bound)):

@@ -14,10 +14,10 @@ class BatchFRI:
         if debug: print("evals:", evals)
         MMCS.configure(lambda x: sha256(str(x).encode('ascii')).digest(), lambda x: sha256(sha256(x[0]).digest() + sha256(x[1]).digest()).digest(), b'default_digest')
         sorted_evals = sorted(evals, key=lambda x: len(x), reverse=True)
-        # coeffs = [UniPolynomial.compute_coeffs_from_evals_fast(sorted_evals[i], domains[i][:len(sorted_evals[i])]) for i in range(len(sorted_evals))]
+
         coeffs = [UniPolynomial.ntt_coeffs_from_evals(sorted_evals[i], log_2(len(sorted_evals[i])), domains[i][1] ** rate, one) for i in range(len(sorted_evals))]
         if debug: print("coeffs:", coeffs, ", domains:", domains)
-        # codes = [cls.rs_encode_single(coeffs[i], domains[i], rate) for i in range(len(coeffs))]
+
         codes = [UniPolynomial.ntt_evals_from_coeffs(coeffs[i] + [0] * (len(sorted_evals[i]) * rate - len(coeffs[i])), log_2(len(sorted_evals[i]) * rate), domains[i][1]) for i in range(len(sorted_evals))]
         if debug: print("codes:", codes)
         if debug: assert evals == [codes[i][:len(evals[i])] for i in range(len(evals))], f"evals: {evals}, codes: {codes}"
@@ -29,53 +29,23 @@ class BatchFRI:
         assert len(vals) == len(codes), f"len(vals): {len(vals)}, len(codes): {len(codes)}"
         assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
 
-        quotients = [[(codes[j][i] - vals[j]) / (domains[j][i] - point) for i in range(len(codes[j]))] for j in range(len(codes))]
-        # quotients = []
-        # for j in range(len(codes)):
-        #     quotients.append([])
-        #     for i in range(len(codes[j])):
-        #         if debug: print("codes[j][i]:", codes[j][i], "vals[j]:", vals[j], "domains[j][i]:", domains[j][i], "point:", point, "quotient:", (codes[j][i] - vals[j]) / (domains[j][i] - point))
-        #         quotients[-1].append((codes[j][i] - vals[j]) / (domains[j][i] - point))
-
-        # if debug:
-        #     coeffs = UniPolynomial.compute_coeffs_from_evals_fast(quotients[0], domains[0]) + [0]
-        #     print("domain:", domains[0])
-        #     print("coeffs:", coeffs)
-        #     print("quotients[0]:", quotients[0])
-        #     encoded = cls.rs_encode_single(coeffs, domains[0], rate)
-        #     assert encoded == quotients[0], f"failed to rs encode, encoded: {encoded}, quotients[0]: {quotients[0]}"
-        #     assert len(coeffs) <= len(quotients[0]) // rate, f"coeffs: {coeffs}, quotients[0]: {quotients[0]}, rate: {rate}"
-
-        quotients_commitment = MMCS.commit(quotients, debug=False)
-        layers = quotients_commitment['layers']
-        transcript.append_message(b"quotient", layers[-1][0])
-        for i in range(len(vals)):
-            transcript.append_message(b"value at z", str(vals[i]).encode('ascii'))
-
-        z = from_bytes(transcript.challenge_bytes(b"z", 4))
-        code_at_z, commit_proof, commit_root = MMCS.open(z, code_tree, debug=debug)
-        quotient_at_z_proof = MMCS.open(z, quotients_commitment, debug=False)
-        if debug: assert quotient_at_z_proof[2] == layers[-1][0], f"failed to open quotient, z: {z}, quotient_at_z_proof: {quotient_at_z_proof}, layers[-1][0]: {layers[-1][0]}"
-
-        if debug: print("prover")
-        if debug: print("z:", z)
-        if debug: print("code_at_z:", code_at_z)
-        if debug: print("commit_proof:", commit_proof)
-        if debug: print("commit_root:", commit_root)
-        if debug: MMCS.verify(z, code_at_z, commit_proof, commit_root, debug=False)
+        quotients = []
+        for i in range(len(codes)):
+            tmp = []
+            for j in range(len(codes[i])):
+                # print("codes[i][j]:", codes[i][j], "vals[i]:", vals[i], "domains[i][j]:", domains[i][j], "point:", point)
+                tmp.append((codes[i][j] - vals[i]) / (domains[i][j] - point))
+            quotients.append(tmp)
 
         num_verifier_queries = cls.security_level // log_2(rate)
         if cls.security_level % log_2(rate) != 0:
             num_verifier_queries += 1
 
-        low_degree_proof = cls.prove_low_degree(quotients, rate, degree_bound, gen, num_verifier_queries, transcript, one, debug)
+        low_degree_proof = cls.prove_low_degree(codes, code_tree, quotients, rate, degree_bound, gen, num_verifier_queries, transcript, one, debug)
 
         return {
             'low_degree_proof': low_degree_proof,
-            'code_commitment': commit_root,
-            'code_at_z_proof': commit_proof,
-            'quotient_at_z_proof': quotient_at_z_proof,
-            'code_at_z': code_at_z,
+            'code_commitment': code_tree['layers'][-1][0],
             'degree_bound': degree_bound,
         }
     
@@ -88,121 +58,88 @@ class BatchFRI:
 
         low_degree_proof = proof['low_degree_proof']
         code_commitment = proof['code_commitment']
-        code_at_z_proof = proof['code_at_z_proof']
-        quotient_at_z_proof = proof['quotient_at_z_proof']
-        quotient_at_z = quotient_at_z_proof[0]
-        quotient_proof = quotient_at_z_proof[1]
-        quotient_commitment = quotient_at_z_proof[2]
-        code_at_z = proof['code_at_z']
-
-        # transcript.append_message(b"code", code_commitment)
-        # point = int.from_bytes(transcript.challenge_bytes(b"point", 4), 'big')
-        # point = gen ** point * shift
-        transcript.append_message(b"quotient", quotient_commitment)
-
-        for v in vals:
-            transcript.append_message(b"value at z", str(v).encode('ascii'))
-
-        z = from_bytes(transcript.challenge_bytes(b"z", 4))
-        
-        if debug: print("verifier")
-        if debug: print("z:", z)
-        if debug: print("code_at_z:", code_at_z)
-        if debug: print("code_at_z_proof:", code_at_z_proof)
-        if debug: print("code_commitment:", code_commitment)
-        if debug: print("quotient_at_z:", quotient_at_z)
-        if debug: print("quotient_at_z_proof:", quotient_proof)
-        if debug: print("quotient_commitment:", quotient_commitment)
-        MMCS.verify(z, code_at_z, code_at_z_proof, code_commitment, debug=False)
-        MMCS.verify(z, quotient_at_z, quotient_proof, quotient_commitment, debug=False)
-
-        for i, (c, q, v) in enumerate(zip(code_at_z, quotient_at_z, vals)):
-            assert c - v == q * (domains[i][z >> (32 - log_2(degree_bound * rate) + i)] - point), f"failed to verify batch fri, z: {z >> (32 - log_2(degree_bound * rate) - i)}, c: {c}, v: {v}, q: {q}, point: {point}, domain[z]: {domains[i][z >> (32 - log_2(degree_bound * rate) - i)]}"
 
         num_verifier_queries = cls.security_level // log_2(rate)
         if cls.security_level % log_2(rate) != 0:
             num_verifier_queries += 1
 
-        cls.verify_low_degree(degree_bound, rate, low_degree_proof, gen, num_verifier_queries, transcript, debug)
+        cls.verify_low_degree(degree_bound, rate, low_degree_proof, gen, num_verifier_queries, point, vals, transcript, debug)
 
     @classmethod
-    def prove_low_degree(cls, evals, rate, degree_bound, gen, num_verifier_queries, transcript, one=1, debug=False):
+    def prove_low_degree(cls, codes, code_tree, quotients, rate, degree_bound, gen, num_verifier_queries, transcript, one=1, debug=False):
         assert is_power_of_two(degree_bound)
-        assert len(evals[0]) == degree_bound * rate, f"evals[0]: {evals[0]}, degree_bound: {degree_bound}, rate: {rate}"
+        assert len(quotients[0]) == degree_bound * rate, f"evals[0]: {quotients[0]}, degree_bound: {degree_bound}, rate: {rate}"
         assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
 
-        evals_copy = evals
-
-        folded = evals[0]
+        folded = [one - one] * len(quotients[0])
         if debug:
             coeffs = UniPolynomial.compute_coeffs_from_evals_fast(folded, [gen ** i for i in range(len(folded))])
             for i in range(len(coeffs), len(folded) // rate):
                 assert coeffs[i] == one - one, f"coeffs: {coeffs}, folded: {folded}, rate: {rate}"
-        first_tree = MerkleTree(folded)
-        transcript.append_message(b"first_oracle", first_tree.root.encode('ascii'))
-
-        alpha = transcript.challenge_bytes(b"alpha", 4)
-        alpha = from_bytes(alpha)
+        first_tree = code_tree
 
         trees = []
         tree_evals = []
-        for i in range(log_2(degree_bound)):
+        for i in range(log_2(degree_bound) - 1):
+
+            alpha = transcript.challenge_bytes(b"alpha", 4)
+            alpha = from_bytes(alpha)
+
             if debug: print("folded:", folded)
             if debug: print("alpha:", alpha)
             if debug: print("generator:", gen)
             if debug: print("domain:", [gen ** i for i in range(len(folded) // 2)])
-            if debug: print("evals[i + 1]:", evals[i + 1])
+            if debug: print("evals[i + 1]:", quotients[i + 1])
+            folded = [x + y for x, y in zip(folded, quotients[i])]
+            tree = MerkleTree(folded)
+            trees.append(tree)
+            tree_evals.append(folded)
             folded = cls.fold(folded, alpha, gen)
             if debug:
                 coeffs1 = UniPolynomial.compute_coeffs_from_evals_fast(folded, [gen ** (2 * i) for i in range(len(folded))])
-                coeffs2 = UniPolynomial.compute_coeffs_from_evals_fast(evals[i + 1], [gen ** (2 * i) for i in range(len(evals[i + 1]))])
+                coeffs2 = UniPolynomial.compute_coeffs_from_evals_fast(quotients[i + 1], [gen ** (2 * i) for i in range(len(quotients[i + 1]))])
                 for j in range(len(coeffs1), len(folded) // rate):
                     assert coeffs1[j] == one - one, f"i: {i}, coeffs1: {coeffs1}, folded: {folded}, rate: {rate}"
-                for j in range(len(coeffs2), len(evals[i + 1]) // rate):
-                    assert coeffs2[j] == one - one, f"i: {i}, coeffs2: {coeffs2}, evals[i + 1]: {evals[i + 1]}, rate: {rate}"
-            assert len(folded) == len(evals[i + 1]), f"len(folded): {len(folded)}, len(evals[i + 1]): {len(evals[i + 1])}"
-            folded = [x + y for x, y in zip(folded, evals[i + 1])]
-            if i != log_2(degree_bound) - 1:
-                tree = MerkleTree(folded)
-                trees.append(tree)
-                tree_evals.append(folded)
+                for j in range(len(coeffs2), len(quotients[i + 1]) // rate):
+                    assert coeffs2[j] == one - one, f"i: {i}, coeffs2: {coeffs2}, evals[i + 1]: {quotients[i + 1]}, rate: {rate}"
+            assert len(folded) == len(quotients[i + 1]), f"len(folded): {len(folded)}, len(evals[i + 1]): {len(quotients[i + 1])}"
 
-                transcript.append_message(b"oracle", tree.root.encode('ascii'))
-                alpha = transcript.challenge_bytes(b"alpha", 4)
-                alpha = from_bytes(alpha)
+            transcript.append_message(b"oracle", tree.root.encode('ascii'))
 
             gen *= gen
 
         if debug:
-            assert len(folded) == rate, f"folded: {folded}, rate: {rate}"
+            assert len(folded) == rate - 1, f"folded: {folded}, rate: {rate}"
             for i in range(len(folded)):
                 if i != 0:
                     assert folded[i] == folded[0], f"folded: {folded}"
 
         # query phase
         # assert len(evals_copy) == degree_bound * rate, f"evals_copy: {evals_copy}, degree_bound: {degree_bound}, rate: {rate}"
-        query_paths, merkle_paths = cls.query_phase(transcript, first_tree, evals_copy, trees, tree_evals, degree_bound * rate, num_verifier_queries, debug)
+        query_paths, merkle_paths, first_merkle_paths = cls.query_phase(transcript, first_tree, codes, trees, tree_evals, degree_bound * rate, num_verifier_queries, debug)
 
         return {
             'query_paths': query_paths,
             'merkle_paths': merkle_paths,
-            'first_oracle': first_tree.root,
+            'first_merkle_paths': first_merkle_paths,
             'intermediate_oracles': [tree.root for tree in trees],
             'degree_bound': degree_bound,
             'final_value': folded[0],
+            'first_oracle': first_tree['layers'][-1][0],
         }
     
     @classmethod
-    def verify_low_degree(cls, degree_bound, rate, proof, gen, num_verifier_queries, transcript, debug=False):
+    def verify_low_degree(cls, degree_bound, rate, proof, gen, num_verifier_queries, point, vals, transcript, debug=False):
         log_degree_bound = log_2(degree_bound)
         log_evals = log_2(degree_bound * rate)
         T = [[(gen**(2 ** j)) ** i for i in range(2 ** (log_evals - j - 1))] for j in range(0, log_evals)]
         if debug: print("T:", T)
-        cls.verify_queries(proof, log_degree_bound, degree_bound * rate, num_verifier_queries, T, transcript, debug)
+        cls.verify_queries(proof, log_degree_bound, degree_bound * rate, num_verifier_queries, T, point, vals, transcript, debug)
 
     @classmethod
-    def query_phase(cls, transcript: MerlinTranscript, first_tree: MerkleTree, evals: list, trees: list, oracles: list, num_vars, num_verifier_queries, debug=False):
-        queries = [from_bytes(transcript.challenge_bytes(b"queries", 4)) % num_vars for _ in range(num_verifier_queries)]
+    def query_phase(cls, transcript: MerlinTranscript, first_tree, codes: list, quotients: list, trees: list, oracles: list, num_vars, num_verifier_queries, debug=False):
+        num_vars = len(codes[0])
+        queries = [from_bytes(transcript.challenge_bytes(b"queries", 4)) % (num_vars // 2) for _ in range(num_verifier_queries)]
         if debug: print("queries:", queries)
 
         query_paths = []
@@ -213,84 +150,93 @@ class BatchFRI:
             indices = []
             reduced_openings = []
 
-            if debug: print("first_oracle:", evals[0])
-            cur_path.append(evals[0][q ^ (num_vars_copy // 2)])
-            reduced_openings.append(evals[0][q])
-            indices.append(q)
-            q = min(q, q ^ (num_vars_copy // 2))
-            num_vars_copy >>= 1
-
-            for i, oracle in enumerate(oracles):
-                if debug: print("oracle:", oracle)
-                cur_path.append(oracle[q ^ (num_vars_copy // 2)])
-                reduced_openings.append(evals[i+1][q])
-                indices.append(q)
-                q = min(q, q ^ (num_vars_copy // 2))
+            for i in range(len(oracles)):
+                next_q = min(q, q ^ (num_vars_copy // 2))
+                if debug: print("oracle:", oracles[i])
+                assert next_q < len(oracles[i]), f"q: {q}, oracle: {oracles[i]}, num_vars_copy: {num_vars_copy}"
+                assert num_vars_copy == len(codes[i]), f"num_vars_copy: {num_vars_copy}, len(codes[i]): {len(codes[i])}"
+                cur_path.append(oracles[i][next_q])
+                reduced_openings.append(codes[i][q])
+                indices.append(next_q)
+                q = next_q
                 num_vars_copy >>= 1
-            
-            reduced_openings.append(evals[-1][q])
+
+            reduced_openings.append(codes[-2][q])
             
             query_paths.append((cur_path, indices, reduced_openings))
 
         # merkle paths
         merkle_paths = []
+        first_merkle_paths = []
+        for q, (cur_path, indices, reduced_openings) in zip(queries, query_paths):
+            mmcs_proof = MMCS.open(q, first_tree, debug)
+            first_merkle_paths.append(mmcs_proof[1])
+            if debug:
+                num_vars_copy = num_vars
+                openings = []
+                idx = q
+                for i in range(len(codes) - 1):
+                    assert idx < len(codes[i]), f"idx: {idx}, len(codes[i]): {len(codes[i])}"
+                    assert num_vars_copy == len(codes[i]), f"num_vars_copy: {num_vars_copy}, len(codes[i]): {len(codes[i])}"
+                    openings.append((codes[i][idx]))
+                    idx = min(idx, idx ^ (num_vars_copy // 2))
+                    num_vars_copy >>= 1
+                assert openings == reduced_openings, f"openings: {openings}, reduced_openings: {reduced_openings}"
+                assert mmcs_proof[0] == reduced_openings + [codes[-1][0]], f"mmcs_proof[0]: {mmcs_proof[0]}, openings: {openings}, codes[-1][0]: {codes[-1][0]}"
+                assert mmcs_proof[2] == first_tree['layers'][-1][0], f"mmcs_proof[2]: {mmcs_proof[2]}, first_tree['layers'][-1][0]: {first_tree['layers'][-1][0]}"
+                print("prover MMCS.verify:", q, reduced_openings + [codes[-1][0]], mmcs_proof[1], first_tree['layers'][-1][0])
+                MMCS.verify(q, reduced_openings + [codes[-1][0]], mmcs_proof[1], first_tree['layers'][-1][0], debug)
+
         for _, indices, _ in query_paths:
             cur_query_paths = []
             for i, idx in enumerate(indices):
-                if i == 0:
-                    cur_query_paths.append(first_tree.get_authentication_path(idx))
-                    if debug: print("mp:", cur_query_paths[-1])
-                    if debug: print("commit:", first_tree.root)
-                    if debug: print("idx:", idx)
-                else:
-                    cur_tree = trees[i - 1]
-                    assert isinstance(cur_tree, MerkleTree)
-                    cur_query_paths.append(cur_tree.get_authentication_path(idx))
-                    if debug: print("mp:", cur_query_paths[-1])
-                    if debug: print("commit:", cur_tree.root)
-                    if debug: print("idx:", idx)
+                cur_tree = trees[i]
+                assert isinstance(cur_tree, MerkleTree)
+                cur_query_paths.append(cur_tree.get_authentication_path(idx))
+                verify_decommitment(idx, oracles[i][idx], cur_query_paths[-1], cur_tree.root)
+                # print("prover verify_decommitment:", idx, oracles[i][idx], cur_query_paths[-1], cur_tree.root)
+                if debug: print("mp:", cur_query_paths[-1])
+                if debug: print("commit:", cur_tree.root)
+                if debug: print("idx:", idx)
             merkle_paths.append(cur_query_paths)
 
-        return query_paths, merkle_paths
+        return query_paths, merkle_paths, first_merkle_paths
     
     @classmethod
-    def verify_queries(cls, proof, k, num_vars, num_verifier_queries, T, transcript, debug=False):
+    def verify_queries(cls, proof, k, num_vars, num_verifier_queries, T, point, vals, transcript, debug=False):
         first_oracle = proof['first_oracle']
         intermediate_oracles = proof['intermediate_oracles']
         query_paths = proof['query_paths']
         merkle_paths = proof['merkle_paths']
+        first_merkle_paths = proof['first_merkle_paths']
 
-        transcript.append_message(b"first_oracle", bytes(first_oracle, 'ascii'))
-        alpha = transcript.challenge_bytes(b"alpha", 4)
-        alpha = from_bytes(alpha)
-
-        fold_challenges = [alpha]
+        fold_challenges = []
         if debug: print("intermediate_oracles:", intermediate_oracles)
         if debug: print("k:", k)
         for i in range(k-1):
-            transcript.append_message(bytes(f'oracle', 'ascii'), bytes(intermediate_oracles[i], 'ascii'))
             fold_challenges.append(from_bytes(transcript.challenge_bytes(b"alpha", 4)))
+            transcript.append_message(bytes(f'oracle', 'ascii'), bytes(intermediate_oracles[i], 'ascii'))
 
         queries = [from_bytes(transcript.challenge_bytes(b"queries", 4)) % num_vars for _ in range(num_verifier_queries)]
 
         # query loop
-        for q, (cur_path, indices, ros), mps in zip(queries, query_paths, merkle_paths):
+        for q, (cur_path, indices, ros), mps, fmp in zip(queries, query_paths, merkle_paths, first_merkle_paths):
             if debug: print("cur_path:", cur_path)
-            num_vars_copy = num_vars
+            num_vars_copy = num_vars // 2
             folded = 0
 
+            q = min(q, q ^ num_vars_copy)
+            MMCS.verify(q, ros + [vals[-1]], fmp, first_oracle, debug)
+
             # fold loop
-            for i in range(k):
+            for i in range(k-1):
                 if debug: print("q:", q)
                 if debug: print("num_vars_copy:", num_vars_copy)
                 if debug: print("ros[i]:", ros[i])
                 if debug: assert indices[i] == q, f"indices: {indices}, q: {q}"
-                folded += ros[i]
-
-                if i == 0:
-                    assert verify_decommitment(q, folded, mps[i], first_oracle), "failed to verify decommitment at first level"
-                else:
-                    assert verify_decommitment(q, folded, mps[i], intermediate_oracles[i - 1]), f"failed to verify decommitment at level {i}, folded: {folded}, mp: {mps[i]}, intermediate_oracles[i - 1]: {intermediate_oracles[i - 1]}"
+                # print("ros[i]:", ros[i], "vals[i]:", vals[i], "T[i][q]:", T[i][q], "point:", point)
+                cur_quotient = (ros[i] - vals[i]) / (T[i][q] - point)
+                folded += cur_quotient
 
                 table = T[i]
                 sibling = q ^ (num_vars_copy // 2)
@@ -299,13 +245,13 @@ class BatchFRI:
                 alpha = fold_challenges[i]
                 evals = [cur_path[i]] * 2
                 evals[q // (num_vars_copy // 2)] = folded
-                if debug: print("evals[0]:", evals[0], "evals[1]:", evals[1], "alpha:", alpha, "table[idx]:", table[idx])
                 folded = (evals[0] + evals[1])/2 + alpha * (evals[0] - evals[1])/(2 * table[idx])
+                assert verify_decommitment(q, folded, mps[i], intermediate_oracles[i]), f"failed to verify decommitment at level {i}, folded: {folded}, mp: {mps[i]}, intermediate_oracles[i - 1]: {intermediate_oracles[i - 1]}"
 
                 num_vars_copy >>= 1
                 q = idx
 
-            assert proof['final_value'] == folded + ros[-1], f"failed to verify batch fri, final_value: {proof['final_value']}, folded: {folded}"
+            assert proof['final_value'] == folded, f"failed to verify batch fri, final_value: {proof['final_value']}, folded: {folded}"
 
     # f(x) = f0(x^2) + x * f1(x^2)
     # and half degree interpolation is
