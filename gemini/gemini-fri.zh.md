@@ -14,7 +14,7 @@ Gemini 协议 [BCH+22] 为我们提供了一种将 multilinear polynomial PCS �
 $$
 \tilde{f}(X_0, X_1, \ldots, X_{n - 1}) = \sum_{i = 0}^{2^n - 1}c_i \cdot X_0^{i_0} X_1^{i_1} \cdots X_{n - 1}^{i_{n-1}}
 $$
-其中 $(i_0, i_1,\ldots,i_{n - 1})$ 是 $i$ 的二进制表示。
+其中 $(i_0, i_1,\ldots,i_{n - 1})$ 是 $i$ 的二进制表示，$i_0$  是二进制表示的最低位，满足 $i = \sum_{j=0}^{n-1}i_j 2^{j}$ 。
 
 证明的目标是证明 $\tilde{f}(X_0, X_1, \ldots, X_{n - 1})$ 在点 $\vec{u} = (u_0,u_1, \ldots, u_{n - 1})$ 处的值为 $v = \tilde{f}(u_0,u_1, \ldots, u_{n - 1})$ 。
 
@@ -45,7 +45,7 @@ $$
 1. Prover 记 $h_0(X) = f(X)$ ，计算折叠多项式 $h_1(X), h_2(X), \ldots, h_{n-1}(X)$ ，使得对于 $i = 1, \ldots, n-1$ 有
 
 $$
-h_{i}(X^{2}) = \frac{h_{i - 1}(X) + h_{i - 1}(-X)}{2} + u_{i - 1} \cdot \frac{h_{i - 1}(X) + h_{i - 1}(-X)}{2X}
+h_{i}(X^{2}) = \frac{h_{i - 1}(X) + h_{i - 1}(-X)}{2} + u_{i - 1} \cdot \frac{h_{i - 1}(X) - h_{i - 1}(-X)}{2X}
 $$
 2. Prover 计算承诺 $(C_{h_{1}},C_{h_{2}}, \ldots, C_{h_{n-1}})$ ，其中对于 $i = 1, \ldots, n-1$ 有
 
@@ -97,14 +97,26 @@ h^*(X) & = h_0(X) + r^{1 + (0)} \cdot h_1'(X) + r^{2 + (0 + e_1)} \cdot h_2'(X) 
 & \quad + \ldots + r^{n - 1+\sum_{i=1}^{n-2}(2^n-2^i)} \cdot h_{n-1}'(X) 
 \end{align*} \tag{2}
 $$
-4. 计算商多项式 $q(X)$ ，能验证 $h^*(X)$ 同时在点 $(\beta,-\beta,\beta^2)$ 打开是否正确，
+4. 计算商多项式 $q'(X)$ ，能验证 $h^*(X)$ 同时在点 $(\beta,-\beta,\beta^2)$ 打开是否正确，
 
 $$
-q(X) = \frac{h^*(X)-h^*(\beta)}{X-\beta} + \frac{h^*(X)-h^*(-\beta)}{X+\beta} + \frac{h^*(X)-h^*(\beta^2)}{X-\beta^2}
+q'(X) = \frac{h^*(X)-h^*(\beta)}{X-\beta} + \frac{h^*(X)-h^*(-\beta)}{X+\beta} + \frac{h^*(X)-h^*(\beta^2)}{X-\beta^2}
 $$
 上述商多项式的构造参考论文 [H22] Multi-point queries 小节。
 
 ### Round 4
+
+这一轮将商多项式 $q'(X)$ 对齐到 $2$ 的幂次，以对接 FRI 协议。
+
+1. Verifier 发送随机数 $\lambda \stackrel{\$}{\leftarrow} \mathbb{F}$
+2. Prover 计算 
+
+$$
+q(X) = (1 + \lambda \cdot X) q'(X)
+$$
+在 $D$ 上的值。
+
+### Round 5
 
 Prover 和 Verifier 进行 FRI 的 low degree test 证明交互，证明 $q(X)$ 的次数小于 $2^n$ 。
 
@@ -112,15 +124,15 @@ $$
 \pi_{q} = \mathsf{FRI.LDT}(q(X), 2^n)
 $$
 
-具体过程如下：
+这里包含 $n$ 轮的交互，直到最后将原来的多项式折叠为常数多项式。下面用 $i$ 表示第 $i$ 轮，具体交互过程如下：
 
 - 记 $q^{(0)}(x)|_{x \in D} := q(x)|_{x \in D}$
 - 对于 $i = 1,\ldots, n$ ，
   - Verifier 发送随机数 $\alpha^{(i)}$
-  - 对于任意的 $y \in D_i$ ，在 $D_{i - 1}$ 中找到 $x$ 满足 $y^2 = x$，Prover 计算
+  - 对于任意的 $y \in D_i$ ，在 $D_{i - 1}$ 中找到 $x$ 满足 $x^2 = y$，Prover 计算
 
   $$
-    q^{(i)}(y) = \frac{q^{(i - 1)}(x) + q^{(i - 1)}(-x)}{2} + \alpha^{(i)} \cdot \frac{q^{(i - 1)}(x) + q^{(i - 1)}(-x)}{2x}
+    q^{(i)}(y) = \frac{q^{(i - 1)}(x) + q^{(i - 1)}(-x)}{2} + \alpha^{(i)} \cdot \frac{q^{(i - 1)}(x) - q^{(i - 1)}(-x)}{2x}
   $$
 
   
@@ -136,9 +148,11 @@ $$
 >
 > 如果折叠次数 $r < n$ ，那么最后不会折叠到常数多项式，因此 Prover 在第 $r$ 轮时会发送一个 Merkle Tree 承诺，而不是发送一个值。
 
-### Round 5
+### Round 6
 
-这一轮是接着 Prover 与 Verifier 进行 FRI 协议的 low degree test 交互的查询阶段，Verifier 重复查询 $l$ 次：
+这一轮是接着 Prover 与 Verifier 进行 FRI 协议的 low degree test 交互的查询阶段，Verifier 重复查询 $l$ 次，每一次 Verifier 都会从 $D_0$ 中选取一个随机数，让 Prover 发送在第 $i$ 轮折叠的值及对应的 Merkle Path，用来让 Verifier 验证每一轮折叠的正确性。
+
+重复 $l$ 次：
 - Verifier 从 $D_0$ 中随机选取一个数 $s^{(0)} \stackrel{\$}{\leftarrow} D_0$ 
 - Prover 打开 $\{h_i(s^{(0)})\}_{i = 0}^{n-1}$ 与 $\{h_i(-s^{(0)})\}_{i = 0}^{n-1}$ 的承诺，即这些点的值与对应的 Merkle Path，并发送给 Verifier
   
@@ -149,6 +163,7 @@ $$
 $$
   \{(h_i(-s^{(0)}), \pi_{h_i}(-s^{(0)}))\}_{i = 0}^{n-1} \leftarrow \{\mathsf{MT.open}([h_i(x)|_{x \in D_0}], -s^{(0)})\}_{i = 0}^{n-1}
 $$
+
 - Prover 计算 $s^{(1)} = (s^{(0)})^2$ 
 - 对于 $i = 1, \ldots, n - 1$
   - Prover 发送 $q^{(i)}(s^{(i)}), q^{(i)}(-s^{(i)})$ 的值，并附上 Merkle Path。
@@ -188,12 +203,12 @@ $$
 1. Verifier 验证折叠过程是否正确，对于 $i = 1, \ldots, n - 1$ ，根据 Prover 发送过来的值计算并验证
 
 $$
-h_{i}(\beta^{2}) \stackrel{?}{=} \frac{h_{i - 1}(\beta) + h_{i - 1}(-\beta)}{2} + u_{i - 1} \cdot \frac{h_{i - 1}(\beta) + h_{i - 1}(-\beta)}{2\beta}
+h_{i}(\beta^{2}) \stackrel{?}{=} \frac{h_{i - 1}(\beta) + h_{i - 1}(-\beta)}{2} + u_{i - 1} \cdot \frac{h_{i - 1}(\beta) - h_{i - 1}(-\beta)}{2\beta}
 $$
 2. Verifier 验证最后是否折叠为常数 $v$ ，验证
 
 $$
-\frac{h_{n - 1}(\beta) + h_{n - 1}(-\beta)}{2} + u_{n - 1} \cdot \frac{h_{n - 1}(\beta) + h_{n - 1}(-\beta)}{2\beta} \stackrel{?}{=} v
+\frac{h_{n - 1}(\beta) + h_{n - 1}(-\beta)}{2} + u_{n - 1} \cdot \frac{h_{n - 1}(\beta) - h_{n - 1}(-\beta)}{2\beta} \stackrel{?}{=} v
 $$
 
 3. 验证 $q(X)$ 的 low degree test 证明，
@@ -248,12 +263,23 @@ $$
 
 - Verifier 计算
   $$
-  q^{(0)}(s^{(0)}) = \frac{h^*(s^{(0)})-h^*(\beta)}{s^{(0)}-\beta} + \frac{h^*(s^{(0)})-h^*(-\beta)}{s^{(0)}+\beta} + \frac{h^*(s^{(0)})-h^*(\beta^2)}{s^{(0)}-\beta^2}
+  q'(s^{(0)}) = \frac{h^*(s^{(0)})-h^*(\beta)}{s^{(0)}-\beta} + \frac{h^*(s^{(0)})-h^*(-\beta)}{s^{(0)}+\beta} + \frac{h^*(s^{(0)})-h^*(\beta^2)}{s^{(0)}-\beta^2}
   $$
 
 $$
-  q^{(0)}(-s^{(0)}) = \frac{h^*(-s^{(0)})-h^*(\beta)}{-s^{(0)}-\beta} + \frac{h^*(-s^{(0)})-h^*(-\beta)}{-s^{(0)}+\beta} + \frac{h^*(-s^{(0)})-h^*(\beta^2)}{-s^{(0)}-\beta^2}
+  q'(-s^{(0)}) = \frac{h^*(-s^{(0)})-h^*(\beta)}{-s^{(0)}-\beta} + \frac{h^*(-s^{(0)})-h^*(-\beta)}{-s^{(0)}+\beta} + \frac{h^*(-s^{(0)})-h^*(\beta^2)}{-s^{(0)}-\beta^2}
 $$
+
+- Verifier 计算
+
+$$
+q^{(0)}(s^{(0)}) = (1 + \lambda \cdot s^{(0)}) q'(s^{(0)})
+$$
+
+$$
+q^{(0)}(-s^{(0)}) = (1 - \lambda \cdot s^{(0)}) q'(-s^{(0)})
+$$
+
 
 - 验证 $q^{(1)}(s^{(1)}), q^{(1)}(-s^{(1)})$ 的正确性
 
@@ -281,15 +307,19 @@ $$
   $$
   \mathsf{MT.verify}(\mathsf{cm}(q^{(i)}(X)), q^{(i)}(-s^{(i)}), \pi_{q^{(i)}}(-s^{(i)})) \stackrel{?}{=} 1
   $$
+  
   - 验证第 $i$ 轮的折叠是否正确
+  
   $$
   q^{(i)}(s^{(i)}) \stackrel{?}{=} \frac{q^{(i-1)}(s^{(i - 1)}) + q^{(i - 1)}(- s^{(i - 1)})}{2} + \alpha^{(i)} \cdot \frac{q^{(i - 1)}(s^{(i - 1)}) - q^{(i - 1)}(- s^{(i - 1)})}{2 \cdot s^{(i - 1)}}
   $$
+  
 - 验证最后是否折叠到常数多项式
+
   $$
   q^{(n)}(x_0) \stackrel{?}{=} \frac{q^{(n-1)}(s^{(n - 1)}) + q^{(n - 1)}(- s^{(n - 1)})}{2} + \alpha^{(n)} \cdot \frac{q^{(n - 1)}(s^{(n - 1)}) - q^{(n - 1)}(- s^{(n - 1)})}{2 \cdot s^{(n - 1)}}
   $$
-
+  
 ## Reference
 
 - [BCH+22] Bootle, Jonathan, Alessandro Chiesa, Yuncong Hu, *_et al. "Gemini: Elastic SNARKs for Diverse Environments."_ Cryptology ePrint Archive* (2022). [https://eprint.iacr.org/2022/420](https://eprint.iacr.org/2022/420) 

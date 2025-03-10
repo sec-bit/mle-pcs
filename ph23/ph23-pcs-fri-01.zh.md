@@ -86,7 +86,7 @@ $$
 $$
 q_a(X) = \frac{a(X) - a(\zeta)}{X - \zeta}
 $$
-的次数小于 $N$。
+的次数小于 $N - 1$。
 
 对于 $c(X)$ ，其要打开的点有 $n + 1$ 个，为 $H_{\zeta}' = \{\zeta, \zeta\cdot\omega, \zeta\cdot\omega^2, \ldots, \zeta\cdot\omega^{2^{n-1}} \}$ ，用 [H22] 论文在 Multi-point queries 小节介绍的方法同时打开多个点，令商多项式
 
@@ -94,35 +94,41 @@ $$
 q_c(X) = \sum_{x \in H_\zeta'} \frac{c(X) - c(x)}{X - x} = \frac{c(X) - c(\zeta)}{X - \zeta} + \frac{c(X) - c(\zeta \cdot \omega)}{X - \zeta \cdot \omega} + \ldots + \frac{c(X) - c(\zeta \cdot \omega^{2^{n-1}})}{X - \zeta \cdot \omega^{2^{n-1}}}
 $$
 
-这样转换为需要证明 $q_c(X)$ 的次数小于 $N$ 。
+这样转换为需要证明 $q_c(X)$ 的次数小于 $N - 1$ 。
 
 对于 $z(X)$ ，类似地，证明商多项式
 
 $$
 q_z(X) = \frac{z(X) - z(\zeta)}{X - \zeta} + \frac{z(X) - z(\zeta \cdot \omega^{-1})}{X - \zeta \cdot \omega^{-1}}
 $$
-次数小于 $N$ 。
+次数小于 $N - 1$ 。
 
 对于 $t(X)$ ，证明商多项式
 
 $$
 q_t(X) = \frac{t(X) - t(\zeta)}{X - \zeta}
 $$
-次数小于 $N$ 。
+次数小于 $N - 1$ 。
 
 这时，向 Verifier 要一个随机数 $r \stackrel{\$}{\leftarrow} \mathbb{F}$ ，可以将上面要证明的四个商多项式 batch 在一起，令
 
 $$
-q(X) = q_a(X) + r \cdot q_c(X) + r^2 \cdot q_z(X) + r^3 \cdot q_t(X)
+q'(X) = q_a(X) + r \cdot q_c(X) + r^2 \cdot q_z(X) + r^3 \cdot q_t(X)
 $$
 
-这样只需要调用一次 FRI 的 low degree test 就可以了，证明 $\deg(q(X)) < N$ 。
+这样只需要调用一次 FRI 的 low degree test 就可以了，证明 $\deg(q'(X)) < N - 1$ 。最后为了对接 FRI low degree test 协议，需要将 $q'(X)$ 的次数对齐到 $2$ 的幂次，即向 Verifier 要一个随机数 $\lambda$ ，证明
+
+$$
+q(X) = (1 + \lambda \cdot X) q'(X)
+$$
+
+的次数小于 $N$ 。
 
 > 📝 **Remark:**
 >上面 batch 不同多项式时也可以从 $\mathbb{F}$ 中选取三个不同的随机数 $r_1, r_2,r_3$ ，令
 > 
 > $$
-> q(X) = q_a(X) + r_1 \cdot q_c(X) + r_2 \cdot q_z(X) + r_3 \cdot q_t(X)
+> q'(X) = q_a(X) + r_1 \cdot q_c(X) + r_2 \cdot q_z(X) + r_3 \cdot q_t(X)
 > $$
 > 
 > 这种方式会比上面用一个随机数的幂次进行 batch 有更高一点的安全性。([BCIKS20])
@@ -338,10 +344,22 @@ $$
 5. 将上面的四个商多项式用随机数 $r$ 的幂次 batch 成一个多项式
 
 $$
-q(X) = q_a(X) + r \cdot q_c(X) + r^2 \cdot q_z(X) + r^3 \cdot q_t(X)
+q'(X) = q_a(X) + r \cdot q_c(X) + r^2 \cdot q_z(X) + r^3 \cdot q_t(X)
 $$
 
 #### Round 5
+
+这一轮将商多项式 $q'(X)$ 对齐到 $2$ 的幂次，以对接 FRI 协议。
+
+1. Verifier 发送随机数 $\lambda \stackrel{\$}{\leftarrow} \mathbb{F}$
+2. Prover 计算 
+
+$$
+q(X) = (1 + \lambda \cdot X) q'(X)
+$$
+在 $D$ 上的值。
+
+#### Round 6
 
 Prover 和 Verifier 进行 FRI 的 low degree test 证明交互，证明 $q(X)$ 的次数小于 $2^n$ 。
 
@@ -349,17 +367,16 @@ $$
 \pi_{q} = \mathsf{FRI.LDT}(q(X), 2^n)
 $$
 
-具体过程如下：
+这里包含 $n$ 轮的交互，直到最后将原来的多项式折叠为常数多项式。下面用 $i$ 表示第 $i$ 轮，具体交互过程如下：
 
 - 记 $q^{(0)}(x)|_{x \in D} := q(x)|_{x \in D}$
 - 对于 $i = 1,\ldots, n$ ，
   - Verifier 发送随机数 $\alpha^{(i)}$
-  - 对于任意的 $y \in D_i$ ，在 $D_{i - 1}$ 中找到 $x$ 满足 $y^2 = x$，Prover 计算
+  - 对于任意的 $y \in D_i$ ，在 $D_{i - 1}$ 中找到 $x$ 满足 $x^2 = y$，Prover 计算
 
   $$
-    q^{(i)}(y) = \frac{q^{(i - 1)}(x) + q^{(i - 1)}(-x)}{2} + \alpha^{(i)} \cdot \frac{q^{(i - 1)}(x) + q^{(i - 1)}(-x)}{2x}
+    q^{(i)}(y) = \frac{q^{(i - 1)}(x) + q^{(i - 1)}(-x)}{2} + \alpha^{(i)} \cdot \frac{q^{(i - 1)}(x) - q^{(i - 1)}(-x)}{2x}
   $$
-
   
   - 如果 $i < n$ ，Prover 发送 $[q^{(i)}(x)|_{x \in D_{i}}]$ 的 Merkle Tree 承诺，
   
@@ -373,9 +390,11 @@ $$
 >
 > 如果折叠次数 $r < n$ ，那么最后不会折叠到常数多项式，因此 Prover 在第 $r$ 轮时会发送一个 Merkle Tree 承诺，而不是发送一个值。
 
-#### Round 6
+#### Round 7
 
-这一轮是接着 Prover 与 Verifier 进行 FRI 协议的 low degree test 交互的查询阶段，Verifier 重复查询 $l$ 次：
+这一轮是接着 Prover 与 Verifier 进行 FRI 协议的 low degree test 交互的查询阶段，Verifier 重复查询 $l$ 次，每一次 Verifier 都会从 $D_0$ 中选取一个随机数，让 Prover 发送在第 $i$ 轮折叠的值及对应的 Merkle Path，用来让 Verifier 验证每一轮折叠的正确性。
+
+重复 $l$ 次：
 - Verifier 从 $D_0$ 中随机选取一个数 $s^{(0)} \stackrel{\$}{\leftarrow} D_0$ 
 - Prover 打开 $a(s^{(0)}), a(-s^{(0)},c(s^{(0)}),c(-s^{(0)}),z(s^{(0)}),z(-s^{(0)}),t(s^{(0)}),t(-s^{(0)})$ 的承诺，即这些点的值与对应的 Merkle Path，并发送给 Verifier
   
@@ -547,9 +566,18 @@ $$
 
 $$
 \begin{align}
-q^{(0)}(x) & = \frac{a(x) - a(\zeta)}{x - \zeta} + r \cdot \left( \frac{c(x) - c(\zeta)}{x - \zeta} + \frac{c(x) - c(\zeta \cdot \omega)}{x - \zeta \cdot \omega} + \ldots + \frac{c(x) - c(\zeta \cdot \omega^{2^{n-1}})}{x - \zeta \cdot \omega^{2^{n-1}}}\right) \\ \\
+q'(x) & = \frac{a(x) - a(\zeta)}{x - \zeta} + r \cdot \left( \frac{c(x) - c(\zeta)}{x - \zeta} + \frac{c(x) - c(\zeta \cdot \omega)}{x - \zeta \cdot \omega} + \ldots + \frac{c(x) - c(\zeta \cdot \omega^{2^{n-1}})}{x - \zeta \cdot \omega^{2^{n-1}}}\right) \\ \\
 & \qquad + r^2 \cdot \left(\frac{z(x) - z(\zeta)}{x - \zeta} + \frac{z(x) - z(\zeta \cdot \omega^{-1})}{x - \zeta \cdot \omega^{-1}}\right) + r^3 \cdot \frac{t(x) - t(\zeta)}{x - \zeta}
 \end{align}
+$$
+- Verifier 计算
+
+$$
+q^{(0)}(s^{(0)}) = (1 + \lambda \cdot s^{(0)}) q'(s^{(0)})
+$$
+
+$$
+q^{(0)}(-s^{(0)}) = (1 - \lambda \cdot s^{(0)}) q'(-s^{(0)})
 $$
 
 - 验证 $q^{(1)}(s^{(1)}), q^{(1)}(-s^{(1)})$ 的正确性
@@ -557,7 +585,6 @@ $$
 $$
 \mathsf{MT.verify}(\mathsf{cm}(q^{(1)}(X)), q^{(1)}(s^{(1)}), \pi_{q^{(1)}}(s^{(1)})) \stackrel{?}{=} 1
 $$
-
 
 $$
 \mathsf{MT.verify}(\mathsf{cm}(q^{(1)}(X)), q^{(1)}(-s^{(1)}), \pi_{q^{(1)}}(-s^{(1)})) \stackrel{?}{=} 1
@@ -568,16 +595,17 @@ $$
 $$
 q^{(1)}(s^{(1)}) \stackrel{?}{=} \frac{q^{(0)}(s^{(0)}) + q^{(0)}(- s^{(0)})}{2} + \alpha^{(1)} \cdot \frac{q^{(0)}(s^{(0)}) - q^{(0)}(- s^{(0)})}{2 \cdot s^{(0)}}
 $$
+
 - 对于 $i = 2, \ldots, n - 1$
   - 验证 $q^{(i)}(s^{(i)}), q^{(i)}(-s^{(i)})$ 的正确性
 
   $$
   \mathsf{MT.verify}(\mathsf{cm}(q^{(i)}(X)), q^{(i)}(s^{(i)}), \pi_{q^{(i)}}(s^{(i)})) \stackrel{?}{=} 1
   $$
-
   $$
   \mathsf{MT.verify}(\mathsf{cm}(q^{(i)}(X)), q^{(i)}(-s^{(i)}), \pi_{q^{(i)}}(-s^{(i)})) \stackrel{?}{=} 1
   $$
+  
   - 验证第 $i$ 轮的折叠是否正确
   $$
   q^{(i)}(s^{(i)}) \stackrel{?}{=} \frac{q^{(i-1)}(s^{(i - 1)}) + q^{(i - 1)}(- s^{(i - 1)})}{2} + \alpha^{(i)} \cdot \frac{q^{(i - 1)}(s^{(i - 1)}) - q^{(i - 1)}(- s^{(i - 1)})}{2 \cdot s^{(i - 1)}}
