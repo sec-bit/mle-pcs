@@ -225,7 +225,7 @@ class ZeroFRI:
         domains = [[gen ** (i * (1 << j)) for i in range((1 << (num_var - 1)) * rate)] for j in range(num_var)]
         if batch:
             if debug > 0: print(f"V> degree_bound={1 << (num_var - 1)}, rate={rate}, proof={quotients_proof}, vals={quotients_vals}, domains={domains}, gen={gen}, shift={g}")
-            BatchFRI.batch_verify(1 << (num_var - 1), rate, quotients_proof, zeta, quotients_vals, domains, gen, g, transcript, debug=debug > 1)
+            BatchFRI.batch_verify(1 << (num_var - 1), rate, quotients_proof, zeta, quotients_vals, gen, one, transcript, debug=debug > 1)
         else:
             for i in range(num_var):
                 if debug > 0: 

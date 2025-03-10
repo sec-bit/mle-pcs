@@ -50,20 +50,19 @@ class BatchFRI:
         }
     
     @classmethod
-    def batch_verify(cls, degree_bound, rate, proof, point, vals, domains, gen, shift, transcript, debug=False):
+    def batch_verify(cls, degree_bound, rate, proof, point, vals, gen, one, transcript, debug=False):
         assert degree_bound >= proof['degree_bound']
         degree_bound = proof['degree_bound']
 
         assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
 
         low_degree_proof = proof['low_degree_proof']
-        code_commitment = proof['code_commitment']
 
         num_verifier_queries = cls.security_level // log_2(rate)
         if cls.security_level % log_2(rate) != 0:
             num_verifier_queries += 1
 
-        cls.verify_low_degree(degree_bound, rate, low_degree_proof, gen, num_verifier_queries, point, vals, transcript, debug)
+        cls.verify_low_degree(degree_bound, rate, low_degree_proof, gen, num_verifier_queries, point, vals, one, transcript, debug)
 
     @classmethod
     def prove_low_degree(cls, codes, code_tree, quotients, rate, degree_bound, gen, num_verifier_queries, transcript, one=1, debug=False):
@@ -82,6 +81,8 @@ class BatchFRI:
         tree_evals = []
         for i in range(log_2(degree_bound) - 1):
 
+            lambda_ = one * from_bytes(transcript.challenge_bytes(b"lambda", 4))
+
             alpha = transcript.challenge_bytes(b"alpha", 4)
             alpha = from_bytes(alpha)
 
@@ -90,7 +91,7 @@ class BatchFRI:
             if debug: print("generator:", gen)
             if debug: print("domain:", [gen ** i for i in range(len(folded) // 2)])
             if debug: print("evals[i + 1]:", quotients[i + 1])
-            folded = [x + y for x, y in zip(folded, quotients[i])]
+            folded = [x + (one + lambda_ * gen ** i) * y for x, y in zip(folded, quotients[i])]
             tree = MerkleTree(folded)
             trees.append(tree)
             tree_evals.append(folded)
@@ -129,12 +130,12 @@ class BatchFRI:
         }
     
     @classmethod
-    def verify_low_degree(cls, degree_bound, rate, proof, gen, num_verifier_queries, point, vals, transcript, debug=False):
+    def verify_low_degree(cls, degree_bound, rate, proof, gen, num_verifier_queries, point, vals, one, transcript, debug=False):
         log_degree_bound = log_2(degree_bound)
         log_evals = log_2(degree_bound * rate)
         T = [[(gen**(2 ** j)) ** i for i in range(2 ** (log_evals - j - 1))] for j in range(0, log_evals)]
         if debug: print("T:", T)
-        cls.verify_queries(proof, log_degree_bound, degree_bound * rate, num_verifier_queries, T, point, vals, transcript, debug)
+        cls.verify_queries(proof, log_degree_bound, degree_bound * rate, num_verifier_queries, T, point, vals, one, transcript, debug)
 
     @classmethod
     def query_phase(cls, transcript: MerlinTranscript, first_tree, codes: list, quotients: list, trees: list, oracles: list, num_vars, num_verifier_queries, debug=False):
@@ -203,12 +204,14 @@ class BatchFRI:
         return query_paths, merkle_paths, first_merkle_paths
     
     @classmethod
-    def verify_queries(cls, proof, k, num_vars, num_verifier_queries, T, point, vals, transcript, debug=False):
+    def verify_queries(cls, proof, k, num_vars, num_verifier_queries, T, point, vals, one, transcript, debug=False):
         first_oracle = proof['first_oracle']
         intermediate_oracles = proof['intermediate_oracles']
         query_paths = proof['query_paths']
         merkle_paths = proof['merkle_paths']
         first_merkle_paths = proof['first_merkle_paths']
+
+        lambda_ = one * from_bytes(transcript.challenge_bytes(b"lambda", 4))
 
         fold_challenges = []
         if debug: print("intermediate_oracles:", intermediate_oracles)
@@ -235,7 +238,7 @@ class BatchFRI:
                 if debug: print("ros[i]:", ros[i])
                 if debug: assert indices[i] == q, f"indices: {indices}, q: {q}"
                 # print("ros[i]:", ros[i], "vals[i]:", vals[i], "T[i][q]:", T[i][q], "point:", point)
-                cur_quotient = (ros[i] - vals[i]) / (T[i][q] - point)
+                cur_quotient = (one + lambda_ * T[i][q]) * (ros[i] - vals[i]) / (T[i][q] - point)
                 folded += cur_quotient
 
                 table = T[i]
