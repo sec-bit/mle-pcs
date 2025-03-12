@@ -71,6 +71,7 @@ class BatchFRI:
         assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
 
         lambda_ = one * from_bytes(transcript.challenge_bytes(b"lambda", 4))
+        # print("lambda:", lambda_)
         folded = [one - one] * len(quotients[0])
         if debug:
             coeffs = UniPolynomial.compute_coeffs_from_evals_fast(folded, [gen ** i for i in range(len(folded))])
@@ -90,8 +91,7 @@ class BatchFRI:
             if debug: print("generator:", gen)
             if debug: print("domain:", [gen ** i for i in range(len(folded) // 2)])
             if debug: print("evals[i + 1]:", quotients[i + 1])
-            # folded = [x + (one + lambda_ * gen ** i) * y for x, y in zip(folded, quotients[i])]
-            folded = [x + y for x, y in zip(folded, quotients[i])]
+            folded = [x + (one + lambda_ * gen ** j) * y for j, (x, y) in enumerate(zip(folded, quotients[i]))]
             tree = MerkleTree(folded)
             trees.append(tree)
             tree_evals.append(folded)
@@ -212,6 +212,7 @@ class BatchFRI:
         first_merkle_paths = proof['first_merkle_paths']
 
         lambda_ = one * from_bytes(transcript.challenge_bytes(b"lambda", 4))
+        # print("lambda:", lambda_)
         fold_challenges = []
         if debug: print("intermediate_oracles:", intermediate_oracles)
         if debug: print("k:", k)
@@ -228,7 +229,7 @@ class BatchFRI:
             num_vars_copy = num_vars
             folded = 0
 
-            # print("verifier MMCS.verify:", q, ros, first_oracle)
+            # print("verifier MMCS.verify:", q, ros, first_oracle, fmp)
             MMCS.verify(q, ros, fmp, first_oracle, debug)
             # q = min(q, q ^ num_vars_copy)
 
@@ -239,11 +240,10 @@ class BatchFRI:
                 if debug: print("ros[i]:", ros[i])
                 if debug: assert indices[i] == q, f"indices: {indices}, q: {q}"
                 # print("ros[i]:", ros[i], "vals[i]:", vals[i], "T[i][q]:", T[i][q], "point:", point)
-                # cur_quotient = (one + lambda_ * T[i][q]) * (ros[i] - vals[i]) / (T[i][q] - point)
                 assert q < len(T[i]), f"q: {q}, len(T[i]): {len(T[i])}, i: {i}"
-                cur_quotient = (ros[i] - vals[i]) / (T[i][q] - point)
+                cur_quotient = (one + lambda_ * T[i][q]) * (ros[i] - vals[i]) / (T[i][q] - point)
+                # cur_quotient = (ros[i] - vals[i]) / (T[i][q] - point)
                 folded += cur_quotient
-                # print("cur_quotient:", cur_quotient, ", q:", q, ", ros[i]:", ros[i], ", vals[i]:", vals[i], ", T[i][q]:", T[i][q], ", point:", point)
 
                 table = T[i]
                 sibling = q ^ (num_vars_copy // 2)
