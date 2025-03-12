@@ -71,9 +71,9 @@ class TestBatchFRI(TestCase):
         transcript = MerlinTranscript(b'test')
         point = 5
         point = gen ** point * Fp.primitive_element()
-        vals = [UniPolynomial.uni_eval_from_evals(evals[i], point, domains[i][::rate], Fp(1)) for i in range(len(evals))]
+        vals = [UniPolynomial.uni_eval_from_evals(evals[i], point, domains[i][::rate], Fp.one()) for i in range(len(evals))]
         # assert vals == [UniPolynomial.uni_eval_from_evals(codes[i], point, domains[i][:len(codes[i])], Fp(1)) for i in range(len(codes))], f"evals and codes are not the same, {vals} != {[UniPolynomial.uni_eval_from_evals(codes[i], point, domains[i][:len(codes[i])], Fp(1)) for i in range(len(codes))]} "
-        proof = BatchFRI.batch_prove(codes, commitment, vals, point, domains, rate, (1 << (num_evals - 1)), gen, transcript, debug=False)
+        proof = BatchFRI.batch_prove(codes, commitment, vals, point, domains, rate, (1 << (num_evals - 1)), gen, transcript, one=Fp.one(), debug=False)
         transcript = MerlinTranscript(b'test')
         BatchFRI.batch_verify((1 << (num_evals - 1)), rate, proof, point, vals, gen, Fp.one(), transcript, debug=False)
 
