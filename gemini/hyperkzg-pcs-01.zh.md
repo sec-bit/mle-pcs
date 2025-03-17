@@ -111,7 +111,7 @@ $$
 
 其中最后一个 $f^{(n)}(X)$ 是一个常数多项式，它恰好为 $\tilde{f}(u_0, u_1, \ldots, u_{n-1})$ 完全的运算结果，即 $f^{(n)}(X)=v$。
 
-并且，这些引入的一元多项式 $f^{(0)}(X), \ldots, f^{(n-1)}(X) $ ，它们相邻两项之间都满足下面的关系：
+并且，这些引入的一元多项式 $f^{(0)}(X), \ldots, f^{(n-1)}(X)$ ，它们相邻两项之间都满足下面的关系：
 
 $$
 f^{(i+1)}(X^2) = \frac{f^{(i)}(X) + f^{(i)}(-X)}{2} + u_i\cdot \frac{f^{(i)}(X) - f^{(i)}(-X)}{2X}
@@ -157,7 +157,7 @@ $$
 容易通过定义得知， $E_i(\vec{X})$ 满足下面的拆分性质（Tensor Structure）：
 
 $$
-E_{i\parallel j}(\vec{X}, \vec{Y}) = E_i(\vec{X})\cdot E_i(\vec{Y})
+E_{i\parallel j}(\vec{X}, \vec{Y}) = E_i(\vec{X})\cdot E_j(\vec{Y})
 $$
 
 其中 $k = i\parallel j$ 为 $k$ 的二进制位向量的分拆，例如，$i=23$，它的二进制表示为 $10111$，可以拆分为 $10\parallel 111$，或者记为 $23=2\parallel 7$。根据拆分性质，我们可以得到：
@@ -224,7 +224,7 @@ $$
 
 ### 公共输入: 
 
-1. $C_f$: MLE 多项式 $\tilde{f}(X_0, X_1, \ldots, X_{n-1})$ 的同构多项式  $f(X)$ 的承诺, 
+1. $C_f$: MLE 多项式 $\tilde{f}(X_0, X_1, \ldots, X_{n-1})$ 的同构多项式 $f(X)$ 的承诺, 
 
 $$
 C_f = \mathsf{KZG10.Commit}(f(X))
@@ -270,11 +270,11 @@ $\Big(\pi_{1,\beta}, \pi_{1,-\beta}, \pi_{1,\beta^2}\Big)$, $\ldots$, $\Big(\pi_
 
 $$
 \begin{split}
-h^{(1)}(\beta^2) &\overset{?}{=} \frac{h^{(0)}(\beta) + h^{(0)}(-\beta)}{2} + u_0\cdot \frac{h^{(0)}(\beta) - h^{(0)}(-\beta)}{2\beta} \\
-h^{(2)}(\beta^2) &\overset{?}{=} \frac{h^{(1)}(\beta) + h^{(1)}(-\beta)}{2} + u_1\cdot \frac{h^{(1)}(\beta) - h^{(1)}(-\beta)}{2\beta} \\
+h^{(1)}(\beta^2) &\overset{?}{=} (1 - u_0) \cdot \frac{h^{(0)}(\beta) + h^{(0)}(-\beta)}{2} + u_0\cdot \frac{h^{(0)}(\beta) - h^{(0)}(-\beta)}{2\beta} \\
+h^{(2)}(\beta^2) &\overset{?}{=} (1 - u_1) \cdot \frac{h^{(1)}(\beta) + h^{(1)}(-\beta)}{2} + u_1\cdot \frac{h^{(1)}(\beta) - h^{(1)}(-\beta)}{2\beta} \\
 \vdots & \\
-h^{(n-1)}(\beta^2) &\overset{?}{=} \frac{h^{(n-2)}(\beta) + h^{(n-2)}(-\beta)}{2} + u_{n-2}\cdot \frac{h^{(n-2)}(\beta) - h^{(n-2)}(-\beta)}{2\beta} \\
- v &\overset{?}{=} \frac{h^{(n-1)}(\beta) + h^{(n-1)}(-\beta)}{2} + u_{n-1}\cdot \frac{h^{(n-1)}(\beta) - h^{(n-1)}(-\beta)}{2\beta} \\
+h^{(n-1)}(\beta^2) &\overset{?}{=} (1 - u_{n-2}) \cdot\frac{h^{(n-2)}(\beta) + h^{(n-2)}(-\beta)}{2} + u_{n-2}\cdot \frac{h^{(n-2)}(\beta) - h^{(n-2)}(-\beta)}{2\beta} \\
+ v &\overset{?}{=} (1 - u_{n-1}) \cdot\frac{h^{(n-1)}(\beta) + h^{(n-1)}(-\beta)}{2} + u_{n-1}\cdot \frac{h^{(n-1)}(\beta) - h^{(n-1)}(-\beta)}{2\beta} \\
 \end{split}
 $$
 
@@ -301,10 +301,10 @@ $$
 1. Prover 没有必要发送除 $h^{(0)}(\beta^2)$ 之外的其它所有 $X=\beta^2$ 的运算值，因为 Verifier 可以通过下面的递推关系计算出来。这样可以减少 Prover 的通信量，同时 Verifier 在计算的过程相当于同时进行了验证，因而可以省去递推式验证过程。
 
 $$
-h^{(i+1)}(\beta^2) = \frac{h^{(i)}(\beta) + h^{(i)}(-\beta)}{2} + u_i\cdot \frac{h^{(i)}(\beta) - h^{(i)}(-\beta)}{2\beta}
+h^{(i+1)}(\beta^2) = (1 - u_i) \cdot \frac{h^{(i)}(\beta) + h^{(i)}(-\beta)}{2} + u_i\cdot \frac{h^{(i)}(\beta) - h^{(i)}(-\beta)}{2\beta}
 $$
 
-2. Prover 可以通过一个随机数 $\gamma$ 把 $h^{(0)}(X),\ldots, h^{(n-1)}(X)$ 聚合在一起，得到 $h(X)$，然后证明 $h(X)$ 在 $X=\beta,-\beta, \beta^2$ 处的取值。这样可以避免让 Prover 发送 $3n-1$ 个独立的 KZG10 的 Evaluation 证明，而是只需要发送三个 Evaluataion 证明。
+2. Prover 可以通过一个随机数 $\gamma$ 把 $h^{(0)}(X),\ldots, h^{(n-1)}(X)$ 聚合在一起，得到 $h(X)$，然后证明 $h(X)$ 在 $X=\beta,-\beta, \beta^2$ 处的取值。这样可以避免让 Prover 发送 $3n-1$ 个独立的 KZG10 的 Evaluation 证明，而是只需要发送三个 Evaluation 证明。
 
 下面是优化过后的协议描述
 
@@ -328,7 +328,7 @@ Prover 发送多项式承诺 $\big(C_{h^{(1)}}, C_{h^{(2)}},\ldots, C_{h^{(n-1)}
 1. Verifier 发送随机挑战数 $\beta\in\mathbb{F}$，
 
 2. Prover 计算并发送 
-$\Big(h^{(0)}(\beta), h^{(0)}(-\beta), {\color{blue}h^{(0)(\beta^2)}}\Big)$, 
+$\Big(h^{(0)}(\beta), h^{(0)}(-\beta), {\color{blue}h^{(0)}(\beta^2)}\Big)$, 
 $\Big(h^{(1)}(\beta), h^{(1)}(-\beta)\Big)$, 
 $\Big(h^{(2)}(\beta), h^{(2)}(-\beta)\Big)$, $\ldots$, 
 $\Big(h^{(n-1)}(\beta), h^{(n-1)}(-\beta)\Big)$
@@ -393,31 +393,32 @@ Prover 发送 $C_w=[w(x)]_1$
 
 $$
 \begin{split}
-h^{(1)}(\beta^2) &= \frac{h^{(0)}(\beta) + h^{(0)}(-\beta)}{2} + u_0\cdot \frac{h^{(0)}(\beta) - h^{(0)}(-\beta)}{2\beta} \\
-h^{(2)}(\beta^2) &= \frac{h^{(1)}(\beta) + h^{(1)}(-\beta)}{2} + u_1\cdot \frac{h^{(1)}(\beta) - h^{(1)}(-\beta)}{2\beta} \\
+h^{(1)}(\beta^2) &= (1 - u_0) \cdot \frac{h^{(0)}(\beta) + h^{(0)}(-\beta)}{2} + u_0\cdot \frac{h^{(0)}(\beta) - h^{(0)}(-\beta)}{2\beta} \\
+h^{(2)}(\beta^2) &= (1 - u_1) \cdot\frac{h^{(1)}(\beta) + h^{(1)}(-\beta)}{2} + u_1\cdot \frac{h^{(1)}(\beta) - h^{(1)}(-\beta)}{2\beta} \\
 \vdots & \\
-h^{(n-1)}(\beta^2) &=\frac{h^{(n-2)}(\beta) + h^{(n-2)}(-\beta)}{2} + u_{n-2}\cdot \frac{h^{(n-2)}(\beta) - h^{(n-2)}(-\beta)}{2\beta} \\
+h^{(n-1)}(\beta^2) &= (1 - u_{n-2}) \cdot\frac{h^{(n-2)}(\beta) + h^{(n-2)}(-\beta)}{2} + u_{n-2}\cdot \frac{h^{(n-2)}(\beta) - h^{(n-2)}(-\beta)}{2\beta} \\
 \end{split}
 $$
 
 2. 计算 $h(\beta), h(-\beta), h(\beta^2)$，
 
 $$
+\begin{aligned}
 h(\beta) = h^{(0)}(\beta) + \gamma\cdot h^{(1)}(\beta) + \cdots + \gamma^{n-1}\cdot h^{(n-1)}(\beta) \\
 h(-\beta) = h^{(0)}(-\beta) + \gamma\cdot h^{(1)}(-\beta) + \cdots + \gamma^{n-1}\cdot h^{(n-1)}(-\beta) \\
 h(\beta^2) = h^{(0)}(\beta^2) + \gamma\cdot h^{(1)}(\beta^2) + \cdots + \gamma^{n-1}\cdot h^{(n-1)}(\beta^2) \\
+\end{aligned}
 $$
 
 3. 计算 $c(X)$ 在 $X=\zeta$ 处的取值 $c(\zeta)$，
 4. 计算 $C_h=C_f+\gamma\cdot C_{h^{(1)}}+\gamma^2\cdot C_{h^{(2)}}+\cdots+\gamma^{n-1}\cdot C_{h^{(n-1)}}$
-
 5. 计算 $C_r = [r_\zeta(x)]_1$ 的承诺：
 
 $$
 C_r = [r_\zeta(x)]_1 = C_h - c(\zeta)\cdot [1]_1 - (\zeta-\beta)(\zeta+\beta)(\zeta-\beta^2)\cdot C_q
 $$
 
-4. 验证 $C_h$ 与 $C_w$ 的关系：
+6. 验证 $C_h$ 与 $C_w$ 的关系：
 
 $$
 e(C_r + \zeta\cdot C_w, [1]_2) \overset{?}{=} e(C_w, [x]_2)

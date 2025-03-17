@@ -46,7 +46,7 @@ Prover 与 Verifier 通过一个 Inner Product Argument 协议来证明 $\vec{a}
 
 ### 证明目标
 
-Prover 拥有知识 $(\vec{a},\vec{b}) $（ 两个向量长度相等，记为 $m$，则总共有 $2m$ 个 witness），并且 $\langle \vec{a}, \vec{b} \rangle = c$
+Prover 拥有知识 $(\vec{a},\vec{b})$（ 两个向量长度相等，记为 $m$，则总共有 $2m$ 个 witness），并且 $\langle \vec{a}, \vec{b} \rangle = c$
 
 ### 公开参数
 
@@ -137,7 +137,7 @@ $$
 
 Hyrax 论文提出了一个简单直接的思路，将 Verifier 的计算复杂度降到 $O(\sqrt{n})$，Sublinear Verifier 是 zkSNARK 的一个基本要求。我们仍然只考虑 $\tilde{f}$ 的 Coefficients 形式，即 $\vec{c}$ 是 $\tilde{f}$ 的系数。
 
-我们假设 $n=4$，那么 $\vec{a}$ 长度为 $16$，然后我们可以把这个向量排成一个矩阵：
+我们假设 $n=4$，那么 $\vec{c}$ 长度为 $16$，然后我们可以把这个向量排成一个矩阵：
 
 $$
 \begin{bmatrix}
@@ -148,7 +148,7 @@ c_{12} & c_{13} & c_{14} & c_{15}
 \end{bmatrix}
 $$
 
-以 $\vec{a}$ 为表示的 MLE 多项式可以表示为下面的形式：
+以 $\vec{c}$ 为表示的 MLE 多项式可以表示为下面的形式：
 
 $$
 \tilde{f}(X_0, X_1, X_2, X_3) = 
@@ -172,7 +172,7 @@ $$
 这个矩阵的计算结果如下：
 
 $$
-\tilde{f}(X_0, X_1, X_2, X_3) = c_0 + c_1X_0 + c_2X_1 + c_3X_2 + c_4X_0X_1 + \cdots + c_{14}X_1X_2X_3 + c_{15}X_0X_1X_2X_3
+\tilde{f}(X_0, X_1, X_2, X_3) = c_0 + c_1X_0 + c_2X_1 + c_3X_0X_1 + c_4X_2 + \cdots + c_{14}X_1X_2X_3 + c_{15}X_0X_1X_2X_3
 $$
 
 我们先把 $\vec{u}$ 拆成两个短向量：
@@ -222,10 +222,10 @@ $$
 
 $$
 \begin{split}
-d_0 &= c_0 + c_4\cdot u_0 + c_8\cdot u_2 + c_{12}\cdot u_2u_0 \\
-d_1 &= c_1 + c_5\cdot u_0 + c_9\cdot u_2 + c_{13}\cdot u_2u_0 \\
-d_2 &= c_2 + c_6\cdot u_0 + c_{10}\cdot u_2 + c_{14}\cdot u_2u_0 \\
-d_3 &= c_3 + c_7\cdot u_0 + c_{11}\cdot u_2 + c_{15}\cdot u_2u_0 \\
+d_0 &= c_0 + c_4\cdot u_2 + c_8\cdot u_3 + c_{12}\cdot u_2u_3 \\
+d_1 &= c_1 + c_5\cdot u_2 + c_9\cdot u_3 + c_{13}\cdot u_2u_3 \\
+d_2 &= c_2 + c_6\cdot u_2 + c_{10}\cdot u_3 + c_{14}\cdot u_2u_3 \\
+d_3 &= c_3 + c_7\cdot u_2 + c_{11}\cdot u_3 + c_{15}\cdot u_2u_3 \\
 \end{split}
 $$
 
@@ -251,7 +251,7 @@ $$
 
 ### 承诺
 
-1. Prover 把 $\vec{a}$ 重排成一个矩阵 $M_a\in\mathbb{F}_p^{l\times h}$：
+1. Prover 把 $\vec{a}$ 重排成一个矩阵 $M_a\in\mathbb{F}_p^{h\times l}$：
 
 $$
 M_a =
@@ -316,7 +316,7 @@ b_{l-1} &= \langle \vec{e}, (a_{l-1}, a_{l+l-1}, ..., a_{(h-1)l+l-1}) \rangle \\
 \end{split}
 $$
 
-2. Prover 计算 $\vec{b}$ 的承诺 $C^*$
+3. Prover 计算 $\vec{b}$ 的承诺 $C^*$
 
 $$
 C^* = \mathsf{cm}(\vec{b}; \rho^*)
@@ -378,7 +378,9 @@ $$
 
 #### Verification
 
-Verifier 验证：
+1. Verifier 计算 $C^*$ 。
+
+2. Verifier 验证：
 
 $$
 C_r + \mu\cdot{}C^*\overset{?}{=} \mathsf{cm}(\vec{z_b}; z_\rho)
@@ -486,7 +488,7 @@ $\vec{G}, \vec{H}\in\mathbb{G}^n$；$U, T\in\mathbb{G}$
 
 $P = \vec{a}\vec{G} + \vec{b}\vec{H} + cU + \rho T$
 
-**Witnesses**：$\vec{a}, \vec{b}\in\mathbb{Z}^n_p$；$c\in\Z_p$
+**Witnesses**：$\vec{a}, \vec{b}\in\mathbb{Z}^n_p$；$c\in \mathbb{Z}_p$
 
 **第一步（承诺步）**：Prover 发送两个遮罩向量的承诺 $P_0$ 与 $C_1$，$C_2$：
 
@@ -511,6 +513,7 @@ Verifier 可以计算得到 $P'$
 
 于是，Prover 和 Verifier 可以接着运行 rIPA 协议，证明 $\vec{a}'\cdot\vec{b}'\overset{?}{=}c'$，这三个值的承诺合并为 $P' = \vec{a}'\vec{G} + \vec{b}'\vec{H} + (\vec{a}'\cdot\vec{b}')U + \rho'T$。
 
+
 ## 5. 完整协议
 
 下面是结合了递归折叠与 Square-root IPA 的完整协议，这个协议支持 Zero-Knowledge 性质。如果不需要的 ZK 性质，直接去除 $H$ 部分关于 $\rho$ 相关的值即可。
@@ -522,7 +525,7 @@ Verifier 可以计算得到 $P'$
 
 ### 计算承诺
 
-1. Prover 把 $\vec{a}$ 重排成一个矩阵 $M_a\in\mathbb{F}_p^{l\times h}$：
+1. Prover 把 $\vec{a}$ 重排成一个矩阵 $M_a\in\mathbb{F}_p^{h\times l}$：
 
 $$
 M_a =
@@ -558,7 +561,7 @@ $$
 ### 公共输入
 
 1. $\vec{a}$ 的承诺： $(C_0, C_1, ..., C_{h-1})$
-2. $\vec{u}=(u_0, u_1, ..., u_{n-1})=\vec{u}_L \parallel \vec{u}_R$ ，其中 $|\vec{u}_L|=\log(h)$ ，$|\vec{u}_R|=\log(l)$
+2. $\vec{u}=(u_0, u_1, ..., u_{n-1})=\vec{u}_L \parallel \vec{u}_R$ ，其中 $|\vec{u}_L|=\log(l)$ ，$|\vec{u}_R|=\log(h)$
 3. $v=\tilde{f}(u_0, u_1, ..., u_{n-1})$
 
 ### Witness
@@ -640,11 +643,10 @@ $$
 
 $$
 \begin{aligned}
-L^{(i)} &= \mathsf{cm}_{\vec{G}^{(i)}_L}(\vec{b}^{(i)}; \rho^{(i)}_L) + \langle\vec{b}^{(i)}_R, \vec{d}^{(i)}_L\rangle\cdot{}U' \\
-R^{(i)} &= \mathsf{cm}_{\vec{G}^{(i)}_R}(\vec{b}^{(i)}; \rho^{(i)}_R) + \langle\vec{b}^{(i)}_L, \vec{d}^{(i)}_R\rangle\cdot{}U' \\
+L^{(i)} &= \mathsf{cm}_{\vec{G}^{(i)}_L}(\vec{b}_R^{(i)}; \rho^{(i)}_L) + \langle\vec{b}^{(i)}_R, \vec{d}^{(i)}_L\rangle\cdot{}U' \\
+R^{(i)} &= \mathsf{cm}_{\vec{G}^{(i)}_R}(\vec{b}_L^{(i)}; \rho^{(i)}_R) + \langle\vec{b}^{(i)}_L, \vec{d}^{(i)}_R\rangle\cdot{}U' \\
 \end{aligned}
 $$
-
 
 2. Verifier 发送一个随机数 $\mu^{(i)}$, 
 
@@ -652,8 +654,8 @@ $$
 
 $$
 \begin{aligned}
-\vec{b}^{(i+1)} &= \vec{b}^{i}_L + \mu^{(i)}\cdot\vec{b}^{i}_R \\
-\vec{d}^{(i+1)} &= \vec{d}^{i}_L + {\mu^{(i)}}^{-1}\cdot\vec{d}^{i}_R \\
+\vec{b}^{(i+1)} &= \vec{b}^{(i)}_L + \mu^{(i)}\cdot\vec{b}^{(i)}_R \\
+\vec{d}^{(i+1)} &= \vec{d}^{(i)}_L + {\mu^{(i)}}^{-1}\cdot\vec{d}^{(i)}_R \\
 \end{aligned}
 $$
 
@@ -712,7 +714,6 @@ $$
 $$
 R + \zeta\cdot P \overset{?}{=} z\cdot (G^{(n-1)} + b^{(n-1)}\cdot{U'}) + z_r\cdot{}H
 $$
-
 
 ## References
 
