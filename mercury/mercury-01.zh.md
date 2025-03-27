@@ -105,7 +105,7 @@ $$
 要证明 $\tilde{f}(\vec{u}_1, \vec{u}_2)  = v$ ，可以分成两部分：
 
 1. 证明 $M_f \cdot \vec{v}_1 = \vec{b}$ ，对应于先计算一个多元线性多项式 $\tilde{h}(\vec{X}_2) := \tilde{f}(\vec{u}_1, \vec{X}_2)$ 
-2. 证明 $\vec{v}_1^{\intercal} \cdot \vec{b} = v$ ，对应于计算 $\tilde{h}(\vec{u}_2) = \tilde{f}(\vec{u}_1, \vec{u_2})$ ，证明其结果为 $v$ 。
+2. 证明 $\vec{v}_2^{\intercal} \cdot \vec{b} = v$ ，对应于计算 $\tilde{h}(\vec{u}_2) = \tilde{f}(\vec{u}_1, \vec{u_2})$ ，证明其结果为 $v$ 。
 
 至此我们已经将 $(1)$ 中 $N$ 项的求和转换成了两个计算步骤，先代入 $\vec{u}_1$ 进行部分求和，再代入 $\vec{u_2}$ 得到最终的求和结果 $v$ 。下面先引入多元线性多项式到一元多项式的转换，再借助于一元多项式的承诺方案 KZG10 来进行证明。
 
@@ -218,7 +218,7 @@ $$
 那么 $h(X)= \sum_{i = 0}^{b - 1} \tilde{eq}(\mathsf{bits}(i), \vec{u}_1) \cdot f_i(X)$ 对应的多元线性多项式就是 $\tilde{h}(\vec{X}) = \tilde{f}(\vec{u}_1, \vec{X})$ 。这就相当于一次性替换了 $\tilde{f}$ 中的前 $t$ 个变量。那么我们承诺与 $\tilde{f}(\vec{u}_1, \vec{X})$ 对应的一元多项式 $\mathsf{cm}(h(X))$ ，再证明 $\tilde{h}(\vec{u}_2) = v$ 就完成了证明。也就是对应前一小节所说的证明分为两个部分：
 
 1. 证明 $M_f \cdot \vec{v}_1 = \vec{b}$ ，对应于先计算一个多元线性多项式 $\tilde{h}(\vec{X}_2) := \tilde{f}(\vec{u}_1, \vec{X}_2)$ 
-2. 证明 $\vec{v}_1^{\intercal} \cdot \vec{b} = v$ ，对应于计算 $\tilde{h}(\vec{u}_2) = \tilde{f}(\vec{u}_1, \vec{u_2})$ ，证明其结果为 $v$ 。
+2. 证明 $\vec{v}_2^{\intercal} \cdot \vec{b} = v$ ，对应于计算 $\tilde{h}(\vec{u}_2) = \tilde{f}(\vec{u}_1, \vec{u_2})$ ，证明其结果为 $v$ 。
 
 第 2 部分其实是证明两个向量的内积，可以转换为内积的证明。
 
@@ -303,7 +303,7 @@ $$
 至此，就将上一小节提到的两个证明：
 
 1. 证明 $M_f \cdot \vec{v}_1 = \vec{b}$ ，对应于先计算一个多元线性多项式 $\tilde{h}(\vec{X}_2) := \tilde{f}(\vec{u}_1, \vec{X}_2)$ 
-2. 证明 $\vec{v}_1^{\intercal} \cdot \vec{b} = v$ ，对应于计算 $\tilde{h}(\vec{u}_2) = \tilde{f}(\vec{u}_1, \vec{u_2})$ ，证明其结果为 $v$ 。
+2. 证明 $\vec{v}_2^{\intercal} \cdot \vec{b} = v$ ，对应于计算 $\tilde{h}(\vec{u}_2) = \tilde{f}(\vec{u}_1, \vec{u_2})$ ，证明其结果为 $v$ 。
 
 转换为下面四个证明：
 
