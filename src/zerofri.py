@@ -124,8 +124,7 @@ class ZeroFRI:
                 transcript.append_message(b"q_cm", bytes(str(comm.root), encoding='ascii'))
 
         gen = g ** (g_order // (len(f) * rate))
-        zeta = int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big") % g_order
-        zeta = gen ** zeta * g
+        zeta = int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big")
         if debug > 0: print(f"P> receive zeta: {zeta} = {gen} ** {zeta} * {g}")
 
         f_val = UniPolynomial.uni_eval_from_evals(f_evals, zeta, f_domain[::rate], one)
@@ -214,8 +213,7 @@ class ZeroFRI:
 
         gen = g ** (g_order // ((1 << num_var) * rate))
 
-        zeta = int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big") % g_order
-        zeta = gen ** zeta * g
+        zeta = int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big")
         if debug > 0: print(f"V> send zeta: {zeta} = {gen} ** {zeta} * {g}")
 
         f_domain = [g ** (i * g_order // ((1 << num_var) * rate)) for i in range((1 << num_var) * rate)]
