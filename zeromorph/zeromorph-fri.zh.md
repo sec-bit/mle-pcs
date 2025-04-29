@@ -236,6 +236,7 @@ $$
   $$
   \{(\hat{q}_k(-s_k^{(0)}), \pi_{\hat{q}_k}(-s_k^{(0)}))\} \leftarrow \mathsf{MT.open}([\hat{q}_k(x)|_{x \in D_0^{(k)}}], -s^{(0)})
   $$
+  
 - Prover 计算 $s_k^{(1)} = (s_k^{(0)})^2$ 
 - 对于 $i = 1, \ldots, k - 1$
   - Prover 发送 $q_{\hat{q}_k}^{(i)}(s_k^{(i)}), q_{\hat{q}_k}^{(i)}(-s_k^{(i)})$ 的值，并附上 Merkle Path。
@@ -665,7 +666,7 @@ $$
 \end{aligned}
 $$
 
-用符号 $\{\cdot\}^l$ 表示在 FRI low degree test 的查询阶段重复查询 $l$ 次产生的证明，由于每次查询是随机选取的，因此花括号中的证明也是随机的。那么 FRI 进行 low degree test 的两个证明为
+用符号 $\{\cdot\}^l$ 表示在 FRI low degree test 的查询阶段重复查询 $l$ 次产生的证明，由于每次查询是随机选取的，因此花括号中的证明也是随机的。那么 FRI 进行 low degree test 的证明为
 
 $$
 \begin{aligned}
