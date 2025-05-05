@@ -31,6 +31,10 @@ class Fr(FQ):
         return cls(rndg.randint(1, cls.field_modulus - 1))
     
     @classmethod
+    def random(cls) -> "Fr":
+        return cls.rand()
+    
+    @classmethod
     def rands(cls, rndg: Random, n: int) -> list["Fr"]:
         return [cls(rndg.randint(1, cls.field_modulus - 1)) for _ in range(n)]
     
@@ -58,6 +62,9 @@ class Fr(FQ):
     def __pow__(self: "Fr", other: int) -> "Fr":
         return type(self)(pow(self.n, other, self.field_modulus))
         
+    def __int__(self) -> int:
+        return self.n
+    
     def exp(self: "Fr", other: int) -> "Fr":
         return type(self)(pow(self.n, other, self.field_modulus))
     
@@ -145,6 +152,8 @@ class G1Point:
 
 
 def ec_mul(pt: G1Point, coeff: Fr) -> G1Point:
+    assert isinstance(pt, G1Point), f"pt is not a G1Point"
+
     if pt.is_zero:
         return G1Point.zero()
     if coeff == Fr.zero():
@@ -185,7 +194,7 @@ class G2Point:
         if other == G2Point.zero():
             return self
         result = bn128.add((self.x, self.y), bn128.neg((other.x, other.y)))
-        return G1Point(result[0], result[1])
+        return G2Point(result[0], result[1])
     
     def __neg__(self) -> "G2Point":
         g = bn128.neg((self.x, self.y))
@@ -217,8 +226,9 @@ class G2Point:
     def zero() -> "G2Point":
         return G2Point(bn128.Z2, bn128.Z2, is_zero=True)
 
-
 def ec_mul_group2(pt: G2Point, coeff: Fr) -> G2Point:
+    assert isinstance(pt, G2Point), f"pt is not a G2Point"
+
     if pt.is_zero:
         return G2Point.zero()
     if coeff == Fr.zero():
@@ -233,6 +243,11 @@ def ec_mul_group2(pt: G2Point, coeff: Fr) -> G2Point:
 #     return b.Z2
 
 def ec_lincomb(pairs: list[tuple[G1Point, Fr]]) -> G1Point:
+    assert len(pairs) > 0, "Pairs must be non-empty"
+    for i in range(len(pairs)):
+        assert isinstance(pairs[i][0], G1Point), f"pairs[{i}][0] is not a G1Point"
+        assert isinstance(pairs[i][1], Fr), f"pairs[{i}][1] is not a Fr"
+
     o = bn128.Z1
     for pt, coeff in pairs:
         o = bn128.add(o, ec_mul(pt, coeff))
@@ -249,7 +264,11 @@ def ec_pairing_check(Ps: list[G1Point], Qs: list[G2Point]) -> bool:
         Returns:
             bool: True if the pairing equation holds, False otherwise
     """
-    assert len(Ps) == len(Qs)
+    assert len(Ps) == len(Qs), f"Incompatible lengths: len(Ps)= {len(Ps)}, len(Qs)= {len(Qs)}"
+    for i in range(len(Ps)):
+        assert isinstance(Ps[i], G1Point), f"Ps[{i}] is not a G1Point"
+        assert isinstance(Qs[i], G2Point), f"Qs[{i}] is not a G2Point"
+    
     prod = bn128.FQ12.one()
     for i in range(len(Ps)):
         p = Ps[i]
@@ -325,7 +344,7 @@ if __name__ == "__main__":
 
     g1_3 = ec_mul(g1, Fr(3))
 
-    g2_2 = ec_mul(g2, Fr(2))
+    g2_2 = ec_mul_group2(g2, Fr(2))
     g1_6 = ec_mul(g1, Fr(6))
 
     assert bn128.pairing([g2_4.x, g2_4.y], (g1_3.x, g1_3.y)) == bn128.pairing([g2_2.x, g2_2.y], (g1_6.x, g1_6.y))

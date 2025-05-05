@@ -1,6 +1,47 @@
 #!/usr/bin/env python3
 
 
+class Scalar:
+    def __init__(self, value):
+        self.value = value
+    
+    def __repr__(self):
+        return f"Scalar({self.value})"
+    
+    def __str__(self):
+        return f"Scalar({self.value})"
+    
+def inner_product(a, b, z):
+    return sum([a[i] * b[i] for i in range(len(a))], z)
+
+## NOTE: Copy from py_ecc.utils
+def prime_field_inv(a, n):
+    """
+    Extended euclidean algorithm to find modular inverses for integers
+    """
+    # To address a == n edge case.
+    # https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-09#section-4
+    # inv0(x): This function returns the multiplicative inverse of x in
+    # F, extended to all of F by fixing inv0(0) == 0.
+    a %= n
+
+    if a == 0:
+        return 0
+    lm, hm = 1, 0
+    low, high = a % n, n
+    while low > 1:
+        r = high // low
+        nm, new = hm - lm * r, high - low * r
+        lm, low, hm, high = nm, new, lm, low
+    return lm % n
+
+def bits_be(int):
+    bits = []
+    while int:
+        bits.insert(0, int % 2)
+        int //= 2
+    return bits
+
 def bits_le_with_width(i, width):
     if i >= 2**width:
         return "Failed"
@@ -17,7 +58,6 @@ def bits_le_to_int(bits):
 def bit_reverse(x: int, width: int) -> int:
     bits = bits_le_with_width(x, width)
     return int("".join(map(str, bits)), 2)
-
 
 def pow_2(n):
     return 1 << n
@@ -36,6 +76,16 @@ def next_power_of_two(n):
         k <<= 1
     return k
 
+def log_2_ceiling(i):
+    if i < 1:
+        raise ValueError("Error: i < 1")
+    c = 0
+    j = i-1
+    while j != 0:
+        j = j >> 1
+        c += 1
+    return c
+
 def log_2(x):
     """
     Compute the integer part of the logarithm base 2 of x.
@@ -49,8 +99,8 @@ def log_2(x):
     Raises:
         ValueError: If x is not a positive integer.
     """
-    if not isinstance(x, int) or x <= 0:
-        raise ValueError("x must be a positive integer")
+    if x <= 0:
+        raise ValueError(f"x must be a positive integer, x={x},type(x)={type(x)}")
     
     result = 0
     while x > 1:
@@ -63,6 +113,19 @@ def from_bytes(bytes):
     for b in bytes:
         res = (res << 8) + b
     return res
+
+def bit_reverse_inplace(f, k):
+    if len(f) > 2**k:
+        raise ValueError("length of f should be less than 2^k")
+    n = 2**k
+    for i in range(0, n):
+        i_bits = bits_le_with_width(i, k)
+        i_bits.reverse()
+        i_rev = bits_le_to_int(i_bits)
+        if i < i_rev:
+            tmp = f[i]
+            f[i] = f[i_rev]
+            f[i_rev] = tmp
 
 if __name__ == "__main__":
     import random
