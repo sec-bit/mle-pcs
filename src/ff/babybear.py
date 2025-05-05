@@ -14,6 +14,10 @@ class BabyBear:
         self.value = value % self.P
 
     @classmethod
+    def field_order(cls):
+        return cls.P
+
+    @classmethod
     def zero(cls):
         return cls(0)
 
