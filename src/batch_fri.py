@@ -46,13 +46,10 @@ class BatchFRI:
         return {
             'low_degree_proof': low_degree_proof,
             'code_commitment': code_tree['layers'][-1][0],
-            'degree_bound': degree_bound,
         }
     
     @classmethod
     def batch_verify(cls, degree_bound, rate, proof, point, vals, gen, one, transcript, debug=False):
-        assert degree_bound >= proof['degree_bound']
-        degree_bound = proof['degree_bound']
 
         assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
 
@@ -167,7 +164,6 @@ class BatchFRI:
             query_paths.append((cur_path, indices, reduced_openings))
 
         # merkle paths
-        merkle_paths = []
         first_merkle_paths = []
         for q, (cur_path, indices, reduced_openings) in zip(queries, query_paths):
             mmcs_proof = MMCS.open(q, first_tree, debug)
@@ -188,13 +184,14 @@ class BatchFRI:
                 print("prover MMCS.verify:", q, reduced_openings, first_tree['layers'][-1][0])
                 MMCS.verify(q, reduced_openings, mmcs_proof[1], first_tree['layers'][-1][0], debug)
 
+        merkle_paths = []
         for cur_path, indices, _ in query_paths:
             cur_query_paths = []
             for i, idx in enumerate(indices):
                 cur_tree = trees[i]
                 assert isinstance(cur_tree, MerkleTree)
                 cur_query_paths.append(cur_tree.get_authentication_path(idx))
-                verify_decommitment(idx, oracles[i][idx], cur_query_paths[-1], cur_tree.root)
+                if debug: verify_decommitment(idx, oracles[i][idx], cur_query_paths[-1], cur_tree.root)
                 # print("prover verify_decommitment:", idx, oracles[i][idx], cur_query_paths[-1], cur_tree.root)
                 if debug: print("mp:", cur_query_paths[-1])
                 if debug: print("commit:", cur_tree.root)
@@ -204,7 +201,7 @@ class BatchFRI:
         return query_paths, merkle_paths, first_merkle_paths
     
     @classmethod
-    def verify_queries(cls, proof, k, num_vars, num_verifier_queries, T, point, vals, one, transcript, debug=False):
+    def verify_queries(cls, proof, log_degree_bound, num_vars, num_verifier_queries, T, point, vals, one, transcript, debug=False):
         first_oracle = proof['first_oracle']
         intermediate_oracles = proof['intermediate_oracles']
         query_paths = proof['query_paths']
@@ -215,8 +212,8 @@ class BatchFRI:
         # print("lambda:", lambda_)
         fold_challenges = []
         if debug: print("intermediate_oracles:", intermediate_oracles)
-        if debug: print("k:", k)
-        for i in range(k):
+        if debug: print("k:", log_degree_bound)
+        for i in range(log_degree_bound):
             fold_challenges.append(from_bytes(transcript.challenge_bytes(b"alpha", 4)))
             transcript.append_message(b'oracle', intermediate_oracles[i].encode('ascii'))
 
@@ -234,7 +231,7 @@ class BatchFRI:
             # q = min(q, q ^ num_vars_copy)
 
             # fold loop
-            for i in range(k):
+            for i in range(log_degree_bound):
                 if debug: print("q:", q)
                 if debug: print("num_vars_copy:", num_vars_copy)
                 if debug: print("ros[i]:", ros[i])
