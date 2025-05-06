@@ -201,6 +201,7 @@ $$
 > 这一步中的 $g(X)$ 多项式就是类似 sumcheck 协议中为了证明求和正确，构造的一元多项式。
 
 c. verifier 向 prover 发送 $r_1 \stackrel{\$}{\leftarrow} \mathbb{F}$ .
+
 d. prover 计算折叠后的多项式 $f^{(1)}(X) = f_E^{(1)}(X) + r_1 \cdot f_O^{(1)}(X)$ ，其中 $f_E^{(1)}(X)$ 与 $f_O^{(1)}(X)$ 应该满足
 
 $$
@@ -231,6 +232,7 @@ $$
 令 $A_2 := \{A_2, \vec{w}_{[2:]}\} = \{(z_3), (\alpha^4), (\alpha_1^4), (\alpha_2^2)\}$ 。
 
 c. verifier 向 prover 发送 $r_2 \stackrel{\$}{\leftarrow} \mathbb{F}$ .
+
 d. prover 计算折叠后的多项式 $f^{(2)}(X) = f_E^{(2)}(X) + r_2 \cdot f_O^{(2)}(X)$ ，其中 $f_E^{(2)}(X)$ 与 $f_O^{(2)}(X)$ 应该满足
 
 $$
@@ -252,6 +254,7 @@ $$
 > 现在是最后一轮，直接发送函数 $g(X)$ 。
 
 c. verifier 向 prover 发送 $r_3 \stackrel{\$}{\leftarrow} \mathbb{F}$ .
+
 d. prover 计算折叠后的多项式 $f^{(3)}(X) = f_E^{(3)}(X) + r_3 \cdot f_O^{(3)}(X)$ ，其中 $f_E^{(3)}(X)$ 与 $f_O^{(3)}(X)$ 应该满足
 
 $$
@@ -361,9 +364,13 @@ $$
 
 
 **第 4 步**：重复查询 $s$ 次：
+
 a. verifier 向 prover 发送 $\beta_0 \stackrel{\$}{\leftarrow} L_0$ 。对于 $i \in [3]$ ，定义 $\beta_i := \beta_{i - 1}^2$ 。
+
 b. 对于每一个 $i \in [3]$ ，prover 用 $\mathsf{MT.Open}$ 打开 $f^{(i - 1)}(\beta_{i - 1})$ 以及 $f^{(i - 1)}(-\beta_{i - 1})$ 。
+
 c. verifier 检查 prover 发送的结果是否正确，调用 $\mathsf{MT.Verify}$ 。
+
 d. 对于每一个 $i \in [3]$，verifier 需要检查下面三个点是否在一条直线上:
 
 $$
@@ -387,7 +394,11 @@ $$
 
 ![](./img/deepfold-sumcheck.svg)
 
-可以发现两个协议在构造一元多项式的方式上有所不同，同时 Verifier 检查的式子也有所不同。Basefold 协议中的 sumcheck 协议比较好理解，因为它的求和的形式比较明显。先将 $\tilde{f}(z_1, z_2, z_3)$ 转换为在 boolean hypercube $\{0,1\}^3$ 上求和，即
+可以发现两个协议在构造一元多项式的方式上有所不同，同时 Verifier 检查的式子也有所不同。
+
+### Basefold 中的 sumcheck
+
+Basefold 协议中的 sumcheck 协议比较好理解，因为它的求和的形式比较明显。先将 $\tilde{f}(z_1, z_2, z_3)$ 转换为在 boolean hypercube $\{0,1\}^3$ 上求和，即
 
 
 $$
@@ -462,6 +473,8 @@ $$
 下面就可以对上式继续用 split 以及 fold 的过程，不断将问题的规模减小到一个 Verfier 更容易验证的问题。因此 sumcheck 协议的整个过程可以用这种 split-and-fold 的视角来重新看待，整个流程如下图所示。
 
 ![](./img/deepfold-sumcheck-split-fold.svg)
+
+### Deepfold 中的 sumcheck
 
 DeepFold 中的 sumcheck 协议，同样也是这种 split-and-fold 的思想来证明 $\tilde{f}(z_1, z_2, z_3) = y$ ，不过，其分解的方式与 Basefold 中的 sumcheck 协议有所不同。设
 
