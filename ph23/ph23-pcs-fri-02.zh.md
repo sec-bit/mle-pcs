@@ -135,21 +135,21 @@ $$
 	q_a(X) = \frac{a(X) - a(\zeta)}{X - \zeta}
 	$$
 	
-	的次数小于 $N$ 。
+	的次数小于 $N - 1$ 。
 
 - 对于 $c(X)$ ，证明商多项式
 	
 	$$
 	q_c(X) = \sum_{x \in H_\zeta'} \frac{c(X) - c(x)}{X - x} = \frac{c(X) - c(\zeta)}{X - \zeta} + \frac{c(X) - c(\zeta \cdot \omega)}{X - \zeta \cdot \omega} + \ldots + \frac{c(X) - c(\zeta \cdot \omega^{2^{n-1}})}{X - \zeta \cdot \omega^{2^{n-1}}}
 	$$
-	的次数小于 $N$ 。
+	的次数小于 $N - 1$ 。
 
 - 对于 $t(X)$ ，用 $t'(X)$ 的商多项式来证明，证明
 
 	$$
 	q_{t'}(X) = \frac{t'(X) - t'(\zeta)}{X - \zeta}
 	$$
-	的次数小于 $N$ 。
+	的次数小于 $N - 1$ 。
 
 
 - 对于 $q_{ac}(X)$ ，用 $q_{ac}'(X)$ 的商多项式来证明，证明
@@ -157,7 +157,7 @@ $$
 	$$
 	q_{q_{ac}'}(X) = \frac{q_{ac}'(X) - q_{ac}'(\zeta)}{X - \zeta}
 	$$
-	的次数小于 $N$ 。
+	的次数小于 $N - 1$ 。
 
 - 对于 $g(X)$ ，用 $g'(X)$ 的商多项式来证明，证明
 	
@@ -165,17 +165,23 @@ $$
 	q_{g'}(X) = \frac{g'(X) - g'(\zeta)}{X - \zeta}
 	$$
 	
-	的次数小于 $N$ 。这里也就自然证明了 $\deg(g(X)) < N - 1$ 。
+	的次数小于 $N - 1$ 。这里也就自然证明了 $\deg(g(X)) < N - 1$ 。
 
 
 接着用随机数 $r$ 的幂次将上面 $5$ 个 low degree test batch 成一个 low degree test 证明。令
 
 $$
-q(X) = q_a(X) + r \cdot q_c(X) + r^2 \cdot q_{t'}(X) + r^4 \cdot q_{q_{ac}'}(X) + r^6 \cdot q_{g'}(X)
+q'(X) = q_a(X) + r \cdot q_c(X) + r^2 \cdot q_{t'}(X) + r^4 \cdot q_{q_{ac}'}(X) + r^6 \cdot q_{g'}(X)
 $$
 注意，由于 $t'(X), q_{ac}'(X) , g'(X)$ 多项式进行 degree correction 时已经用了随机数 $r$ ，为了能用一个随机数的幂次达到多个随机数的效果，因此上面 batch 的幂次不是按自然数递增的，不是 $(1, r, r^2, r^3, r^4)$  而是 $(1, r, r^2, r^4, r^6)$ 。
 
-下面只需要用 FRI 的 low degree test 来证明 $\deg(q(X)) < N$ 就大功告成了。
+下面只需要用 FRI 的 low degree test 来证明 $\deg(q'(X)) < N - 1$ 就大功告成了。最后为了对接 FRI low degree test 协议，需要将 $q'(X)$ 的次数对齐到 $2$ 的幂次，即向 Verifier 要一个随机数 $\lambda$ ，证明
+
+$$
+q(X) = (1 + \lambda \cdot X) q'(X)
+$$
+
+的次数小于 $N$ 。
 
 ## PH23 + FRI 协议
 
@@ -388,10 +394,21 @@ Prover:
 7. 将上面的 $5$ 个商多项式用随机数 $r$ 的幂次 batch 成一个多项式
 	
 	$$
-	q(X) = q_a(X) + r \cdot q_c(X) + r^2 \cdot q_{t'}(X) + r^4 \cdot q_{q_{ac}'}(X) + r^6 \cdot q_{g'}(X)
+	q'(X) = q_a(X) + r \cdot q_c(X) + r^2 \cdot q_{t'}(X) + r^4 \cdot q_{q_{ac}'}(X) + r^6 \cdot q_{g'}(X)
 	$$
-
 #### Round 5
+
+这一轮将商多项式 $q'(X)$ 对齐到 $2$ 的幂次，以对接 FRI 协议。
+
+1. Verifier 发送随机数 $\lambda \stackrel{\$}{\leftarrow} \mathbb{F}$
+2. Prover 计算 
+
+$$
+q(X) = (1 + \lambda \cdot X) q'(X)
+$$
+在 $D$ 上的值。
+
+#### Round 6
 
 Prover 和 Verifier 进行 FRI 的 low degree test 证明交互，证明 $q(X)$ 的次数小于 $2^n$ 。
 
@@ -399,7 +416,7 @@ $$
 \pi_{q} = \mathsf{FRI.LDT}(q(X), 2^n)
 $$
 
-具体过程如下：
+这里包含 $n$ 轮的交互，直到最后将原来的多项式折叠为常数多项式。下面用 $i$ 表示第 $i$ 轮，具体交互过程如下：
 
 - 记 $q^{(0)}(x)|_{x \in D} := q(x)|_{x \in D}$
 - 对于 $i = 1,\ldots, n$ ，
@@ -423,9 +440,11 @@ $$
 >
 > 如果折叠次数 $r < n$ ，那么最后不会折叠到常数多项式，因此 Prover 在第 $r$ 轮时会发送一个 Merkle Tree 承诺，而不是发送一个值。
 
-#### Round 6
+#### Round 7
 
-这一轮是接着 Prover 与 Verifier 进行 FRI 协议的 low degree test 交互的查询阶段，Verifier 重复查询 $l$ 次：
+这一轮是接着 Prover 与 Verifier 进行 FRI 协议的 low degree test 交互的查询阶段，Verifier 重复查询 $l$ 次，每一次 Verifier 都会从 $D_0$ 中选取一个随机数，让 Prover 发送在第 $i$ 轮折叠的值及对应的 Merkle Path，用来让 Verifier 验证每一轮折叠的正确性。
+
+重复 $l$ 次：
 - Verifier 从 $D_0$ 中随机选取一个数 $s^{(0)} \stackrel{\$}{\leftarrow} D_0$ 
 - Prover 打开 $a(s^{(0)}), a(-s^{(0)},c(s^{(0)}),c(-s^{(0)}),t(s^{(0)}),t(-s^{(0)}),q_{ac}(s^{(0)}),q_{ac}(-s^{(0)}),g(s^{(0)}),g(-s^{(0)})$ 的承诺，即这些点的值与对应的 Merkle Path，并发送给 Verifier
   
@@ -614,20 +633,30 @@ $$
 g'(\zeta) = g(\zeta) + r \cdot \zeta \cdot g(\zeta)
 $$
 
-- Verifier 根据 $a(s^{(0)}), a(-s^{(0)},c(s^{(0)}),c(-s^{(0)}),t(s^{(0)}),t(-s^{(0)}),q_{ac}(s^{(0)}),q_{ac}(-s^{(0)}),g(s^{(0)}),g(-s^{(0)})$  这些值计算出 $q^{(0)}(s^{(0)})$ 与 $q^{(0)}(-s^{(0)})$ ，计算
+- Verifier 根据 $a(s^{(0)}), a(-s^{(0)},c(s^{(0)}),c(-s^{(0)}),t(s^{(0)}),t(-s^{(0)}),q_{ac}(s^{(0)}),q_{ac}(-s^{(0)}),g(s^{(0)}),g(-s^{(0)})$  这些值计算出 $q'(s^{(0)})$ 与 $q'(-s^{(0)})$ ，计算
 
 $$
 \begin{align}
-q^{(0)}(s^{(0)}) & = \frac{a(s^{(0)}) - a(\zeta)}{s^{(0)} - \zeta} + r \cdot \left( \frac{c(s^{(0)}) - c(\zeta)}{s^{(0)} - \zeta} + \frac{c(s^{(0)}) - c(\zeta \cdot \omega)}{s^{(0)} - \zeta \cdot \omega} + \ldots + \frac{c(s^{(0)}) - c(\zeta \cdot \omega^{2^{n-1}})}{s^{(0)} - \zeta \cdot \omega^{2^{n-1}}}\right) \\ \\
+q'(s^{(0)}) & = \frac{a(s^{(0)}) - a(\zeta)}{s^{(0)} - \zeta} + r \cdot \left( \frac{c(s^{(0)}) - c(\zeta)}{s^{(0)} - \zeta} + \frac{c(s^{(0)}) - c(\zeta \cdot \omega)}{s^{(0)} - \zeta \cdot \omega} + \ldots + \frac{c(s^{(0)}) - c(\zeta \cdot \omega^{2^{n-1}})}{s^{(0)} - \zeta \cdot \omega^{2^{n-1}}}\right) \\ \\
 & \qquad + r^2 \cdot \frac{t'(s^{(0)}) - t'(\zeta)}{s^{(0)} - \zeta} + r^4 \cdot \frac{q_{ac}'(s^{(0)}) - q_{ac}'(\zeta)}{s^{(0)} - \zeta} + r^6 \cdot \frac{g'(s^{(0)}) - g'(\zeta)}{s^{(0)} - \zeta}
 \end{align}
 $$
 
 $$
 \begin{align}
-q^{(0)}(-s^{(0)}) & = \frac{a(-s^{(0)}) - a(\zeta)}{-s^{(0)} - \zeta} + r \cdot \left( \frac{c(-s^{(0)}) - c(\zeta)}{-s^{(0)} - \zeta} + \frac{c(-s^{(0)}) - c(\zeta \cdot \omega)}{-s^{(0)} - \zeta \cdot \omega} + \ldots + \frac{c(-s^{(0)}) - c(\zeta \cdot \omega^{2^{n-1}})}{-s^{(0)} - \zeta \cdot \omega^{2^{n-1}}}\right) \\ \\
+q'(-s^{(0)}) & = \frac{a(-s^{(0)}) - a(\zeta)}{-s^{(0)} - \zeta} + r \cdot \left( \frac{c(-s^{(0)}) - c(\zeta)}{-s^{(0)} - \zeta} + \frac{c(-s^{(0)}) - c(\zeta \cdot \omega)}{-s^{(0)} - \zeta \cdot \omega} + \ldots + \frac{c(-s^{(0)}) - c(\zeta \cdot \omega^{2^{n-1}})}{-s^{(0)} - \zeta \cdot \omega^{2^{n-1}}}\right) \\ \\
 & \qquad + r^2 \cdot \frac{t'(-s^{(0)}) - t'(\zeta)}{-s^{(0)} - \zeta} + r^4 \cdot \frac{q_{ac}'(-s^{(0)}) - q_{ac}'(\zeta)}{-s^{(0)} - \zeta} + r^6 \cdot \frac{g'(-s^{(0)}) - g'(\zeta)}{-s^{(0)} - \zeta}
 \end{align}
+$$
+
+- Verifier 计算
+
+$$
+q^{(0)}(s^{(0)}) = (1 + \lambda \cdot s^{(0)}) q'(s^{(0)})
+$$
+
+$$
+q^{(0)}(-s^{(0)}) = (1 - \lambda \cdot s^{(0)}) q'(-s^{(0)})
 $$
 
 - 验证 $q^{(1)}(s^{(1)}), q^{(1)}(-s^{(1)})$ 的正确性
@@ -723,6 +752,8 @@ Verifier 计算量：
 综合来看，由于协议 2 中对接 FRI 协议时，需要处理的多项式有 $5$ 个，分别是 $a(X),c(X),t(X),q_{ac}(X),g(X)$ ，这相比协议 1 多了 1 个多项式，同时这 5 个多项式中的次数不统一，需要将 $t(X),q_{ac}(X),g(X)$ 这几个多项式进行 degree correction 提升到 $N - 1$ 次。由于协议开始承诺的是原多项式 $a(X),c(X),t(X),q_{ac}(X),g(X)$ ，相比协议 1 多承诺的 1 个多项式以及进行 degree correction 的操作，就会导致在后续在进行 FRI low degree test 时增加复杂度。
 
 在 query 阶段，协议 2 就需要多发送一个多项式对应查询点的证明，而这需要重复 $l$ 次，这就导致了 proof size 的增加，另一方面，在 verifier 验证阶段，verifier 不仅要多对发过来的查询点的证明进行验证，同时需要自己计算 degree correction 之后的函数在查询点的值，这也是和 $l$ 相关的，导致了 verifier 计算复杂度的增加。
+
+通过上述分析能发现，对接 FRI 协议的复杂度是和需要处理的多项式的个数以及打开点的个数相关的。协议 2 中要处理的多项式更多，因此整体证明大小和 Verifier 计算复杂度也会比协议 1 高。
 
 ## References
 

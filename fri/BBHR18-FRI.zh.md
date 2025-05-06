@@ -1,6 +1,7 @@
 # [BBHR18] FRI 论文 soundness 解析 
 
-> 作者： Yu Guo(yu.guo@secbit.io) Jade Xie(jade@secbit.io)
+- Jade Xie  <jade@secbit.io>
+- Yu Guo <yu.guo@secbit.io>
 
 本篇文章主要讲解 Eli Ben-Sasson 等人在 2018 年发表的论文 [BBHR18b] ，重点放在对 FRI
 协议的 completeness 和 soundness 证明上。他们在这篇论文中针对 Reed-Solomon (RS) 编码提出了一种新的 IOPP (Interactive Oracle Proof of Proximity, IOPP)，称之为 FRI (Fast RS IOPP, FRI)。随后，在 [BBHR18a] 中使用 FRI 协议构建了一个实用的 ZK 系统，即我们熟知的 STARK。

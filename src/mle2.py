@@ -1,18 +1,36 @@
 #!/usr/bin/env sage -python
 
 from functools import reduce
-from utils import log_2, pow_2, bits_le_with_width
+from utils import log_2, pow_2, bits_le_with_width, Scalar
 from curve import Fr as Field
 
 # from sage.all import product, GF
 
+# TODO:
+#  1. mle addition with different number of variables
+#  2. mle multiplication
+
 class MLEPolynomial:
+
+    F = Field
+
     def __init__(self, evals, num_var):
         assert len(evals) <= 2**num_var, "Evaluation length must be less than or equal to 2^num_var"
 
         self.evals = evals + [Field(0)] * (2**num_var - len(evals))
         self.num_var = num_var
 
+    @classmethod
+    def zero_polynomial(cls):
+        f = cls([cls.F.zero()], 0)
+        return f
+    
+    def is_zero(self):
+        for i in range(2**self.num_var):
+            if self.evals[i] != self.F.zero():
+                return False
+        return True
+    
     def __repr__(self):
         return f"MLEPolynomial({self.evals}, {self.num_var})"
     
@@ -34,6 +52,54 @@ class MLEPolynomial:
             return self.evals[index]
         else:
             raise IndexError("Evaluation index out of range")
+
+    @classmethod
+    def set_field_type(cls, field_type: type):
+        cls.F = field_type
+        return
+    
+    def sub(self, g: 'MLEPolynomial'):
+        if g.is_zero():
+            return self
+        neg_g = g.scalar_mul(Scalar(self.F(-1)))
+        return self.add(neg_g)
+
+    def add(self, g: 'MLEPolynomial'):
+        if g.is_zero() or self.is_zero():
+            return g if self.is_zero() else self
+        assert self.num_var == g.num_var, "Number of variables must match"
+        evals = [self.evals[i] + g.evals[i] for i in range(len(self.evals))]
+        return MLEPolynomial(evals, self.num_var)
+    
+    def scalar_mul(self, s: Scalar):
+        if self.is_zero():
+            return self
+        evals = [self.evals[i] * s.value for i in range(len(self.evals))]
+        return MLEPolynomial(evals, self.num_var)
+    
+    def __add__(self, other):
+        return self.add(other)
+    
+    def __sub__(self, other):
+        return self.sub(other)
+    
+    def __neg__(self):
+        return self.scalar_mul(Scalar(self.F(-1)))
+
+    def __rmul__(self, other):
+        """
+        Overload the * operator for right multiplication (scalar * polynomial).
+
+        Args:
+            other (scalar): The scalar to multiply with this polynomial.
+
+        Returns:
+            UniPolynomial: Scalar multiplication result.
+        """
+        if isinstance(other, Scalar):
+            return self.scalar_mul(other)
+        else:
+            raise TypeError("Unsupported operand type for *: '{}' and '{}'".format(type(other).__name__, type(self).__name__))
 
     @classmethod
     def compute_monomials(cls, rs):
@@ -89,7 +155,7 @@ class MLEPolynomial:
                 for l in range(j, j+half):
                     vs[l+half] = vs[l+half] + twiddle * vs[l]
             half <<= 1
-        return vs
+        return vs   
 
     @classmethod
     def compute_evals_from_coeffs(cls, f_coeffs):

@@ -99,7 +99,7 @@ $$
 V_3 = \{0, \beta_0, \beta_1, \beta_0+\beta_1\} \cup \{{\color{blue}\beta_2}, \beta_0+{\color{blue}\beta_2}, \beta_1+{\color{blue}\beta_2}, (\beta_0+\beta_1)+{\color{blue}\beta_2}\}
 $$
 
-我们容易验证： $s_3(X) = s_{2}(X) \cdot s_{2}(X+\beta_{k-1})$ 。当然 $s_{2}(X)$ 也可以拆成关于 $s_1(X)$ 和 $s_1(X+\beta_1)$ 的乘积，我们不妨试着拆解到底：
+我们容易验证： $s_3(X) = s_{2}(X) \cdot s_{2}(X+\beta_{2})$ 。当然 $s_{2}(X)$ 也可以拆成关于 $s_1(X)$ 和 $s_1(X+\beta_1)$ 的乘积，我们不妨试着拆解到底：
 
 $$
 \begin{split}
@@ -355,7 +355,7 @@ f_{odd}(X) &= a_1 + a_3\cdot{s}_1(X) + a_5\cdot{s}_2(X) + a_7\cdot{s}_1(X)\cdot 
 \end{split}
 $$
 
-根据我们之前推导的映射的复合性质，$s_1(X)=s^{(1)}_0\circ s_0(X)$，$s_2(X)=s^{(1)}_1\circ s_1(X)$，于是我们可以得到：
+根据我们之前推导的映射的复合性质，$s_1(X)=s^{(1)}_0\circ s_1(X)$，$s_2(X)=s^{(1)}_1\circ s_1(X)$，于是我们可以得到：
 
 $$
 \begin{split}
