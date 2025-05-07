@@ -85,6 +85,15 @@ class Fr(FQ):
         assert is_power_of_two(n), "n must be a power of two"
         return cls(pow(cls.ROOT_OF_UNITY, 2**(cls.TWO_ADICITY - log_2(n)), cls.field_modulus))
 
+    @classmethod
+    def neg_one(cls) -> "Fr":
+        return cls(cls.field_modulus - 1)
+
+    # @classmethod
+    # def zero(cls) -> "Fr":
+    #     return cls(0)
+    
+
 Fp = NewType("Fp", bn128.FQ)
 
 class G1Point:
