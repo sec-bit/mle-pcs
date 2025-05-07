@@ -60,7 +60,7 @@ class SAMARITAN_PCS:
             pcs: the PedersenCommitment instance to use for the proof
         """
         self.kzg_pcs = kzg_pcs
-        self.rng = random.Random("mercury-pcs")
+        self.rng = random.Random("samaritan-pcs")
         self.debug = debug
 
     def commit(self, f_mle: MLEPolynomial) -> Commitment:

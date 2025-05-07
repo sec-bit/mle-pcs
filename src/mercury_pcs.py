@@ -39,7 +39,7 @@ from kzg10_non_hiding2 import KZG10_PCS, Commitment
 # TODO:
 #
 #  - [ ] Add [BDFG20] optimization
-#  - [ ] Add batching
+#  - [ ] Add batching proving/verifying
 
 def compute_product_poly(a: list[Field], b: list[Field]):
     assert len(a) == len(b), "Length of a and b must be the same"
