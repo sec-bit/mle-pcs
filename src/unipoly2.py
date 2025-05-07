@@ -6,9 +6,10 @@ from utils import Scalar
 from curve import Fp, Fr
 
 # TODO: 
-#  1. Iterative construct_subproduct_tree() 
-#  2. Karatsuba polynomial multiplication
-#  3. precompute_fft_twiddles()
+#  1. Rewrite fft_coset_core() with RBO output
+#  2. Iterative construct_subproduct_tree() 
+#  3. Karatsuba polynomial multiplication
+#  4. precompute_fft_twiddles()
 
 Field = TypeVar('Field', bound=Fr)
 
@@ -852,6 +853,7 @@ class UniPolynomialWithFft(UniPolynomial):
 
     @classmethod
     def set_field_type(cls, field_type: type):
+        UniPolynomial.set_field_type(field_type)
         cls.F = field_type
         one = field_type.one()
         zero = field_type.zero()
@@ -905,14 +907,16 @@ class UniPolynomialWithFft(UniPolynomial):
         return coeffs
     
     @classmethod
-    def fft_coset(cls, coeffs, omega, coset_factor, k_log_size):
+    def fft_core_with_coset(cls, coeffs, coset_factor, k_log_size, omega=None):
         """
-        Perform Algebraic FFT on the given coefficients using a 2^k-th root of unity.
+        Perform Algebraic FFT on the given coefficients over a coset
+            using a 2^k-th root of unity.
 
         Args:
             coeffs (list): Coefficients of the polynomial.
-            omega (Field): The root of unity.
+            coset_factor (Field): The coset factor.
             k_log_size (int): The logarithm of the size of the domain.
+            omega (Field): The root of unity.
 
         Returns:
             list: Coefficients after Algebraic FFT.
@@ -920,6 +924,12 @@ class UniPolynomialWithFft(UniPolynomial):
         domain_size = 2 ** k_log_size
         assert len(coeffs) == domain_size, "Coefficients length must be a power of 2"
 
+        if omega is None:
+            omega = cls.F.nth_root_of_unity(domain_size)
+        else:
+            assert (omega ** domain_size) == cls.F.one(), "omega must be a 2^k-th root of unity"
+            assert (omega ** (domain_size // 2)) == cls.F.neg_one(), "omega must be a 2^k-th root of unity"
+        
         # Bit-reversing
         for k in range(domain_size):
             k_rev = bit_reverse(k, k_log_size)
@@ -927,29 +937,105 @@ class UniPolynomialWithFft(UniPolynomial):
                 coeffs[k], coeffs[k_rev] = coeffs[k_rev], coeffs[k]
 
         sep = 1
-        g = coset_factor
-        for _ in range(k_log_size):
-            w = 1
+        
+        for i in range(k_log_size):
+            g = coset_factor**(2**(k_log_size - 1 - i))
+            w = cls.F.one()
             for j in range(sep):
                 for i in range(0, domain_size, 2*sep):
                     l, r = i + j, i + j + sep
-                    tmp = g * coeffs[r] * w
+                    tmp = coeffs[r] * w * g
                     coeffs[r] = coeffs[l] - tmp
                     coeffs[l] = coeffs[l] + tmp
                 w = w * (omega**(domain_size // (2*sep)))
             sep *= 2
-            g = g * g
         return coeffs   
+
+    @classmethod
+    def fft_coset_rbo(cls, coeffs: list[Field], coset_factor: Field, k_log_size: int, omega=None):
+        """
+        Compute evaluations of the polynomial over a coset.
+
+        Args:
+            coeffs (list): Coefficients of the polynomial.
+            coset_factor (Field): The coset factor.
+            k_log_size (int): The logarithm of the size of the domain.
+            omega (Field): The root of unity.
+
+        Returns:
+            list: (Reversed Bit-Order) Evaluations of the polynomial over the coset.
+        """
+        domain_size = 2**k_log_size
+        assert len(coeffs) <= domain_size, "Coefficients length must be less than or equal to the domain size"
+        
+        if omega is None:
+            omega = cls.F.nth_root_of_unity(domain_size)
+        else:
+            assert (omega ** domain_size) == cls.F.one(), "omega must be a 2^k-th root of unity"
+            assert (omega ** (domain_size // 2)) == cls.F.neg_one(), "omega must be a 2^k-th root of unity"
+
+        coeffs_copy = coeffs + [cls.F.zero()] * (domain_size - len(coeffs))
+        evals = cls.fft_core_with_coset(coeffs_copy, coset_factor, k_log_size, omega)
+        return bit_reverse_permutation(evals)
     
-    def ifft_coset(cls, coeffs, omega, coset_factor, k_log_size):
-        n = cls.F(2**k_log_size)
+    @classmethod
+    def fft_coset(cls, coeffs: list[Field], coset_factor: Field, k_log_size: int, omega=None):
+        """
+        Compute evaluations of the polynomial over a coset.
+
+        Args:
+            coeffs (list): Coefficients of the polynomial.
+            coset_factor (Field): The coset factor.
+            k_log_size (int): The logarithm of the size of the domain.
+            omega (Field): The root of unity.
+
+        Returns:
+            list: (Reversed Bit-Order) Evaluations of the polynomial over the coset.
+        """
+        domain_size = 2**k_log_size
+        assert len(coeffs) <= domain_size, "Coefficients length must be less than or equal to the domain size"
+        
+        if omega is None:
+            omega = cls.F.nth_root_of_unity(domain_size)
+        else:
+            assert (omega ** domain_size) == cls.F.one(), "omega must be a 2^k-th root of unity"
+            assert (omega ** (domain_size // 2)) == cls.F.neg_one(), "omega must be a 2^k-th root of unity"
+
+        coeffs_copy = coeffs + [cls.F.zero()] * (domain_size - len(coeffs))
+        evals = cls.fft_core_with_coset(coeffs_copy, coset_factor, k_log_size, omega)
+        return evals
+    
+    @classmethod
+    def ifft_coset(cls, evals: list[Field], coset_factor: Field, k_log_size: int, omega=None):
+        """
+        Perform Algebraic Inverse FFT on the given coefficients over a coset
+            using a 2^k-th root of unity.
+
+        Args:
+            evals (list): Evaluations of the polynomial over the coset `gH`.
+            coset_factor (Field): A coset factor, `g` not in `H`.
+            k_log_size (int): The logarithm of the size of the domain.
+            omega (Field): The root of unity.
+
+        Returns:
+            list: Coefficients after Algebraic Inverse FFT.
+        """
+        domain_size = 2**k_log_size
+        if omega is None:
+            omega = cls.F.nth_root_of_unity(domain_size)
+        else:
+            assert (omega ** domain_size) == cls.F.one(), "omega must be a 2^k-th root of unity"
+            assert (omega ** (domain_size // 2)) == cls.F.neg_one(), "omega must be a 2^k-th root of unity"
+        
+        n = cls.F(domain_size)
         n_inv = n.inv()
+
         omega_inv = omega.inv()
-        coeffs2 = cls.fft_coset(coeffs, omega_inv, cls.F.one(), k_log_size)
+        coeffs = cls.fft_coset(evals, cls.F.one(), k_log_size, omega=omega_inv)
         coset_factor_inv = coset_factor.inv()
 
-        factors = [coset_factor_inv**i for i in range(n)]
-        return [c * n_inv * f for c, f in zip(coeffs2, factors)]
+        factors = [coset_factor_inv**i for i in range(domain_size)]
+        return [c * f * n_inv for c, f in zip(coeffs, factors)]
 
     # @classmethod    
     # def fft_with_twiddles(cls, coeffs, k_log_size, twiddles):
@@ -1099,6 +1185,24 @@ class UniPolynomialWithFft(UniPolynomial):
         coeffs = cls.ifft(evals, domain_log_size, omega)
 
         return cls(coeffs)
+    
+    @classmethod
+    def precompute_twiddles_for_fft(cls, domain_size: int, is_inversed: bool = False, is_bit_reversed: bool = False):
+        assert is_power_of_two(domain_size), "Domain size must be a power of 2"
+
+        twiddles = []
+        omega = cls.F.nth_root_of_unity(domain_size)
+        omega_power = cls.F.one()
+        for i in range(domain_size//2):
+            if is_inversed:
+                twiddles.insert(1, omega_power)
+            else:
+                twiddles.append(omega_power)
+            omega_power *= omega
+
+        if is_bit_reversed:
+            twiddles = bit_reverse_permutation(twiddles)
+        return twiddles
 
 def reverse_bits(n: int, bit_length: int) -> int:
     """
@@ -1117,29 +1221,45 @@ def reverse_bits(n: int, bit_length: int) -> int:
         n >>= 1
     return result
 
-def bit_reverse_permutation(elements: list, bit_length: int):
+def bit_reverse_permutation_inplace(elements: list[Field]):
+    assert is_power_of_two(len(elements)), "Length of elements must be a power of 2"
+
+    bit_length = log_2(len(elements))
     n = len(elements)
     for i in range(n):
         j = reverse_bits(i, bit_length)
         if i < j:
             elements[i], elements[j] = elements[j], elements[i]
-    return elements
+    return
 
-def precompute_twiddles_for_fft(omega: Field, domain_size: int, is_inversed: bool = False, is_reversed: bool = False):
-    twiddles = []
-    omega_power = Field.one()
-    for i in range(domain_size):
-        if is_inversed:
-            twiddles.insert(1, omega_power)
-        else:
-            twiddles.append(omega_power)
-        print(f"twiddles: {twiddles}")
-        omega_power *= omega
+def bit_reverse_permutation(elements: list[Field]):
+    assert is_power_of_two(len(elements)), "Length of elements must be a power of 2"
+    
+    bit_length = log_2(len(elements))
+    n = len(elements)
+    vec = elements.copy()
+    for i in range(n):
+        j = reverse_bits(i, bit_length)
+        if i < j:
+            vec[i], vec[j] = vec[j], vec[i]
+    return vec
 
-    if is_reversed:
-        twiddles = bit_reverse_permutation(twiddles, log_2(domain_size))
-    return twiddles
+def test_fft_coset():
+    coeffs = [Fr(2), Fr(3), Fr(4), Fr(2)]
+    evals1 = UniPolynomialWithFft.fft_coset(coeffs, Fr.one(), 2)
+    evals2 = UniPolynomialWithFft.fft(coeffs, 2, Fr.nth_root_of_unity(4))
+    evals3 = UniPolynomialWithFft.fft_coset_rbo(coeffs, Fr.one(), 2)
 
+    print(f"evals1: {evals1}")
+    print(f"evals2: {evals2}")
+    print(f"evals3: {evals3}")
+    assert evals1 == evals2
+    assert bit_reverse_permutation(evals1) == evals3
+
+    evals = UniPolynomialWithFft.fft_coset(coeffs, Fr.multiplicative_generator(), 2)
+    coeffs2 = UniPolynomialWithFft.ifft_coset(evals, Fr.multiplicative_generator(), 2)
+    print(f"coeffs2: {coeffs2}")
+    assert coeffs == coeffs2  
 
 # Example usage
 if __name__ == "__main__":
@@ -1176,3 +1296,5 @@ if __name__ == "__main__":
     # print(f"Equal: {result.coeffs == f.coeffs}")
 
     # assert f.field_type == Fr, f"field_type: {f.field_type}, type(Fr): {type(Fr)}"
+
+    test_fft_coset()
