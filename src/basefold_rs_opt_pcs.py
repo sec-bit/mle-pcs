@@ -17,8 +17,6 @@ from utils import inner_product, Scalar
 #    Field-Agnostic Polynomial Commitment Schemes from Foldable Codes. 2024.
 #
 
-
-
 from curve import Fr as BN254_Fr
 from merlin.merlin_transcript import MerlinTranscript
 from mle2 import MLEPolynomial
@@ -31,7 +29,6 @@ from merkle import MerkleTree, verify_decommitment
 #  - [ ] Reduce leaves revealed by the prover and also the corresponding checks
 #  - [ ] Compress the merkle proofs
 #  - [ ] Add batching proving/verifying
-
 
 Field = BN254_Fr
 
@@ -121,7 +118,7 @@ def expanded_partial_evaluate(f: list[Field], us: list[Field]) -> list[Field]:
     return rs
 
 
-class DEEPFOLD_RS_PCS:
+class BASEFOLD_RS_PCS:
 
     blowup_factor = 2 # WARNING: this is not secure
     num_queries = 6   # WARNING: this is not secure
@@ -173,14 +170,6 @@ class DEEPFOLD_RS_PCS:
             for c in codes:
                 x0, x1 = int(prev_idx//2*2), int(prev_idx//2*2+1)
                 cur_path.append((c[x0], c[x1]))
-                # if prev_idx % 2 == 0 and x1 == prev_idx:
-                #     indices.append(x0)
-                # elif prev_idx % 2 == 0 and x0 == prev_idx:
-                #     indices.append(x1)
-                # elif prev_idx % 2 == 1 and x1 == prev_idx:
-                #     indices.append(x0)
-                # else:
-                #     indices.append(x1)
                 indices.append((x0,x1))
                 prev_idx = x0//2
             query_indices.append(indices)
@@ -221,7 +210,6 @@ class DEEPFOLD_RS_PCS:
                 indices = query_indices[i]
                 merkle_path = merkle_paths[i]
                 for j in range(len(indices)):
-                    # print(f"P> i={i}, j={j}, idx={indices[j]}, cur_query={cur_query[j]}, merkle_path={merkle_path[j]}")
                     x0, x1 = indices[j]
                     c0, c1 = cur_query[j]
                     p0, p1 = merkle_path[j]
@@ -229,7 +217,6 @@ class DEEPFOLD_RS_PCS:
                     assert checked0, f"merkle_path-{i} failed at index {j}, x0={x0} p0={p0}, c0={c0}"
                     checked1 = verify_decommitment(x1, c1, p1, trees[j].root)
                     assert checked1, f"merkle_path-{i} failed at index {j}, x1={x1}, p1={p1}, c1={c1}"
-                    # print(f"P> checked0={checked0}, checked1={checked1}")
                 # print(f"P>> check merkle_path-{i} passed")
             print(f"P> check merkle_paths passed")
         
@@ -273,7 +260,6 @@ class DEEPFOLD_RS_PCS:
             prev_idx = q
             for i in range(k):
                 x0, x1 = int(prev_idx//2*2), int(prev_idx//2*2+1)
-                # print(f"V> q={q}, prev_idx={prev_idx}, x0={x0}, x1={x1}")
                 indices.append((x0,x1))
                 prev_idx = x0//2
             query_indices.append(indices)
@@ -341,14 +327,14 @@ class DEEPFOLD_RS_PCS:
         if self.debug > 0:
             print(f"P> f_len={len(f)}, k={k}, c_len ={len(f)*self.blowup_factor}")
 
-        # eq = MLEPolynomial.eqs_over_hypercube(us)
-        # eq_mle = MLEPolynomial(eq, k)
+        # NOTE: The array `eq` is not needed for the simplified sumcheck.
+        ## eq = MLEPolynomial.eqs_over_hypercube(us)
 
         # > Preparation
 
         f_code_len = len(f) * self.blowup_factor
 
-        # precompute twiddles for FFT
+        # Precompute twiddles for FFT
         # NOTE: the array of twiddles are bit-reversed, such that it can be reused for all rounds.
         twiddles = UniPolynomialWithFft.precompute_twiddles_for_fft(f_code_len, is_bit_reversed=True)
 
@@ -587,7 +573,7 @@ class DEEPFOLD_RS_PCS:
 
 def test_pcs():
 
-    pcs = DEEPFOLD_RS_PCS(MerkleTree, debug = 1)
+    pcs = BASEFOLD_RS_PCS(MerkleTree, debug = 1)
 
     tr = MerlinTranscript(b"basefold-rs-pcs")
 
