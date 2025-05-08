@@ -5,17 +5,16 @@
 # DO NOT use it in a production environment.
 
 from utils import log_2, next_power_of_two
-from utils import inner_product, Scalar
+from utils import inner_product
 
-# Implementation of Basefold (RS encoding) with simplified sumcheck, which is 
-#   inspired by DeepFold [GLH+25].
+# Implementation of Deepfold (RS encoding) PCS [GLH+25]
 #
-# [GLH+25] Yanpei Guo, Xuanming Liu, Kexi Huang and others. DeepFold: Efficient 
-#    Multilinear Polynomial Commitment from Reed-Solomon Code and Its. 2025.
-#    Application to Zero-knowledge Proofs
-# [ZCF23] Hadas Zeilberger, Binyi Chen and Ben Fisch. BaseFold: Efficient 
-#    Field-Agnostic Polynomial Commitment Schemes from Foldable Codes. 2024.
-#
+# [GLH+25] DeepFold: Efficient Multilinear Polynomial Commitment 
+#    from Reed-Solomon Code and Its Application to Zero-knowledge Proofs
+
+#  Author: Yanpei Guo, Xuanming Liu, Kexi Huang, Wenjie Qu,
+#    Tianyang Tao and Jiaheng Zhang
+#  URL: https://eprint.iacr.org/2023/1705
 
 from curve import Fr as BN254_Fr
 from merlin.merlin_transcript import MerlinTranscript
@@ -34,12 +33,13 @@ Field = BN254_Fr
 
 class Commitment:
 
-    def __init__(self, tree: MerkleTree):
-        self.tree = tree
-        self.cm = tree.root
+    def __init__(self, root: str, alpha: Field, v_alpha: Field):
+        self.root = root
+        self.alpha = alpha
+        self.v_alpha = v_alpha
 
     def __repr__(self):
-        return f"Commitment(len={len(self.tree.data)}, root={self.cm})"
+        return f"Commitment(root={self.root}, alpha={self.alpha}, v_alpha={self.v_alpha})"
 
 def rs_encode(f: list[Field], coset: Field, blowup_factor: int) -> list[Field]:
     n = next_power_of_two(len(f))
@@ -69,15 +69,6 @@ def fold(f: list[Field], r: Field) -> list[Field]:
     f_odd = f[1::2]
     return [f_even[i] + r * (f_odd[i] - f_even[i]) for i in range(half)]
 
-
-# NOTE: The secret recipe of simplified sumcheck is to use a cached partial 
-#       evaluation of the MLE polynomial. The cached array follows the folding 
-#       pattern of the MLE polynomial, and can be used to help compute the next 
-#       sum to be checked.
-#
-#       This idea is inspired by DeepFold [GLH+25].
-#
-#       The following function is the implementation of the partial evaluation.
 def expanded_partial_evaluate(f: list[Field], us: list[Field]) -> list[Field]:
     """
     Evaluate an mle polynomial *partially* backwards, 
@@ -117,8 +108,10 @@ def expanded_partial_evaluate(f: list[Field], us: list[Field]) -> list[Field]:
         half >>= 1
     return rs
 
+def compute_alpha_powers(alpha: Field, l: int) -> list[Field]:
+    return [alpha**(2**i) for i in range(l)]
 
-class BASEFOLD_RS_PCS:
+class DEEPFOLD_RS_PCS:
 
     blowup_factor = 2 # WARNING: this is not secure
     num_queries = 6   # WARNING: this is not secure
@@ -134,7 +127,7 @@ class BASEFOLD_RS_PCS:
         self.oracle = oracle
         self.debug = debug
 
-    def commit(self, f_mle: MLEPolynomial) -> Commitment:
+    def commit(self, f_mle: MLEPolynomial, tr: MerlinTranscript) -> Commitment:
         """
         Commit to the evaluations of the MLE polynomial.
         """
@@ -145,7 +138,13 @@ class BASEFOLD_RS_PCS:
 
         assert len(f_code) == 2**f_mle.num_var * self.blowup_factor, \
             f"len(evals)={len(evals)}, f_mle.num_var={f_mle.num_var}, blowup_factor={self.blowup_factor}"
-        cm = Commitment(f_tree)
+        
+        tr.absorb(b"f_code_merkle_root", f_tree.root)
+
+        alpha = tr.squeeze(Field, b"alpha", self.random_challenge_bits)
+        alpha_powers = compute_alpha_powers(alpha, f_mle.num_var)
+        v_alpha = f_mle.evaluate(alpha_powers)
+        cm = Commitment(f_tree.root, alpha, v_alpha)
         return cm
 
     def query_phase(self, 
@@ -160,7 +159,6 @@ class BASEFOLD_RS_PCS:
         Generate queries and anwers for the query phase.
         """
         N = len(codes[0])
-
         # Construct query paths
         query_indices = []
         query_paths = []
@@ -211,6 +209,7 @@ class BASEFOLD_RS_PCS:
                 indices = query_indices[i]
                 merkle_path = merkle_paths[i]
                 for j in range(len(indices)):
+                    # print(f"P> i={i}, j={j}, idx={indices[j]}, cur_query={cur_query[j]}, merkle_path={merkle_path[j]}")
                     x0, x1 = indices[j]
                     c0, c1 = cur_query[j]
                     p0, p1 = merkle_path[j]
@@ -218,6 +217,7 @@ class BASEFOLD_RS_PCS:
                     assert checked0, f"merkle_path-{i} failed at index {j}, x0={x0} p0={p0}, c0={c0}"
                     checked1 = verify_decommitment(x1, c1, p1, trees[j].root)
                     assert checked1, f"merkle_path-{i} failed at index {j}, x1={x1}, p1={p1}, c1={c1}"
+                    # print(f"P> checked0={checked0}, checked1={checked1}")
                 # print(f"P>> check merkle_path-{i} passed")
             print(f"P> check merkle_paths passed")
         
@@ -233,9 +233,8 @@ class BASEFOLD_RS_PCS:
                        query_paths: list[list[tuple[Field, Field]]],
                        merkle_paths: list[list[tuple[Field, Field]]]
                        ):
-        """
-        Verify the query phase.
-        """
+        
+        # Reconstruct queries
         k = len(r_vec)
         assert N == 2**k * self.blowup_factor, \
             f"N = {N}, k = {k}, blowup_factor = {self.blowup_factor}"
@@ -243,7 +242,7 @@ class BASEFOLD_RS_PCS:
             f"len(r_vec)={len(r_vec)}, len(query_paths)={len(query_paths)}, len(merkle_paths)={len(merkle_paths)}"
         assert k == len(codes_cm), \
             f"len(r_vec)={len(r_vec)}, len(codes)={len(codes_cm)}"
-        
+
         # Reconstruct query_indices
         query_indices = []
         for q in queries:
@@ -251,6 +250,7 @@ class BASEFOLD_RS_PCS:
             prev_idx = q
             for i in range(k):
                 x0, x1 = int(prev_idx//2*2), int(prev_idx//2*2+1)
+                # print(f"V> q={q}, prev_idx={prev_idx}, x0={x0}, x1={x1}")
                 indices.append((x0,x1))
                 prev_idx = x0//2
             query_indices.append(indices)
@@ -318,21 +318,21 @@ class BASEFOLD_RS_PCS:
         if self.debug > 0:
             print(f"P> f_len={len(f)}, k={k}, c_len ={len(f)*self.blowup_factor}")
 
-        # NOTE: The array `eq` is not needed for the simplified sumcheck.
-        ## eq = MLEPolynomial.eqs_over_hypercube(us)
+        # eq = MLEPolynomial.eqs_over_hypercube(us)
+        # eq_mle = MLEPolynomial(eq, k)
 
         # > Preparation
 
         f_code_len = len(f) * self.blowup_factor
 
-        # Precompute twiddles for FFT
+        # precompute twiddles for FFT
         # NOTE: the array of twiddles are bit-reversed, such that it can be reused for all rounds.
         twiddles = UniPolynomialWithFft.precompute_twiddles_for_fft(f_code_len, is_bit_reversed=True)
 
         f0_code = rs_encode(f, self.coset_gen, self.blowup_factor)
 
         # Update transcript with the context
-        tr.absorb(b"f_code_merkle_root", f_cm.cm)
+        tr.absorb(b"f_code_merkle_root", f_cm)
         tr.absorb(b"point", us)
         tr.absorb(b"value", v)
 
@@ -352,88 +352,123 @@ class BASEFOLD_RS_PCS:
         coset = self.coset_gen
         constant = None
         r_vec = []
-        sumcheck_h_vec = []
+        sumcheck_h_vec_vec = []
+        sumcheck_h_eval_vec = []
         code_commitments = []
         trees = [MerkleTree(f_code)]
         codes = [f_code]
-
-        # NOTE: The cached partial evaluations will be used to compute h(u) and h(u+1).
-        #  The value at the tail is exactly the evaluation, i.e. h(u0,u1,...,u_{k-1}).
         h_partial = expanded_partial_evaluate(f, us)
-        
+        alpha_powers = compute_alpha_powers(f_cm.alpha, k)
+        h_partial_alpha = expanded_partial_evaluate(f, alpha_powers)
+
+        # deepfold-binding-points
+        binding_points = [us, alpha_powers]
+        binding_partial = [h_partial, h_partial_alpha]
+        binding_evals = [v, f_cm.v_alpha]
         for i in range(k):
             if self.debug > 0:
                 print(f"P> Round {i}")
 
-            # construct h(X) = f(r0, r1, ..., r_{i-1}, X, u_{i+1}, ..., u_{k-1})
-            if i < k - 1:
-                # If i in [0, 1, ..., k-2], h(0) and h(1) are at the tail of the cached array. 
-                h_at_0 = h_partial[-3]
-                h_at_1 = h_partial[-2]
-                h_at_u = h_partial[-1]
-                h_at_u_plus_1 = h_at_u + (h_at_1 - h_at_0)
-            else:
-                # If i is k-1, the cached array has been folded into only one element. But
-                # we can still get h(0) and h(1) from the folded f.
-                h_at_0 = f[0]
-                h_at_1 = f[1]
-                h_at_u = h_partial[-1]
-                h_at_u_plus_1 = h_at_u + (h_at_1 - h_at_0)
+            alpha = tr.squeeze(Field, b"alpha", self.random_challenge_bits)
+            if self.debug > 0:
+                print(f"P> alpha = {alpha}")
+
+            alpha_powers = compute_alpha_powers(alpha, k-i)
+            binding_points.append(alpha_powers)
+            h_partial_alpha = expanded_partial_evaluate(f, alpha_powers)
+            binding_partial.append(h_partial_alpha)
+
+            new_eval = h_partial_alpha[-1]
             
-            if self.debug > 1:
-                print(f"P> check h(0), h(1), h(u), h(u+1)")
-                print(f"P> h_partial = {h_partial}")
-                print(f"P> h_at_0 = {h_at_0}")
-                print(f"P> h_at_1 = {h_at_1}")
-                print(f"P> h_at_u = {h_at_u}")
-                partial_f_mle = MLEPolynomial(f, k-i)
-                assert h_at_0 == partial_f_mle.evaluate([Field(0)]+us[i+1:]), \
-                    f"h_at_0 = {h_at_0}, partial_f_mle.evaluate(0, us) = {partial_f_mle.evaluate([Field(0)]+us[i+1:])}"
-                assert h_at_1 == partial_f_mle.evaluate([Field(1)]+us[i+1:]), \
-                    f"h_at_1 = {h_at_1}, partial_f_mle.evaluate(1, us) = {partial_f_mle.evaluate([Field(1)]+us[i+1:])}"
-                assert h_at_u == partial_f_mle.evaluate(us[i:]), \
-                    f"h_at_u = {h_at_u}, partial_f_mle.evaluate(us) = {partial_f_mle.evaluate(us[i:])}"
-                assert h_at_u_plus_1 == partial_f_mle.evaluate([us[i]+Field(1)]+us[i+1:]), \
-                    f"h_plus_1_at_u = {h_at_u_plus_1}, partial_f_mle.evaluate([us[i]+Field(1)]+us[i+1:]) = {partial_f_mle.evaluate([us[i]+Field(1)]+us[i+1:])}"
-                assert h_at_u == sum_checked, \
-                    f"h_at_u = {h_at_u}, sum_checked = {sum_checked}"
-                print(f"P> check h(0), h(1), h(u), h(u+1) passed, {h_at_u} = {sum_checked}")
+            tr.absorb(b"f(alpha)", new_eval)
 
-            if self.debug > 0: print(f"P> h_at_u_plus_1 = {h_at_u_plus_1}")
+            binding_evals.append(new_eval)
+            sumcheck_h_eval_vec.append(new_eval)
+            sumcheck_h_vec = []
+            for j in range(len(binding_points)):
+                
+                us = binding_points[j]
+                h_partial = binding_partial[j]
+                eval = binding_evals[j]
+                # construct h(X) = f(r0, r1, ..., r_{i-1}, X, u_{i+1}, ..., u_{k-1})
+                if i < k - 1:
+                    h_at_0 = h_partial[-3]
+                    h_at_1 = h_partial[-2]
+                else:
+                    h_at_0 = f[0]
+                    h_at_1 = f[1]
+                h_at_u = h_partial[-1]
+                h_at_u_plus_1 = h_at_u + (h_at_1 - h_at_0)
+                # print(f"P> i={i}, j={j}, h_evals = {h_partial}")
+                # print(f"P> i={i}, j={j}, h_at_0 = {h_at_0}")
+                # print(f"P> i={i}, j={j}, h_at_1 = {h_at_1}")
+                # print(f"P> i={i}, j={j}, h_at_u = {h_at_u}")
+                # print(f"P> i={i}, j={j}, h_at_u_plus_1 = {h_at_u_plus_1}")
+        
+                if self.debug > 2:
+                    print(f"P> i={i}, j={j}, check h(0), h(1), h(u), h(u+1)")
+                    partial_f_mle = MLEPolynomial(f, k-i)
+                    assert h_at_0 == partial_f_mle.evaluate([Field(0)]+us[1:]), \
+                        f"h_at_0 = {h_at_0}, partial_f_mle.evaluate(0, us) = {partial_f_mle.evaluate([Field(0)]+us[1:])}"
+                    assert h_at_1 == partial_f_mle.evaluate([Field(1)]+us[1:]), \
+                        f"h_at_1 = {h_at_1}, partial_f_mle.evaluate(1, us) = {partial_f_mle.evaluate([Field(1)]+us[1:])}"
+                    assert h_at_u == partial_f_mle.evaluate(us), \
+                        f"h_at_u = {h_at_u}, partial_f_mle.evaluate(us) = {partial_f_mle.evaluate(us)}"
+                    assert h_at_u_plus_1 == partial_f_mle.evaluate([us[0]+Field(1)]+us[1:]), \
+                        f"h_plus_1_at_u = {h_at_u_plus_1}, partial_f_mle.evaluate([us[i]+Field(1)]+us[1:]) = {partial_f_mle.evaluate([us[0]+Field(1)]+us[1:])}"
+                    assert h_at_u == eval, \
+                        f"h_at_u = {h_at_u}, sum_checked = {eval}"
+                    print(f"P> i={i}, j={j}, check h(0), h(1), h(u), h(u+1) passed, {h_at_u} = {eval}")
+                sumcheck_h_vec.append(h_at_u_plus_1)
 
-            sumcheck_h_vec.append(h_at_u_plus_1)
+                # If not optimized, the prover needs to send at least two points of h(X), and 
+                # the verifier needs to check the sum. Therefore, we can optimize the verifier's
+                # check and also reduce the prover's communication by sending only one point of h(X).
+                tr.absorb(b"h(X)", h_at_u_plus_1)
+                if self.debug > 0:
+                    print(f"P> i={i}, j={j}, h_at_u_plus_1 = {h_at_u_plus_1}")
 
-            tr.absorb(b"h(X)", h_at_u_plus_1)
-
+            sumcheck_h_vec_vec.append(sumcheck_h_vec)
             # Receive a random number from the verifier
             r = tr.squeeze(Field, b"r", self.random_challenge_bits)
             if self.debug > 0:
                 print(f"P> r[{i}] = {r}")
             r_vec.append(r)
 
-            # NOTE: The verifier is supposed to compute f_i(r), which is *equal to* f_{i+1}(u_i). 
-            #   And then in the next round, the prover will only need to send f_{i+1}(u_i+1) to the verifier.
+            new_binding_points = []
+            new_binding_evals = []
+            new_binding_partial = []
+            # NOTE: The verifier compute f_i(r), which is *equal to* f_{i+1}(u_i). And then in 
+            #   the next round, the prover will only need to send f_{i+1}(u_i+1) to the verifier.
             #   The computation of f_{i+1}(r) at the verifier's side costs only one multiplication.
-            h_at_r = h_at_u + (h_at_u_plus_1 - h_at_u) * (r - us[i])
+            for j in range(len(binding_points)):
+                us = binding_points[j]
+                h_partial = binding_partial[j]
 
-            if self.debug > 0:
-                print(f"P> h_at_r[{i}] = {h_at_r}")
+                h_at_u = h_partial[-1]
+                h_at_u_plus_1 = h_at_u + (h_at_1 - h_at_0)
+                h_at_r = h_at_u + (h_at_u_plus_1 - h_at_u) * (r - us[0])
+                if self.debug > 0:
+                    print(f"P> i={i},j={j}, h_at_r = {h_at_r}")
 
-            if self.debug > 1:
-                print(f"P> check new sumcheck passed")
-                assert h_at_r == MLEPolynomial(f, k-i).evaluate([r]+us[i+1:]), \
-                    f"h_eval_at_r = {h_at_r}, f(r) = {MLEPolynomial(f, k-i).evaluate([r]+us[i+1:])}"
-                new_sum = UniPolynomial.evaluate_from_evals([h_at_u, h_at_u_plus_1], r, [us[i], us[i]+Field(1)])
-                assert h_at_r == new_sum
-                print(f"P> check new sumcheck passed, {h_at_r} = {new_sum}")
+                if self.debug > 2:
+                    print(f"P> check new sumcheck passed")
+                    partial_f_mle = MLEPolynomial(f, k-i)
+                    assert h_at_r == partial_f_mle.evaluate([r]+us[1:]), \
+                        f"h_at_r = {h_at_r}, f(r) = {partial_f_mle.evaluate([r]+us[1:])}"
+                    new_eval = UniPolynomial.evaluate_from_evals([h_at_u, h_at_u_plus_1], r, [us[0], us[0]+Field(1)])
+                    assert h_at_r == new_eval
+                    print(f"P> j={j}, check new sumcheck passed, {h_at_r} = {new_eval}")
             
-            # update sumcheck for the next round
-            new_sum_checked = h_at_r
+                # create new binding points for the next round
+                new_binding_points.append(us[1:])
+                new_binding_evals.append(h_at_r)
+                # fold partial evaluations for each binding point
+                h_partial_folded = fold(h_partial[:-1], r)
+                new_binding_partial.append(h_partial_folded)
 
             # fold f
-
             f = fold(f, r)
-            h_partial_folded = fold(h_partial[:-1], r)
 
             # fold f_code
             # TODO: optimized the field inversion (coset, twiddles[])
@@ -461,14 +496,18 @@ class BASEFOLD_RS_PCS:
             h_partial = h_partial_folded
             half >>= 1
             coset *= coset
-            sum_checked = new_sum_checked
+            binding_points = new_binding_points
+            binding_evals = new_binding_evals
+            binding_partial = new_binding_partial
 
         ## End of the big loop for `i`
 
-        assert sum_checked == constant, \
-            f"sum_checked = {sum_checked}, constant = {constant}"
-        if self.debug > 0:
-            print(f"P> check final_sum = f(r_vec) passed, {sum_checked} = {constant}")
+        for j in range(len(binding_evals)):
+            v_j = binding_evals[j]
+            assert v_j == constant, \
+                f"sum_checked = {v_j}, constant = {constant}"
+            if self.debug > 0:
+                print(f"P> check final_sum = f(r_vec) passed, {v_j} = {constant}")
 
         # > Query-phase
 
@@ -488,7 +527,8 @@ class BASEFOLD_RS_PCS:
         query_indices, query_paths, merkle_paths = self.query_phase(queries, codes, trees)
 
         return v, {
-            "sumcheck_h_vec": sumcheck_h_vec,
+            "sumcheck_h_vec_vec": sumcheck_h_vec_vec,
+            "sumcheck_h_eval_vec": sumcheck_h_eval_vec,
             "code_commitments": code_commitments,
             "final_constant": constant,
             "query_paths": query_paths,
@@ -507,7 +547,8 @@ class BASEFOLD_RS_PCS:
         k = len(us)
 
         # Load the argument
-        sumcheck_h_vec = arg['sumcheck_h_vec']
+        sumcheck_h_vec_vec = arg['sumcheck_h_vec_vec']
+        sumcheck_h_eval_vec = arg['sumcheck_h_eval_vec']
         code_commitments = arg['code_commitments']
         final_constant = arg['final_constant']
         query_paths = arg['query_paths']
@@ -519,48 +560,83 @@ class BASEFOLD_RS_PCS:
         # eq = MLEPolynomial.eqs_over_hypercube(us)
         # eq_mle = MLEPolynomial(eq, k)
 
-        tr.absorb(b"f_code_merkle_root", f_cm.cm)
+        tr.absorb(b"f_code_merkle_root", f_cm)
         tr.absorb(b"point", us)
         tr.absorb(b"value", v)
 
         # > Commit-phase 
         # 
-        sum_checked = v
-        r_vec = []
-        for i in range(k):
-            h_at_u_plus_1 = sumcheck_h_vec[i]
-            h_at_u = sum_checked
 
-            tr.absorb(b"h(X)", h_at_u_plus_1)
+        alpha_powers = compute_alpha_powers(f_cm.alpha, k)
+        r_vec = []
+        # deepfold-binding-points
+        binding_points = [us, alpha_powers]
+        binding_evals = [v, f_cm.v_alpha]
+
+        for i in range(k):
+
+            alpha = tr.squeeze(Field, b"alpha", self.random_challenge_bits)
+            if self.debug > 0:
+                print(f"V> i={i},alpha = {alpha}")
+
+            alpha_powers = compute_alpha_powers(alpha, k-i)
+            binding_points.append(alpha_powers)
+
+            new_eval = sumcheck_h_eval_vec[i]
+
+            tr.absorb(b"f(alpha)", new_eval)
+
+            binding_evals.append(new_eval)
+            for j in range(len(binding_points)):
+                # us = binding_points[j]
+                # h_at_u = binding_evals[j]
+                h_at_u_plus_1 = sumcheck_h_vec_vec[i][j]
+                tr.absorb(b"h(X)", h_at_u_plus_1)   
+                if self.debug > 0:
+                    print(f"V> i={i}, j={j}, h_at_u_plus_1 = {h_at_u_plus_1}")
 
             r = tr.squeeze(Field, b"r", self.random_challenge_bits)
             if self.debug > 0:
                 print(f"V> r[{i}] = {r}")
             r_vec.append(r)
 
-            h_at_r = h_at_u + (h_at_u_plus_1 - h_at_u) * (r - us[i])
+            new_binding_points = []
+            new_binding_evals = []
+            for j in range(len(binding_points)):
+                us = binding_points[j]
+                h_at_u = binding_evals[j]
+                h_at_u_plus_1 = sumcheck_h_vec_vec[i][j]
+                h_at_r = h_at_u + (h_at_u_plus_1 - h_at_u) * (r - us[0])
 
-            if self.debug > 0:
-                print(f"V> h_at_r[{i}] = {h_at_r}")
-            
-            sum_checked = h_at_r
+                if self.debug > 0:
+                    print(f"V> i={i}, j={j}, h_at_r = {h_at_r}")
+                # create new binding points for the next round
+                new_binding_points.append(us[1:])
+                new_binding_evals.append(h_at_r)
 
             if i < k-1:
                 tr.absorb(b"f_code_merkle_root", code_commitments[i])
-        
-        tr.absorb(b"f_code_merkle_root", final_constant)
+            else:
+                tr.absorb(b"f_code_merkle_root", final_constant)
 
-        # f_code_folded = [final_constant] * self.blowup_factor
+            # update parameters for the next round
+            binding_points = new_binding_points
+            binding_evals = new_binding_evals
 
-        assert sum_checked == final_constant, \
-                    f"sum_checked = {sum_checked}, final_constant = {final_constant}"
-        if self.debug > 0:
-            print(f"V> check final_sum = f(r_vec) passed, {sum_checked} = {final_constant}")
+        ## End of the big loop for `i`
+
+        # Verify the evaluation of every binding point,
+        #   if the final folded partial evaluation is equal to the final constant
+        #   provided by the parallel FRI protocol.
+        for i, v_i in enumerate(binding_evals):
+            assert v_i == final_constant, \
+                f"sum_checked = {v_i}, final_constant = {final_constant}"
+            if self.debug > 0:
+                print(f"V> i={i}, check final_sum = f(r_vec) passed, {v_i} = {final_constant}")
 
         # > Query-phase
 
         # Reconstruct queries
-        
         queries = []
         for i in range(self.max_queries_try):
             new_query = tr.squeeze(int, b"query", 24) % (f0_code_len//2)
@@ -572,16 +648,16 @@ class BASEFOLD_RS_PCS:
         if self.debug > 0:
             print(f"V> len(code)={f0_code_len}, queries={self.num_queries}")
 
-        self.verify_queries(f0_code_len, r_vec, [f_cm.cm]+code_commitments, final_constant, 
+        self.verify_queries(f0_code_len, r_vec, [f_cm.root]+code_commitments, final_constant, 
             queries, query_paths, merkle_paths)
 
         return True
 
 def test_pcs():
 
-    pcs = BASEFOLD_RS_PCS(MerkleTree, debug = 1)
+    pcs = DEEPFOLD_RS_PCS(MerkleTree, debug = 2)
 
-    tr = MerlinTranscript(b"basefold-rs-pcs")
+    tr = MerlinTranscript(b"deepfold-rs-pcs")
 
     # A simple instance f(x) = y
     # evals = [Field(2), Field(3), Field(4), Field(5), Field(6), Field(7), Field(8), Field(9), \
@@ -594,17 +670,17 @@ def test_pcs():
     f_mle = MLEPolynomial(evals, 3)
     assert f_mle.evaluate(us) == y
     print(f"f(x[]) = {y}")
-    f_cm = pcs.commit(f_mle)
+    f_cm = pcs.commit(f_mle, tr)
 
     print(f"f(0,us)={f_mle.evaluate([Field(0)]+us[1:])}")
     print(f"f(1,us)={f_mle.evaluate([Field(1)]+us[1:])}")
     print("🕐 Generating proof ....")
-    v, arg = pcs.prove_eval(f_cm, f_mle, us, tr.fork(b"basefold_rs_pcs"))
+    v, arg = pcs.prove_eval(f_cm, f_mle, us, tr.fork(b"deepfold_rs_pcs"))
     print("ℹ️ Proof generated.")
 
     assert v == y
     print("🕐 Verifying proof ....")
-    checked = pcs.verify_eval(f_cm, us, v, arg, tr.fork(b"basefold_rs_pcs"))
+    checked = pcs.verify_eval(f_cm, us, v, arg, tr.fork(b"deepfold_rs_pcs"))
     assert checked
     print("✅ Proof verified")
 
