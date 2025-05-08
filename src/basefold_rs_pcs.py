@@ -34,8 +34,6 @@ from merkle import MerkleTree, verify_decommitment
 # TODO:
 #
 #  - [ ] Make security parameters configurable
-#  - [ ] Reduce leaves revealed by the prover and also the corresponding checks
-#  - [ ] Compress the merkle proofs
 #  - [ ] Add batching proving/verifying
 
 Field = BN254_Fr
@@ -89,7 +87,7 @@ class BASEFOLD_RS_PCS:
     def __init__(self, oracle, debug: int = 0):
         """
         Args:
-            pcs: the PedersenCommitment instance to use for the proof
+            oracle: the oracle to use for the proof
         """
         self.oracle = oracle
         # self.rng = random.Random("basefold-rs-pcs")
@@ -97,7 +95,7 @@ class BASEFOLD_RS_PCS:
 
     def commit(self, f_mle: MLEPolynomial) -> Commitment:
         """
-        Commit to a vector of coefficients.
+        Commit to the evaluations of the MLE polynomial.
         """
         evals = f_mle.evals
 
@@ -374,6 +372,7 @@ class BASEFOLD_RS_PCS:
         query_paths = arg['query_paths']
         merkle_paths = arg['merkle_paths']
         f0_code_len = 2**k * self.blowup_factor
+
         # > Preparation
 
         eq = MLEPolynomial.eqs_over_hypercube(us)
