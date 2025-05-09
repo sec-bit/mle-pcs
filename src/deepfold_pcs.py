@@ -113,11 +113,15 @@ def compute_alpha_powers(alpha: Field, l: int) -> list[Field]:
 
 class DEEPFOLD_RS_PCS:
 
-    blowup_factor = 2 # WARNING: this is not secure
-    num_queries = 6   # WARNING: this is not secure
+    blowup_factor = 8 # WARNING: this is not secure
+    security_bits = 64   # WARNING: this is not secure
     coset_gen = Field.multiplicative_generator()
     max_queries_try = 1000  # NOTE: change it to a practical number
     random_challenge_bits = 16
+
+    @property
+    def num_queries(self):
+        return self.security_bits // log_2(self.blowup_factor)
 
     def __init__(self, oracle, debug: int = 0):
         """
