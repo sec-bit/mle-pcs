@@ -120,11 +120,15 @@ def expanded_partial_evaluate(f: list[Field], us: list[Field]) -> list[Field]:
 
 class BASEFOLD_RS_PCS:
 
-    blowup_factor = 2 # WARNING: this is not secure
-    num_queries = 6   # WARNING: this is not secure
+    blowup_factor = 8       # WARNING: this is not secure
+    security_bits = 128     # WARNING: this is not secure
     coset_gen = Field.multiplicative_generator()
     max_queries_try = 1000  # NOTE: change it to a practical number
     random_challenge_bits = 16
+
+    @property
+    def num_queries(self):
+        return self.security_bits // log_2(self.blowup_factor) + 1
 
     def __init__(self, oracle, debug: int = 0):
         """
@@ -307,6 +311,7 @@ class BASEFOLD_RS_PCS:
         """
 
         assert f_mle.num_var == len(us), f"f_mle.num_var={f_mle.num_var}, len(us)={len(us)}"
+        assert self.num_queries <= 1 << (f_mle.num_var + log_2(self.blowup_factor)), f"self.num_queries={self.num_queries}, f_mle.num_var={f_mle.num_var}, blowup_factor={self.blowup_factor}"
 
         k = f_mle.num_var
         
@@ -576,37 +581,3 @@ class BASEFOLD_RS_PCS:
             queries, query_paths, merkle_paths)
 
         return True
-
-def test_pcs():
-
-    pcs = BASEFOLD_RS_PCS(MerkleTree, debug = 1)
-
-    tr = MerlinTranscript(b"basefold-rs-pcs")
-
-    # A simple instance f(x) = y
-    # evals = [Field(2), Field(3), Field(4), Field(5), Field(6), Field(7), Field(8), Field(9), \
-            #  Field(10), Field(11), Field(12), Field(13), Field(14), Field(15), Field(16), Field(17)]
-    evals = [Field(1), Field(2), Field(3), Field(4), Field(5), Field(6), Field(7), Field(8)]
-    us = [Field(4), Field(2), Field(3)]
-    eqs = MLEPolynomial.eqs_over_hypercube(us)
-    
-    y = inner_product(evals, eqs, Field.zero())
-    f_mle = MLEPolynomial(evals, 3)
-    assert f_mle.evaluate(us) == y
-    print(f"f(x[]) = {y}")
-    f_cm = pcs.commit(f_mle)
-
-    print(f"f(0,us)={f_mle.evaluate([Field(0)]+us[1:])}")
-    print(f"f(1,us)={f_mle.evaluate([Field(1)]+us[1:])}")
-    print("🕐 Generating proof ....")
-    v, arg = pcs.prove_eval(f_cm, f_mle, us, tr.fork(b"basefold_rs_pcs"))
-    print("ℹ️ Proof generated.")
-
-    assert v == y
-    print("🕐 Verifying proof ....")
-    checked = pcs.verify_eval(f_cm, us, v, arg, tr.fork(b"basefold_rs_pcs"))
-    assert checked
-    print("✅ Proof verified")
-
-if __name__ == "__main__":
-    test_pcs()
