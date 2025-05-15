@@ -206,8 +206,8 @@ class BASEFOLD_RS_PCS:
 
             # fold f
 
-            f_folded = [(Field(1) - alpha) * f_even[i] + alpha * f_odd[i] for i in range(half)]
-            eq_folded = [(Field(1) - alpha) * eq_even[i] + alpha * eq_odd[i] for i in range(half)]
+            f_folded = [(Field(1) - alpha) * f_even[j] + alpha * f_odd[j] for j in range(half)]
+            eq_folded = [(Field(1) - alpha) * eq_even[j] + alpha * eq_odd[j] for j in range(half)]
 
             f = f_folded
             eq = eq_folded
@@ -216,13 +216,13 @@ class BASEFOLD_RS_PCS:
             sum_checked = UniPolynomial.evaluate_from_evals(h, alpha, [Field(0), Field(1), Field(2)])
 
             # fold f_code
-            f_code_folded = [(Field(1)-alpha) * (f_code[2*i] + f_code[2*i+1]) / 2 
-                      + alpha * (f_code[2*i] - f_code[2*i+1]) / (2 * coset * twiddles[i]) 
-                      for i in range(len(f_code)//2)]
+            f_code_folded = [(Field(1)-alpha) * (f_code[2*j] + f_code[2*j+1]) / 2 
+                      + alpha * (f_code[2*j] - f_code[2*j+1]) / (2 * coset * twiddles[j]) 
+                      for j in range(len(f_code)//2)]
             if i == k-1:
                 constant = f_code_folded[0]
                 
-                assert all([f_code_folded[i] == constant for i in range(len(f_code_folded))]), \
+                assert all([f_code_folded[j] == constant for j in range(len(f_code_folded))]), \
                     f"the final f_code_folded is not constant, f_code_folded = {f_code_folded}"
                 
                 tr.absorb(b"f_code_merkle_root", constant)

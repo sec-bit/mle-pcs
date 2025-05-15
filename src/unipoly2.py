@@ -1177,6 +1177,10 @@ class UniPolynomialWithFft(UniPolynomial):
         """
         assert is_power_of_two(domain_size), "Domain size must be a power of 2"
         domain_size = len(evals)
+        assert len(evals) == domain_size, "Length of evaluations must match the domain size"
+        
+        if domain_size == 1:
+            return cls([evals[0]])
 
         omega = cls.F.nth_root_of_unity(domain_size)
 
