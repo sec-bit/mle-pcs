@@ -1,6 +1,7 @@
 import sys
 from unittest import TestCase, main
 from random import randint
+from hashlib import sha256
 
 sys.path.append("../src")
 sys.path.append("src")
@@ -9,8 +10,8 @@ from mmcs import MMCS
 
 class TestMMCS(TestCase):
     def setUp(self):
-        def hash(x): return x
-        def compress(x): return x[0] - x[1]
+        def hash(x): return sha256(str(x).encode()).digest()
+        def compress(x): return sha256(x[0] + x[1]).digest()
         MMCS.configure(hash, compress)
 
     def test_mmcs(self):

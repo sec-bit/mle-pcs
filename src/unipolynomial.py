@@ -1,4 +1,5 @@
 # from sage.all import *
+from utils import log_2
 
 class UniPolynomial:
 
@@ -279,7 +280,7 @@ class UniPolynomial:
     @classmethod
     def ntt_core(cls, coeffs, omega, k_log_size):
         domain_size = 2 ** k_log_size
-        assert len(coeffs) == domain_size, "Coefficients length must be a power of 2"
+        assert len(coeffs) == domain_size, f"len(coeffs) != domain_size, coeffs: {coeffs}, domain_size: {domain_size}"
 
         # Bit-reversing
         for k in range(domain_size):
@@ -318,7 +319,7 @@ class UniPolynomial:
         # omega = cls.get_root_of_unity(k_log_size)
         # evals = [Fp(e) for e in evals]
 
-        omega_inv = omega.inverse()
+        omega_inv = one / omega
         domain_size = UniPolynomial.scalar_constructor(2 ** k_log_size)
         domain_size_inv = one / domain_size
         
@@ -574,7 +575,7 @@ class UniPolynomial:
             list: Coefficients of the interpolated polynomial.
         """
         n = len(domain)
-        assert len(evals) == n, "Number of evaluations must match domain size"
+        assert len(evals) == n, f"Number of evaluations must match domain size, evals: {evals}, domain: {domain}"
 
         # evals = [e for e in evals]
         # domain = [d for d in domain]
@@ -596,7 +597,7 @@ class UniPolynomial:
         return f
 
     @classmethod
-    def compute_evals_from_coeffs_fast(cls, coeffs, domain):
+    def compute_evals_from_coeffs_fast(cls, coeffs, domain, debug=0):
         """
         Compute evaluations from coefficients in O(n log^2 n) time.
 
@@ -609,8 +610,10 @@ class UniPolynomial:
         """
         n = len(domain)
 
-        assert n == len(coeffs), "Domain size must match the number of coefficients"
-        assert (n & (n - 1) == 0), "Domain size must be a power of 2"
+        if debug > 0: print(f"compute_evals_from_coeffs_fast: coeffs: {coeffs}, domain: {domain}")
+
+        assert n == len(coeffs), f"Domain size must match the number of coefficients, coeffs: {coeffs}, domain: {domain}"
+        assert (n & (n - 1) == 0), f"Domain size must be a power of 2, domain: {domain}"
 
         # coeffs = [Fp(c) for c in coeffs]
         # domain = [Fp(d) for d in domain]

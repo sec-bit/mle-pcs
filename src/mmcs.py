@@ -16,14 +16,14 @@ class MMCS:
             return wrapped
         cls.hash = wrapper(hash)
         cls.compress = wrapper(compress)
-        cls.default_digest = default_digest
+        cls.default_digest = cls.hash(default_digest)
         cls.configured = True
 
     @classmethod
     def commit(cls, vecs, debug=False):
         assert cls.configured, "MMCS is not configured"
         for i in range(len(vecs)):
-            if i is not 0:
+            if i != 0:
                 assert len(vecs[i - 1]) >= len(vecs[i]), f"len(vecs[{i}]) < len(vecs[{i+1}]), {len(vecs[i])}, {len(vecs[i+1])}"
             assert is_power_of_two(len(vecs[i])), f"len(vecs[{i}]) is not a power of two, {len(vecs[i])}"
 
@@ -33,17 +33,20 @@ class MMCS:
         layers = [[cls.hash(e) for e in vecs[0]]]
 
         for i in range(1, len(vecs)):
-            layers.append([cls.compress((layers[i-1][j], layers[i-1][j+1]), debug) for j in range(0, len(layers[i-1]), 2)])
+            if debug: print("i:", i)
+            if debug: print("layers[i-1]:", layers[i-1])
+            layers.append([cls.compress((layers[i-1][j], layers[i-1][j + len(layers[i-1]) // 2]), debug) for j in range(0, len(layers[i-1]) // 2)])
             layers[-1] = [cls.compress((layers[-1][j], cls.hash(vecs[i][j])), debug) for j in range(len(layers[-1]))]
 
         for i in range(len(vecs), len(vecs) + log_2(min_height)):
-            layers.append([cls.compress((layers[i-1][j], layers[i-1][j+1]), debug) for j in range(0, len(layers[i-1]), 2)])
+            layers.append([cls.compress((layers[i-1][j], layers[i-1][j + len(layers[i-1]) // 2]), debug) for j in range(0, len(layers[i-1]) // 2)])
             layers[-1] = [cls.compress((layers[-1][j], cls.default_digest), debug) for j in range(len(layers[-1]))]
-            print("layers[-1]:", layers[-1])
+            if debug: print("layers[-1]:", layers[-1])
 
         return {
             'layers': layers,
-            'vecs': vecs
+            'vecs': vecs,
+            'root': layers[-1][0]
         }
 
     @classmethod
@@ -60,9 +63,17 @@ class MMCS:
             print("vecs:")
             for vec in vecs:
                 print(vec)
+            
+            print("index:", index >> (32 - log_2(len(vecs[0]))))
 
-        openings = [vecs[i][index >> (32 - log_2(len(vecs[i])))] for i in range(len(vecs))]
-        proof = [layers[i][(index >> (32 - log_2(len(layers[i])))) ^ 1] for i in range(len(layers) - 1)]
+        openings = []
+        proof = []
+        index = index % len(vecs[0])
+        for i in range(len(layers)):
+            if i < len(vecs):
+                openings.append(vecs[i][index])
+            proof.append(layers[i][index ^ len(layers[i]) // 2])
+            index %= len(layers[i]) // 2 if len(layers[i]) // 2 > 0 else 1
         root = layers[-1][0]
         if debug: print("openings:", openings)
         if debug: print("proof:", proof)
@@ -71,14 +82,14 @@ class MMCS:
 
     @classmethod
     def verify(cls, index, openings, proof, root, debug=False):
-        index >>= (32 - len(proof))
+        index %= (1 << (len(proof) - 1))
         assert index < 1 << len(proof), f"index {index} is out of bounds"
         if debug: print("index:", index)
         expected = cls.hash(openings[0])
         if debug: print("expected:", expected)
-        for i in range(1, 1 + len(proof)):
+        for i in range(1, len(proof)):
             if debug: print("index:", index)
-            if index & 1:
+            if index & (1 << (len(proof) - i - 1)):
                 expected = cls.compress((proof[i-1], expected), debug)
             else:
                 expected = cls.compress((expected, proof[i-1]), debug)
@@ -86,6 +97,6 @@ class MMCS:
                 expected = cls.compress((expected, cls.default_digest), debug)
             else:
                 expected = cls.compress((expected, cls.hash(openings[i])), debug)
-            index >>= 1
+            index %= (1 << (len(proof) - i - 1)) if len(proof) - i - 1 > 0 else 1
             if debug: print("expected:", expected)
         assert expected == root, f"expected {expected}, root {root}"

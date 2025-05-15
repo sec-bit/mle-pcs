@@ -86,6 +86,10 @@ class BabyBear:
     def __truediv__(self, other):
         return self * other.inv()
 
+    @convert_int_to_babybear
+    def __floordiv__(self, other):
+        return BabyBear(self.value // other.value)
+
     def __radd__(self, other):
         return BabyBear(other) + self
 
@@ -97,6 +101,10 @@ class BabyBear:
 
     def __rtruediv__(self, other):
         return BabyBear(other) / self
+    
+    @convert_int_to_babybear
+    def __rfloordiv__(self, other):
+        return BabyBear(other.value // self.value)
 
 class BabyBearExtElem:
     BETA = BabyBear(11)

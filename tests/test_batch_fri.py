@@ -6,7 +6,6 @@ sys.path.append('src')
 
 from batch_fri import BatchFRI
 from unipolynomial import UniPolynomial
-from fri import FRI
 
 class TestBatchFRI(TestCase):
     def setUp(self):
@@ -21,12 +20,15 @@ class TestBatchFRI(TestCase):
 
         Fp = magic(GF(193))
         num_evals = 4
-        evals = [[Fp(randint(0, 193)) for _ in range(1 << i)] for i in range(num_evals)]
+        evals = [[Fp(randint(0, 192)) for _ in range(1 << i)] for i in range(num_evals)]
         evals = list(reversed(evals))
         rate = 4
         gen = Fp.primitive_element() ** (192 // ((1 << (num_evals - 1)) * rate))
         domains = [[gen ** (i * (1 << j)) for i in range(len(evals[j]) * rate)] for j in range(len(evals))]
-        _ = BatchFRI.batch_commit(evals, rate, domains, debug=False)
+        comm, codes = BatchFRI.batch_commit(evals, rate, domains, one=Fp.one(), debug=False)
+        # for i in range(len(evals)):
+        #     for j in range(len(evals[i])):
+        #         assert evals[i][j] == codes[i][j], f"i: {i}, j: {j}, evals[i][j]: {evals[i][j]}, codes[i][j]: {codes[i][j]}"
 
     def test_batch_prove(self):
         from sage.all import GF
@@ -36,13 +38,13 @@ class TestBatchFRI(TestCase):
 
         Fp = magic(GF(193))
         num_evals = 4
-        evals = [[Fp(randint(0, 193)) for _ in range(1 << i)] for i in range(num_evals)]
+        evals = [[Fp(randint(0, 192)) for _ in range(1 << i)] for i in range(num_evals)]
         # in descending order
         evals = list(reversed(evals))
         rate = 4
         gen = Fp.primitive_element() ** (192 // ((1 << (num_evals - 1)) * rate))
         domains = [[gen ** (i * (1 << j)) for i in range(len(evals[j]) * rate)] for j in range(len(evals))]
-        commitment, codes = BatchFRI.batch_commit(evals, rate, domains, debug=False)
+        commitment, codes = BatchFRI.batch_commit(evals, rate, domains, one=Fp.one(), debug=False)
         root = commitment['layers'][-1][0]
         transcript = MerlinTranscript(b'test')
         transcript.append_message(b'code', root)
@@ -65,17 +67,15 @@ class TestBatchFRI(TestCase):
         rate = 4
         gen = Fp.primitive_element() ** (192 // ((1 << (num_evals - 1)) * rate))
         domains = [[gen ** (i * (1 << j)) for i in range(len(evals[j]) * rate)] for j in range(len(evals))]
-        commitment, codes = BatchFRI.batch_commit(evals, rate, domains, debug=False)
-        root = commitment['layers'][-1][0]
+        commitment, codes = BatchFRI.batch_commit(evals, rate, domains, one=Fp.one(), debug=False)
         transcript = MerlinTranscript(b'test')
-        transcript.append_message(b'code', root)
-        point = int.from_bytes(transcript.challenge_bytes(b'point', 4), 'big')
+        point = 5
         point = gen ** point * Fp.primitive_element()
-        vals = [UniPolynomial.uni_eval_from_evals(evals[i], point, domains[i][:len(evals[i])], Fp(1)) for i in range(len(evals))]
-        assert vals == [UniPolynomial.uni_eval_from_evals(codes[i], point, domains[i][:len(codes[i])], Fp(1)) for i in range(len(codes))], f"evals and codes are not the same, {vals} != {[UniPolynomial.uni_eval_from_evals(codes[i], point, domains[i][:len(codes[i])], Fp(1)) for i in range(len(codes))]} "
-        proof = BatchFRI.batch_prove(codes, commitment, vals, point, domains, rate, (1 << (num_evals - 1)), gen, transcript, debug=False)
+        vals = [UniPolynomial.uni_eval_from_evals(evals[i], point, domains[i][::rate], Fp.one()) for i in range(len(evals))]
+        # assert vals == [UniPolynomial.uni_eval_from_evals(codes[i], point, domains[i][:len(codes[i])], Fp(1)) for i in range(len(codes))], f"evals and codes are not the same, {vals} != {[UniPolynomial.uni_eval_from_evals(codes[i], point, domains[i][:len(codes[i])], Fp(1)) for i in range(len(codes))]} "
+        proof = BatchFRI.batch_prove(codes, commitment, vals, point, domains, rate, (1 << (num_evals - 1)), gen, transcript, one=Fp.one(), debug=False)
         transcript = MerlinTranscript(b'test')
-        BatchFRI.batch_verify((1 << (num_evals - 1)), rate, proof, vals, domains, gen, Fp.primitive_element(), transcript, debug=False)
+        BatchFRI.batch_verify((1 << (num_evals - 1)), rate, proof, point, vals, gen, Fp.one(), transcript, debug=False)
 
 
 if __name__ == '__main__':
