@@ -65,6 +65,9 @@ class MLEPolynomial(Generic[Field]):
         else:
             raise IndexError("Evaluation index out of range")
     
+    def __len__(self):
+        return len(self.evals)
+
     def sub(self, g: 'MLEPolynomial'):
         if g.is_zero():
             return self
@@ -223,6 +226,24 @@ class MLEPolynomial(Generic[Field]):
         
         return self.evaluate_from_evals(self.evals, zs)
     
+    def partial_evaluate(self, zs: list):
+        """
+        Partial evaluate the MLE polynomial at the given points.
+        """
+        assert self.num_var >= len(zs), \
+            f"Number of variables must be greater than or equal to the length of zs: {self.num_var} >= {len(zs)}"   
+        
+        k = self.num_var
+        l = len(zs)
+        f = self.evals
+        half = len(f) >> 1
+        for z in zs:
+            f_even = f[::2]
+            f_odd = f[1::2]
+            f = [(self.F(1) - z) * f_even[i] + z * f_odd[i] for i in range(half)]
+            half >>= 1
+        return MLEPolynomial(f, k-l)
+
     @staticmethod
     def evaluate_from_coeffs(coeffs, zs):
         z = len(zs)
