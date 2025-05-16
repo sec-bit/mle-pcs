@@ -43,6 +43,7 @@ class Commitment:
     def __init__(self, tree: MerkleTree):
         self.tree = tree
         self.cm = tree.root
+        self.root = tree.root
 
     def __repr__(self):
         return f"Commitment(len={len(self.tree.data)}, root={self.cm})"
