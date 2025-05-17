@@ -49,23 +49,29 @@ class ZeroFRI:
         # f_evals = [UniPolynomial.evaluate_at_point(f, x) for x in f_domain[:len(f)]]
         f_evals = UniPolynomial.ntt_evals_from_coeffs(f, log_2(len(f)), g ** (g_order // len(f)))
         f_cm, f_code, f_coeffs = FRI.commit(f_evals, rate, f_domain, debug=False)
-        if debug > 0: print(f"P> send f_cm={str(f_cm.root)}")
-        if debug > 0: assert f == f_coeffs, f"f: {f}, f_coeffs: {f_coeffs}"
+        if debug > 0:
+            if debug > 1:
+                print(f"P> send f_cm={str(f_cm.root)}")
+            assert f == f_coeffs, f"f: {f}, f_coeffs: {f_coeffs}"
+            assert len(f_code) == len(f_evals) * rate, f"len(f_code): {len(f_code)}, len(f_evals): {len(f_evals)}, rate: {rate}"
+            for i in range(len(f_evals)):
+                assert f_code[i * rate] == f_evals[i], f"f_code[{i * rate}]={f_code[i * rate]}, f_evals[{i}]={f_evals[i]}"
         transcript.append_message(b"f_cm", bytes(str(f_cm.root), encoding='ascii'))
 
         k = len(point)
 
-        if debug > 0: print(f"P> f={f}, point={point}, v={v}")
+        if debug > 1: print(f"P> f={f}, point={point}, v={v}")
 
         quotients_ascending, rem = MLEPolynomial(f, k).decompose_by_div(point)
         # Into length descending order
         quotients_evals_descending = [q.evals for q in reversed(quotients_ascending)]
-        if debug > 0: print(f"quotients={quotients_evals_descending}, rem={rem}")
-        assert rem == v, "Evaluation does not match"
+        if debug > 1: print(f"quotients={quotients_evals_descending}, rem={rem}")
+        if debug > 0:
+            assert rem == v, "Evaluation does not match"
         f_uni = UniPolynomial(f)
 
-        if debug > 0: print(f"P> send point={point}")
-        if debug > 0: print(f"P> send v={v}")
+        if debug > 1: print(f"P> send point={point}")
+        if debug > 1: print(f"P> send v={v}")
         transcript.append_message(b"point", bytes(str(point), encoding='ascii'))
         transcript.append_message(b"v", bytes(str(v), encoding='ascii'))
 
@@ -74,22 +80,33 @@ class ZeroFRI:
         domains = [[gen ** (i * (1 << j)) for i in range(len(quotients_evals_descending[j]) * rate)] for j in range(len(quotients_evals_descending))]
 
         q_uni_vec = [UniPolynomial(q) for q in quotients_evals_descending]
-        if debug > 0: print(f"P> q_uni_vec={q_uni_vec}, domains={domains}")
+        if debug > 1: print(f"P> q_uni_vec={q_uni_vec}, domains={domains}")
 
-        quotients_evals_descending = [[q_uni_vec[i].evaluate(x) for x in domains[i][::rate]] for i in range(len(q_uni_vec))]
+        # quotients_evals_descending = [[q_uni_vec[i].evaluate(x) for x in domains[i][::rate]] for i in range(len(q_uni_vec))]
+        quotients_evals_descending = [UniPolynomial.ntt_evals_from_coeffs(q.coeffs, log_2(len(q.coeffs)), g ** (g_order // len(q.coeffs))) for q in q_uni_vec]
         if debug > 0:
+            expected = [[q_uni_vec[i].evaluate(x) for x in domains[i][::rate]] for i in range(len(q_uni_vec))]
+            for q, e in zip(q_uni_vec, expected):
+                assert len(q.coeffs) == len(e), f"len(q)={len(q)}, len(e)={len(e)}"
+            for i, q in enumerate(expected):
+                omega = g ** (g_order // len(q))
+                evals = [q_uni_vec[i].evaluate(omega ** j) for j in range(len(q))]
+                assert evals == q, f"evals={evals}, q={q}"
+
             for i in range(len(quotients_evals_descending)):
                 if i != 0:
                     assert len(quotients_evals_descending[i - 1]) >= len(quotients_evals_descending[i]), f"len(quotients[{i}]) < len(quotients[{i+1}]), {len(quotients_evals_descending[i])}, {len(quotients_evals_descending[i+1])}, quotients_evals={quotients_evals_descending}"
                 assert is_power_of_two(len(quotients_evals_descending[i])), f"len(quotients[{i}]) is not a power of two, {len(quotients_evals_descending[i])}"
+                assert quotients_evals_descending[i] == expected[i], f"quotients_evals_descending[{i}]={quotients_evals_descending[i]}, expected[{i}]={expected[i]}"
 
         q_cm = None
         q_code_descending = None
         if batch:
             q_cm, q_code_descending = BatchFRI.batch_commit(evals=quotients_evals_descending, rate=rate, domains=domains, one=one, debug=False)
-            if debug > 0: 
-                print(f"P> q_code={q_code_descending}")
-                print(f"P> send q_cm={str(q_cm['layers'][-1][0])}")
+            if debug > 0:
+                if debug > 1:
+                    print(f"P> q_code={q_code_descending}")
+                    print(f"P> send q_cm={str(q_cm['layers'][-1][0])}")
                 # coeffs = UniPolynomial.compute_coeffs_from_evals_fast(q_code_descending[0], [gen ** i for i in range(len(q_code_descending[0]))])
                 coeffs = UniPolynomial.ntt_coeffs_from_evals(q_code_descending[0], log_2(len(q_code_descending[0])), domains[0][1], one)
                 new_coeffs = []
@@ -100,7 +117,7 @@ class ZeroFRI:
                 assert len(coeffs) <= len(q_code_descending[0]) // rate, f"coeffs: {coeffs}, q_code[0]: {q_code_descending[0]}, rate: {rate}"
             transcript.append_message(b"q_cm", bytes(str(q_cm['layers'][-1][0]), encoding='ascii'))
 
-            if debug > 0:
+            if debug > 1:
                 print(f"P> f_cm={str(f_cm.root)}, q_cm={str(q_cm['layers'][-1][0])}, q_uni_vec={q_uni_vec}")
         else:
             q_cm = []
@@ -125,22 +142,22 @@ class ZeroFRI:
 
         gen = g ** (g_order // (len(f) * rate))
         zeta = int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big")
-        if debug > 0: print(f"P> receive zeta: {zeta} = {gen} ** {zeta} * {g}")
+        if debug > 1: print(f"P> receive zeta: {zeta} = {gen} ** {zeta} * {g}")
 
         f_val = UniPolynomial.uni_eval_from_evals(f_evals, zeta, f_domain[::rate], one)
-        if debug > 1:
+        if debug > 0:
             assert f_val == UniPolynomial.evaluate_at_point(f, zeta), f"f_val: {f_val}, UniPolynomial.evaluate_at_point(f, zeta): {UniPolynomial.evaluate_at_point(f, zeta)}"
             assert f_domain[1] == g ** (g_order // (len(f) * rate)), f"f_domain[1]: {f_domain[1]}, g ** (g_order // (len(f) * rate)): {g ** (g_order // (len(f) * rate))}"
             assert len(f_domain) == len(f) * rate, f"len(f_domain): {len(f_domain)}, len(f): {len(f)}, rate: {rate}"
         f_proof = FRI.prove(f_code, f_cm, f_val, zeta, f_domain, rate, len(f), f_domain[1], transcript, debug=debug > 1)
-        if debug > 0: print(f"P> ▶️▶️ f_proof={f_proof}")
+        if debug > 1: print(f"P> ▶️▶️ f_proof={f_proof}")
 
         quotients_vals_descending = [UniPolynomial.uni_eval_from_evals(q_code_descending[i], zeta, domains[i][:len(q_code_descending[i])], one) for i in range(len(q_code_descending))]
         quotients_proof = None
         if batch:
             gen = g ** (g_order // ((1 << (len(quotients_evals_descending) - 1)) * rate))
             quotients_proof = BatchFRI.batch_prove(q_code_descending, q_cm, quotients_vals_descending, zeta, domains, rate, (1 << (len(quotients_evals_descending) - 1)), gen, transcript, debug=debug > 1)
-            if debug > 0: print(f"P> ▶️▶️ quotients_proof={quotients_proof}")
+            if debug > 1: print(f"P> ▶️▶️ quotients_proof={quotients_proof}")
         else:
             quotients_proof = []
             for i in range(len(quotients_evals_descending)):
@@ -148,8 +165,9 @@ class ZeroFRI:
                 if debug > 0:
                     domain = [gen ** j for j in range((1 << (len(quotients_evals_descending) - 1 - i)) * rate)]
                     assert domain == domains[i], f"domain: {domain}, domains[i]: {domains[i]}"
-                    print(f"P> FRI.prove domain={domain}")
-                    print(f"P> FRI.prove q_cm={str(q_cm[i].root)}, domain={domains[i]}")
+                    if debug > 1:
+                        print(f"P> FRI.prove domain={domain}")
+                        print(f"P> FRI.prove q_cm={str(q_cm[i].root)}, domain={domains[i]}")
                 quotients_proof.append(FRI.prove(q_code_descending[i], q_cm[i], quotients_vals_descending[i], zeta, domains[i], rate, (1 << (len(quotients_evals_descending) - 1 - i)), gen, transcript, debug=debug > 1))
 
         if debug > 0:
@@ -168,11 +186,9 @@ class ZeroFRI:
                 r_val -= c_i * quotients_vals_ascending[i]
 
             assert r_val == one - one, f"Evaluation does not match, {r_val}!=0"
-            if debug > 0:
+            if debug > 1:
                 print(f"P> 👀 r(zeta={zeta}) == 0 ✅")
-
-        if debug > 1:
-            print("P> r_val=", r_val)
+                print("P> r_val=", r_val)
         
         return (f_proof, f_val, quotients_proof, quotients_vals_descending)
     
@@ -193,28 +209,28 @@ class ZeroFRI:
         """
         assert isinstance(transcript, MerlinTranscript), "Transcript must be a MerlinTranscript"
 
-        if debug > 0: print(f"V> receive f_cm={str(f_proof['proof']['first_oracle'])}")
+        if debug > 1: print(f"V> receive f_cm={str(f_proof['proof']['first_oracle'])}")
         transcript.append_message(b"f_cm", bytes(str(f_proof['proof']['first_oracle']), encoding='ascii'))
 
         k = len(point)
         assert k == num_var, "Number of variables must match the point"
 
-        if debug > 0: print(f"V> receive point={point}")
-        if debug > 0: print(f"V> receive v={v}")
+        if debug > 1: print(f"V> receive point={point}")
+        if debug > 1: print(f"V> receive v={v}")
         transcript.append_message(b"point", bytes(str(point), encoding='ascii'))
         transcript.append_message(b"v", bytes(str(v), encoding='ascii'))
         if batch:
-            if debug > 0: print(f"V> receive q_cm={str(quotients_proof['code_commitment'])}")
+            if debug > 1: print(f"V> receive q_cm={str(quotients_proof['code_commitment'])}")
             transcript.append_message(b"q_cm", bytes(str(quotients_proof['code_commitment']), encoding='ascii'))
         else:
             for i in range(len(quotients_proof)):
-                if debug > 0: print(f"V> receive q_cm={str(quotients_proof[i]['proof']['first_oracle'])}")
+                if debug > 1: print(f"V> receive q_cm={str(quotients_proof[i]['proof']['first_oracle'])}")
                 transcript.append_message(b"q_cm", bytes(str(quotients_proof[i]['proof']['first_oracle']), encoding='ascii'))
 
         gen = g ** (g_order // ((1 << num_var) * rate))
 
         zeta = int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big")
-        if debug > 0: print(f"V> send zeta: {zeta} = {gen} ** {zeta} * {g}")
+        if debug > 1: print(f"V> send zeta: {zeta} = {gen} ** {zeta} * {g}")
 
         f_domain = [g ** (i * g_order // ((1 << num_var) * rate)) for i in range((1 << num_var) * rate)]
         FRI.verify(1 << num_var, rate, f_proof, zeta, f_val, f_domain, f_domain[1], transcript, debug=debug > 1)
@@ -222,13 +238,13 @@ class ZeroFRI:
         gen = g ** (g_order // ((1 << (num_var - 1)) * rate))
         domains = [[gen ** (i * (1 << j)) for i in range((1 << (num_var - 1)) * rate)] for j in range(num_var)]
         if batch:
-            if debug > 0: print(f"V> degree_bound={1 << (num_var - 1)}, rate={rate}, proof={quotients_proof}, vals={quotients_vals}, domains={domains}, gen={gen}, shift={g}")
+            if debug > 1: print(f"V> degree_bound={1 << (num_var - 1)}, rate={rate}, proof={quotients_proof}, vals={quotients_vals}, domains={domains}, gen={gen}, shift={g}")
             BatchFRI.batch_verify(1 << (num_var - 1), rate, quotients_proof, zeta, quotients_vals, gen, one, transcript, debug=debug > 1)
         else:
             for i in range(num_var):
-                if debug > 0: 
+                if debug > 1: 
                     print(f"V> degree_bound={1 << (num_var - 1 - i)}, rate={rate}, proof={quotients_proof[i]}, vals={quotients_vals[i]}, domain={domains[i]}, gen={gen}, shift={g}")
-                    print(f"V> FRI.verify q_cm={str(quotients_proof[i]['code_commitment'])}")
+                    # print(f"V> FRI.verify q_cm={str(quotients_proof[i]['code_commitment'])}")
                 FRI.verify(1 << (num_var - 1 - i), rate, quotients_proof[i], zeta, quotients_vals[i], domains[i], gen ** (1 << i), transcript, debug=debug > 1)
 
         phi_uni_at_zeta = cls.periodic_poly(k, 1).evaluate(zeta)
@@ -238,7 +254,7 @@ class ZeroFRI:
                     - point[i] * cls.periodic_poly(k-i, pow_2(i)).evaluate(zeta)
             # query quotients_vals in descending order
             r_val -= c_i * quotients_vals[k - i - 1]
-        if debug > 0:
+        if debug > 1:
             print(f"V> r_val={r_val}")
             print("V> 👀  r(zeta) == 0 ✅" if r_val == 0 else "👀  r(zeta) == 0 ❌")
 

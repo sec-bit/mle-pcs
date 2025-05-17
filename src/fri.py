@@ -5,7 +5,7 @@ from unipolynomial import UniPolynomial
 import sys
 
 sys.path.append('finite-field')
-sys.path.append('../src/finite-field')
+sys.path.append('../src/ff')
 
 from babybear import BabyBear, BabyBearExtElem
 
