@@ -389,10 +389,10 @@ Prover sends $C_w=[w(x)]_1$
 
 $$
 \begin{split}
-h^{(1)}(\beta^2) &= \frac{h^{(0)}(\beta) + h^{(0)}(-\beta)}{2} + u_0\cdot \frac{h^{(0)}(\beta) - h^{(0)}(-\beta)}{2\beta} \\
-h^{(2)}(\beta^2) &= \frac{h^{(1)}(\beta) + h^{(1)}(-\beta)}{2} + u_1\cdot \frac{h^{(1)}(\beta) - h^{(1)}(-\beta)}{2\beta} \\
+h^{(1)}(\beta^2) &= (1-u_0)\cdot\frac{h^{(0)}(\beta) + h^{(0)}(-\beta)}{2} + u_0\cdot \frac{h^{(0)}(\beta) - h^{(0)}(-\beta)}{2\beta} \\
+h^{(2)}(\beta^2) &= (1-u_1)\cdot\frac{h^{(1)}(\beta) + h^{(1)}(-\beta)}{2} + u_1\cdot \frac{h^{(1)}(\beta) - h^{(1)}(-\beta)}{2\beta} \\
 \vdots & \\
-h^{(n-1)}(\beta^2) &=\frac{h^{(n-2)}(\beta) + h^{(n-2)}(-\beta)}{2} + u_{n-2}\cdot \frac{h^{(n-2)}(\beta) - h^{(n-2)}(-\beta)}{2\beta} \\
+h^{(n-1)}(\beta^2) &=(1-u_{n-2})\cdot\frac{h^{(n-2)}(\beta) + h^{(n-2)}(-\beta)}{2} + u_{n-2}\cdot \frac{h^{(n-2)}(\beta) - h^{(n-2)}(-\beta)}{2\beta} \\
 \end{split}
 $$
 
