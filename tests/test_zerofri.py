@@ -23,7 +23,7 @@ class TestZeroFRI(TestCase):
         FIELD_SIZE = BabyBear.P - 1
         primitive_element = BabyBear(31)
         
-        for i in range(2, 5):
+        for i in range(5, 8):
             num_vars = i
             rate = 4
             point = [BabyBear.random() for _ in range(num_vars)]
@@ -46,7 +46,7 @@ class TestZeroFRI(TestCase):
         FIELD_SIZE = BabyBear.P - 1
         primitive_element = BabyBear(31)
 
-        for i in range(2, 5):
+        for i in range(5, 8):
             num_vars = i
             rate = 4
             point = [BabyBear.random() for _ in range(num_vars)]

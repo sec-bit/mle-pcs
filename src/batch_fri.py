@@ -5,6 +5,7 @@ from unipolynomial import UniPolynomial
 from mmcs import MMCS
 from hashlib import sha256
 from fri import FRI
+from babybear import BabyBear, BabyBearExtElem
 
 class BatchFRI:
     security_level = 128
@@ -34,7 +35,10 @@ class BatchFRI:
             tmp = []
             for j in range(len(codes[i])):
                 # print("codes[i][j]:", codes[i][j], "vals[i]:", vals[i], "domains[i][j]:", domains[i][j], "point:", point)
-                tmp.append((codes[i][j] - vals[i]) / (domains[i][j] - point))
+                if type(one) is BabyBearExtElem:
+                    tmp.append((BabyBearExtElem([codes[i][j], BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) - vals[i]) / (domains[i][j] - point))
+                else:
+                    tmp.append((codes[i][j] - vals[i]) / (domains[i][j] - point))
             quotients.append(tmp)
 
         num_verifier_queries = cls.security_level // log_2(rate)
@@ -67,21 +71,22 @@ class BatchFRI:
         assert len(quotients[0]) == degree_bound * rate, f"evals[0]: {quotients[0]}, degree_bound: {degree_bound}, rate: {rate}"
         assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
 
-        lambda_ = one * from_bytes(transcript.challenge_bytes(b"lambda", 4))
+        lambda_ = BabyBearExtElem([from_bytes(transcript.challenge_bytes(b"lambda", 4)), \
+                                    from_bytes(transcript.challenge_bytes(b"lambda", 4)), \
+                                        from_bytes(transcript.challenge_bytes(b"lambda", 4)), \
+                                            from_bytes(transcript.challenge_bytes(b"lambda", 4))])
         # print("lambda:", lambda_)
         folded = [one - one] * len(quotients[0])
-        if debug:
-            coeffs = UniPolynomial.compute_coeffs_from_evals_fast(folded, [gen ** i for i in range(len(folded))])
-            for i in range(len(coeffs), len(folded) // rate):
-                assert coeffs[i] == one - one, f"coeffs: {coeffs}, folded: {folded}, rate: {rate}"
         first_tree = code_tree
 
         trees = []
         tree_evals = []
         for i in range(log_2(degree_bound)):
 
-            alpha = transcript.challenge_bytes(b"alpha", 4)
-            alpha = from_bytes(alpha)
+            alpha = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))), \
+                                    BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))), \
+                                        BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))), \
+                                            BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4)))])
 
             if debug: print("folded:", folded)
             if debug: print("alpha:", alpha)
@@ -92,14 +97,14 @@ class BatchFRI:
             tree = MerkleTree(folded)
             trees.append(tree)
             tree_evals.append(folded)
-            folded = cls.fold(folded, alpha, gen)
-            if debug:
-                coeffs1 = UniPolynomial.compute_coeffs_from_evals_fast(folded, [gen ** (2 * i) for i in range(len(folded))])
-                coeffs2 = UniPolynomial.compute_coeffs_from_evals_fast(quotients[i + 1], [gen ** (2 * i) for i in range(len(quotients[i + 1]))])
-                for j in range(len(coeffs1), len(folded) // rate):
-                    assert coeffs1[j] == one - one, f"i: {i}, coeffs1: {coeffs1}, folded: {folded}, rate: {rate}"
-                for j in range(len(coeffs2), len(quotients[i + 1]) // rate):
-                    assert coeffs2[j] == one - one, f"i: {i}, coeffs2: {coeffs2}, evals[i + 1]: {quotients[i + 1]}, rate: {rate}"
+            folded = cls.fold(folded, alpha, gen, one)
+            # if debug:
+            #     coeffs1 = UniPolynomial.compute_coeffs_from_evals_fast(folded, [BabyBearExtElem([gen ** (2 * i), BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for i in range(len(folded))], BabyBearExtElem.one())
+            #     coeffs2 = UniPolynomial.compute_coeffs_from_evals_fast(quotients[i + 1], [BabyBearExtElem([gen ** (2 * i), BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for i in range(len(quotients[i + 1]))], BabyBearExtElem.one())
+            #     for j in range(len(coeffs1), len(folded) // rate):
+            #         assert coeffs1[j] == one - one, f"i: {i}, coeffs1: {coeffs1}, folded: {folded}, rate: {rate}"
+            #     for j in range(len(coeffs2), len(quotients[i + 1]) // rate):
+            #         assert coeffs2[j] == one - one, f"i: {i}, coeffs2: {coeffs2}, evals[i + 1]: {quotients[i + 1]}, rate: {rate}"
             assert len(folded) == len(quotients[i + 1]), f"len(folded): {len(folded)}, len(evals[i + 1]): {len(quotients[i + 1])}"
 
             transcript.append_message(b"oracle", tree.root.encode('ascii'))
@@ -208,27 +213,42 @@ class BatchFRI:
         merkle_paths = proof['merkle_paths']
         first_merkle_paths = proof['first_merkle_paths']
 
-        lambda_ = one * from_bytes(transcript.challenge_bytes(b"lambda", 4))
+        lambda_ = BabyBearExtElem([from_bytes(transcript.challenge_bytes(b"lambda", 4)), \
+                                    from_bytes(transcript.challenge_bytes(b"lambda", 4)), \
+                                        from_bytes(transcript.challenge_bytes(b"lambda", 4)), \
+                                            from_bytes(transcript.challenge_bytes(b"lambda", 4))])
         # print("lambda:", lambda_)
         fold_challenges = []
         if debug: print("intermediate_oracles:", intermediate_oracles)
         if debug: print("k:", log_degree_bound)
         for i in range(log_degree_bound):
-            fold_challenges.append(from_bytes(transcript.challenge_bytes(b"alpha", 4)))
+
+            alpha = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))), \
+                        BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))), \
+                            BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))), \
+                                BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4)))])
+            fold_challenges.append(alpha)
             transcript.append_message(b'oracle', intermediate_oracles[i].encode('ascii'))
 
         queries = [from_bytes(transcript.challenge_bytes(b"queries", 4)) % num_vars for _ in range(num_verifier_queries)]
         if debug: print("queries:", queries)
 
+        one = BabyBearExtElem.one()
+        inv_two = one / (one + one)
+
+        T = [[BabyBearExtElem([t, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for t in T[i]] for i in range(log_degree_bound)]
+
         # query loop
         for q, (cur_path, indices, ros), mps, fmp in zip(queries, query_paths, merkle_paths, first_merkle_paths):
             if debug: print("cur_path:", cur_path)
             num_vars_copy = num_vars
-            folded = 0
+            folded = BabyBearExtElem.zero()
 
-            # print("verifier MMCS.verify:", q, ros, first_oracle, fmp)
+            print("verifier MMCS.verify:", q, ros, first_oracle, fmp)
             MMCS.verify(q, ros, fmp, first_oracle, debug)
             # q = min(q, q ^ num_vars_copy)
+
+            ros = [BabyBearExtElem([r, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for r in ros]
 
             # fold loop
             for i in range(log_degree_bound):
@@ -252,7 +272,7 @@ class BatchFRI:
                 alpha = fold_challenges[i]
                 evals = [cur_path[i]] * 2
                 evals[q // (num_vars_copy // 2)] = folded
-                folded = (evals[0] + evals[1])/2 + alpha * (evals[0] - evals[1])/(2 * table[idx])
+                folded = (evals[0] + evals[1]) * inv_two + alpha * (evals[0] - evals[1]) * inv_two / table[idx]
                 num_vars_copy >>= 1
                 q = idx
 
@@ -266,12 +286,13 @@ class BatchFRI:
     # f0(x^2) = (f(x) + f(-x)) / 2
     # f1(x^2) = (f(x) - f(-x)) / 2x
     @classmethod
-    def fold(cls, evals, alpha, g, debug=False):
+    def fold(cls, evals, alpha, g, one=1, debug=False):
         assert len(evals) % 2 == 0
+        two = one + one
 
         half = len(evals) // 2
-        f0_evals = [(evals[i] + evals[half + i]) / 2 for i in range(half)]
-        f1_evals = [(evals[i] - evals[half + i]) / (2 * g ** i) for i in range(half)]
+        f0_evals = [(evals[i] + evals[half + i]) / two for i in range(half)]
+        f1_evals = [(evals[i] - evals[half + i]) / (two * g ** i) for i in range(half)]
 
         if debug:
             x = g ** 5

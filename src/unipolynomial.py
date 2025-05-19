@@ -327,7 +327,7 @@ class UniPolynomial:
         return [c * domain_size_inv for c in coeffs]
     
     @staticmethod
-    def polynomial_multiplication(a, b):
+    def polynomial_multiplication(a, b, one=1):
         """
         Multiply two polynomials represented as lists of coefficients.
         (It's slow)
@@ -340,7 +340,7 @@ class UniPolynomial:
         Returns:
             list: Coefficients of the product polynomial.
         """
-        result = [0] * (len(a) + len(b) - 1)
+        result = [one - one] * (len(a) + len(b) - 1)
         for i in range(len(a)):
             for j in range(len(b)):
                 result[i + j] += a[i] * b[j]
@@ -426,7 +426,7 @@ class UniPolynomial:
         return UniPolynomial(quotient), remainder
     
     @staticmethod
-    def construct_subproduct_tree_fix(domain):
+    def construct_subproduct_tree_fix(domain, one=1):
         """
         Construct a subproduct tree for the given domain.
 
@@ -438,13 +438,13 @@ class UniPolynomial:
         """
         n = len(domain)
         if n == 1:
-            return {"poly": [-domain[0], 1], "children": None}
+            return {"poly": [-domain[0], one], "children": None}
 
         mid = n // 2
-        left = UniPolynomial.construct_subproduct_tree_fix(domain[:mid])
-        right = UniPolynomial.construct_subproduct_tree_fix(domain[mid:])
+        left = UniPolynomial.construct_subproduct_tree_fix(domain[:mid], one)
+        right = UniPolynomial.construct_subproduct_tree_fix(domain[mid:], one)
 
-        poly = UniPolynomial.polynomial_multiplication(left["poly"], right["poly"])
+        poly = UniPolynomial.polynomial_multiplication(left["poly"], right["poly"], one)
 
         return {"poly": poly, "children": (left, right)}
     
@@ -511,15 +511,15 @@ class UniPolynomial:
         return result
     
     @staticmethod
-    def evaluate_at_point(poly, point):
+    def evaluate_at_point(poly, point, one=1):
         """Evaluate a polynomial at a single point using Horner's method."""
-        result = 0
+        result = one - one
         for coeff in reversed(poly):
             result = result * point + coeff
         return result
 
-    def evaluate(self, point):
-        return self.evaluate_at_point(self.coeffs, point)
+    def evaluate(self, point, one=1):
+        return self.evaluate_at_point(self.coeffs, point, one)
 
     @staticmethod
     def polynomial_division(dividend, divisor):
@@ -563,7 +563,7 @@ class UniPolynomial:
         return cls(tree["poly"])
 
     @classmethod
-    def compute_coeffs_from_evals_fast(cls, evals, domain):
+    def compute_coeffs_from_evals_fast(cls, evals, domain, one=1):
         """
         Compute polynomial coefficients from evaluations using fast interpolation.
 
@@ -581,14 +581,14 @@ class UniPolynomial:
         # domain = [d for d in domain]
 
         # 1. Building up subproduct tree
-        tree = cls.construct_subproduct_tree_fix(domain)
+        tree = cls.construct_subproduct_tree_fix(domain, one)
 
         # 2. Construct z'(X) in O(n) time
         z_derivative = cls.compute_z_derivative(tree["poly"])
 
         # 3. Compute barycentric weights
         z_derivative_at_u = cls.compute_eval_fix(tree, z_derivative, domain)
-        ws = [1 / zd for zd in z_derivative_at_u]
+        ws = [one / zd for zd in z_derivative_at_u]
         ws = [w * e for w, e in zip(ws, evals)]
 
         # 4. Compute barycentric interpolation
@@ -649,7 +649,7 @@ class UniPolynomial:
     @classmethod
     def barycentric_weights(cls, D, one=1):
         n = len(D)
-        weights = [1] * n
+        weights = [one] * n
         for i in range(n):
             # weights[i] = product([(D[i] - D[j]) if i !=j else Fp(1) for j in range(n)])
             for j in range(n):
@@ -662,6 +662,7 @@ class UniPolynomial:
 
     @classmethod
     def uni_eval_from_evals(cls, evals, z, D, one=1):
+        zero = one - one
         n = len(evals)
         if n != len(D):
             raise ValueError("Domain size should be equal to the length of evaluations")
@@ -670,8 +671,8 @@ class UniPolynomial:
         weights = cls.barycentric_weights(D, one)
         # print("weights={}".format(weights))
         e_vec = [weights[i] / (z - D[i]) for i in range(n)]
-        numerator = sum([e_vec[i] * evals[i] for i in range(n)])
-        denominator = sum([e_vec[i] for i in range(n)])
+        numerator = sum([e_vec[i] * evals[i] for i in range(n)], zero)
+        denominator = sum([e_vec[i] for i in range(n)], zero)
         return (numerator / denominator)
 
 # Example usage

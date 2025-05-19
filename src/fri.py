@@ -36,12 +36,15 @@ class FRI:
         return MerkleTree(code), code, coeffs
 
     @classmethod
-    def prove(cls, code, code_tree, val, point, domain, rate, degree_bound, gen, transcript, debug=False):
+    def prove(cls, code, code_tree, val, point, domain, rate, degree_bound, gen, transcript, one=1, debug=False):
         if debug: print("val:", val)
         assert len(domain) == degree_bound * rate, f"domain: {domain}, degree_bound: {degree_bound}, rate: {rate}"
         assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
         
-        quotient = [(code[i] - val) / (domain[i] - point) for i in range(len(code))]
+        if type(one) is BabyBearExtElem:
+            quotient = [(BabyBearExtElem([code[i], BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) - val) / (domain[i] - point) for i in range(len(code))]
+        else:
+            quotient = [(code[i] - val) / (domain[i] - point) for i in range(len(code))]
 
         if debug:
             print('point:', point)
@@ -51,7 +54,7 @@ class FRI:
         if cls.security_level % log_2(rate) != 0:
             num_verifier_queries += 1
 
-        proof = cls.prove_low_degree(code, code_tree, quotient, rate, degree_bound, gen, num_verifier_queries, transcript, debug)
+        proof = cls.prove_low_degree(code, code_tree, quotient, rate, degree_bound, gen, num_verifier_queries, transcript, one, debug)
 
         return {
             'proof': proof,
@@ -59,7 +62,7 @@ class FRI:
         }
 
     @classmethod
-    def verify(cls, degree_bound, rate, proof, point, value, domain, gen, transcript, debug=False):
+    def verify(cls, degree_bound, rate, proof, point, value, domain, gen, transcript, one=1, debug=False):
 
         assert degree_bound >= proof['degree_bound']
         degree_bound = proof['degree_bound']
@@ -74,10 +77,10 @@ class FRI:
         if cls.security_level % log_2(rate) != 0:
             num_verifier_queries += 1
         
-        cls.verify_low_degree(point, value, degree_bound, rate, proof['proof'], gen, num_verifier_queries, transcript, debug)
+        cls.verify_low_degree(point, value, degree_bound, rate, proof['proof'], gen, num_verifier_queries, transcript, one, debug)
 
     @staticmethod
-    def prove_low_degree(code, code_tree, evals, rate, degree_bound, gen, num_verifier_queries, transcript, debug=False):
+    def prove_low_degree(code, code_tree, evals, rate, degree_bound, gen, num_verifier_queries, transcript, one=1, debug=False):
         assert is_power_of_two(degree_bound)
 
         lambda_ = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"lambda", 4))) for _ in range(4)])
@@ -91,7 +94,7 @@ class FRI:
             if debug: print("evals:", evals)
             if debug: print("alpha:", alpha)
             if debug: print("generator:", gen)
-            evals = FRI.fold(evals, alpha, gen)
+            evals = FRI.fold(evals, alpha, gen, one)
             tree = MerkleTree(evals)
             trees.append(tree)
             tree_evals.append(evals)
@@ -108,7 +111,7 @@ class FRI:
                     assert evals[i] == evals[0], f"evals: {evals}"
 
         # query phase
-        query_paths, merkle_paths = FRI.query_phase(transcript, code_tree, code, trees, tree_evals, degree_bound * rate, num_verifier_queries, debug)
+        query_paths, merkle_paths = FRI.query_phase(transcript, code_tree, code, trees, tree_evals, degree_bound * rate, num_verifier_queries, one, debug)
 
         return {
             'query_paths': query_paths,
@@ -127,12 +130,13 @@ class FRI:
     # f0(x^2) = (f(x) + f(-x)) / 2
     # f1(x^2) = (f(x) - f(-x)) / 2x
     @staticmethod
-    def fold(evals, alpha, g, debug=False):
+    def fold(evals, alpha, g, one=1, debug=False):
         assert len(evals) % 2 == 0
+        two = one + one
 
         half = len(evals) // 2
-        f0_evals = [ext_from_babybear((evals[i] + evals[half + i]) / BabyBear(2)) for i in range(half)]
-        f1_evals = [(evals[i] - evals[half + i]) / (BabyBear(2) * g ** i) for i in range(half)]
+        f0_evals = [ext_from_babybear((evals[i] + evals[half + i]) / two) for i in range(half)]
+        f1_evals = [(evals[i] - evals[half + i]) / (two * g ** i) for i in range(half)]
 
         if debug:
             x = g ** 5
@@ -145,15 +149,15 @@ class FRI:
 
 
     @staticmethod
-    def verify_low_degree(point, value, degree_bound, rate, proof, gen, num_verifier_queries, transcript, debug=False):
+    def verify_low_degree(point, value, degree_bound, rate, proof, gen, num_verifier_queries, transcript, one=1, debug=False):
         log_degree_bound = log_2(degree_bound)
         log_evals = log_2(degree_bound * rate)
         T = [[(gen**(2 ** j)) ** i for i in range(2 ** (log_evals - j - 1))] for j in range(0, log_evals)]
         if debug: print("T:", T)
-        FRI.verify_queries(proof, log_degree_bound, degree_bound * rate, num_verifier_queries, T, point, value, transcript, debug)
+        FRI.verify_queries(proof, log_degree_bound, degree_bound * rate, num_verifier_queries, T, point, value, transcript, one, debug)
 
     @staticmethod
-    def query_phase(transcript: MerlinTranscript, first_tree: MerkleTree, first_oracle, trees: list, oracles: list, num_vars, num_verifier_queries, debug=False):
+    def query_phase(transcript: MerlinTranscript, first_tree: MerkleTree, first_oracle, trees: list, oracles: list, num_vars, num_verifier_queries, one=1, debug=False):
         queries = [from_bytes(transcript.challenge_bytes(b"queries", 4)) % num_vars for _ in range(num_verifier_queries)]
         if debug: print("queries:", queries)
 
@@ -212,7 +216,7 @@ class FRI:
         return query_paths, merkle_paths
     
     @staticmethod
-    def verify_queries(proof, k, num_vars, num_verifier_queries, T, point, value, transcript, debug=False):
+    def verify_queries(proof, k, num_vars, num_verifier_queries, T, point, value, transcript, one=1, debug=False):
 
         lambda_ = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"lambda", 4))) for _ in range(4)])
 
@@ -243,15 +247,20 @@ class FRI:
                 if debug: print("x1:", x1)
 
                 table = T[i]
+                table = [BabyBearExtElem([t, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for t in table]
                 if debug: print("table:", table)
                 if i != len(mps) - 1:
                     if i == 0:
+                        if type(value) is BabyBearExtElem:
+                            code_left = BabyBearExtElem([code_left, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()])
+                            code_right = BabyBearExtElem([code_right, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()])
                         code_left = (BabyBearExtElem.one() + lambda_ * table[x0]) * (code_left - value) / (table[x0] - point)
                         code_right = (BabyBearExtElem.one() - lambda_ * table[x0]) * (code_right - value) / (-table[x0] - point)
                     f_code_folded = cur_path[i + 1][0 if x0 < num_vars_copy / 4 else 1]
                     alpha = fold_challenges[i]
-                    left = (code_left + code_right)/BabyBear(2)
-                    right = alpha * (code_left - code_right)/(BabyBear(2)*table[x0])
+                    two = one + one
+                    left = (code_left + code_right)/two
+                    right = alpha * (code_left - code_right)/(two*table[x0])
                     if not isinstance(left, BabyBearExtElem):
                         left = BabyBearExtElem([left, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()])
                     if not isinstance(right, BabyBearExtElem):

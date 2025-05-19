@@ -6,6 +6,7 @@ from utils import pow_2, is_power_of_two, log_2
 from mle2 import MLEPolynomial
 from merlin.merlin_transcript import MerlinTranscript
 from kzg10 import KZG10Commitment
+from babybear import BabyBear, BabyBearExtElem
 # from sage.all import *
 import sys
 
@@ -13,7 +14,7 @@ sys.path.append('finite-field')
 
 class ZeroFRI:
     @classmethod
-    def periodic_poly(cls, dim, degree):
+    def periodic_poly(cls, dim, degree, one=1):
         """
         Compute the periodic polynomial Phi(X^d)
 
@@ -28,9 +29,9 @@ class ZeroFRI:
             list: the coefficients of Phi(X^d)
         """
         n = pow_2(dim)
-        coeffs = [0] * (n * degree)
+        coeffs = [one - one] * (n * degree)
         for i in range(n):
-            coeffs[i * degree] = 1
+            coeffs[i * degree] = one
         return UniPolynomial(coeffs)
 
     @classmethod
@@ -45,6 +46,8 @@ class ZeroFRI:
         assert isinstance(transcript, MerlinTranscript), "Transcript must be a MerlinTranscript"
 
         f_domain = [g ** (i * g_order // (len(f) * rate)) for i in range(len(f) * rate)]
+        assert f_domain[1] == g ** (g_order // (len(f) * rate)), f"f_domain[1]: {f_domain[1]}, g ** (g_order // (len(f) * rate)): {g ** (g_order // (len(f) * rate))}"
+        assert len(f_domain) == len(f) * rate, f"len(f_domain): {len(f_domain)}, len(f): {len(f)}, rate: {rate}"
         # f_evals = UniPolynomial.compute_evals_from_coeffs_fast(f, f_domain[:len(f)])
         # f_evals = [UniPolynomial.evaluate_at_point(f, x) for x in f_domain[:len(f)]]
         f_evals = UniPolynomial.ntt_evals_from_coeffs(f, log_2(len(f)), g ** (g_order // len(f)))
@@ -141,22 +144,31 @@ class ZeroFRI:
                 transcript.append_message(b"q_cm", bytes(str(comm.root), encoding='ascii'))
 
         gen = g ** (g_order // (len(f) * rate))
-        zeta = int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big")
+        zeta = BabyBearExtElem([BabyBear(int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big")), \
+                                BabyBear(int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big")), \
+                                    BabyBear(int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big")), \
+                                        BabyBear(int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big"))])
         if debug > 1: print(f"P> receive zeta: {zeta} = {gen} ** {zeta} * {g}")
 
-        f_val = UniPolynomial.uni_eval_from_evals(f_evals, zeta, f_domain[::rate], one)
+        f_evals = [BabyBearExtElem([e, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for e in f_evals]
+        f_domain = [BabyBearExtElem([d, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for d in f_domain]
+        f_val = UniPolynomial.uni_eval_from_evals(f_evals, zeta, f_domain[::rate], BabyBearExtElem.one())
+        # f_code = [BabyBearExtElem([e, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for e in f_code]
+        domains = [[BabyBearExtElem([d, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for d in domain] for domain in domains]
+        q_code_descending_ext = [[BabyBearExtElem([e, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for e in q] for q in q_code_descending]
+        point = [BabyBearExtElem([p, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for p in point]
         if debug > 0:
-            assert f_val == UniPolynomial.evaluate_at_point(f, zeta), f"f_val: {f_val}, UniPolynomial.evaluate_at_point(f, zeta): {UniPolynomial.evaluate_at_point(f, zeta)}"
-            assert f_domain[1] == g ** (g_order // (len(f) * rate)), f"f_domain[1]: {f_domain[1]}, g ** (g_order // (len(f) * rate)): {g ** (g_order // (len(f) * rate))}"
-            assert len(f_domain) == len(f) * rate, f"len(f_domain): {len(f_domain)}, len(f): {len(f)}, rate: {rate}"
-        f_proof = FRI.prove(f_code, f_cm, f_val, zeta, f_domain, rate, len(f), f_domain[1], transcript, debug=debug > 1)
+            f_copy = [BabyBearExtElem([e, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for e in f]
+            assert f_val == UniPolynomial.evaluate_at_point(f_copy, zeta, BabyBearExtElem.one()), f"f_val: {f_val}, UniPolynomial.evaluate_at_point(f, zeta): {UniPolynomial.evaluate_at_point(f_copy, zeta, BabyBearExtElem.one())}"
+        f_proof = FRI.prove(f_code, f_cm, f_val, zeta, f_domain, rate, len(f), f_domain[1], transcript, BabyBearExtElem.one(), debug=debug > 1)
         if debug > 1: print(f"P> ▶️▶️ f_proof={f_proof}")
+        print("prover check:", transcript.challenge_bytes(b"queries", 4))
 
-        quotients_vals_descending = [UniPolynomial.uni_eval_from_evals(q_code_descending[i], zeta, domains[i][:len(q_code_descending[i])], one) for i in range(len(q_code_descending))]
+        quotients_vals_descending = [UniPolynomial.uni_eval_from_evals(q_code_descending_ext[i], zeta, domains[i][:len(q_code_descending[i])], BabyBearExtElem.one()) for i in range(len(q_code_descending))]
         quotients_proof = None
         if batch:
             gen = g ** (g_order // ((1 << (len(quotients_evals_descending) - 1)) * rate))
-            quotients_proof = BatchFRI.batch_prove(q_code_descending, q_cm, quotients_vals_descending, zeta, domains, rate, (1 << (len(quotients_evals_descending) - 1)), gen, transcript, debug=debug > 1)
+            quotients_proof = BatchFRI.batch_prove(q_code_descending, q_cm, quotients_vals_descending, zeta, domains, rate, (1 << (len(quotients_evals_descending) - 1)), BabyBearExtElem([gen, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]), transcript, BabyBearExtElem.one(), debug=debug > 0)
             if debug > 1: print(f"P> ▶️▶️ quotients_proof={quotients_proof}")
         else:
             quotients_proof = []
@@ -164,15 +176,16 @@ class ZeroFRI:
                 gen = g ** (g_order // ((1 << (len(quotients_evals_descending) - 1 - i)) * rate))
                 if debug > 0:
                     domain = [gen ** j for j in range((1 << (len(quotients_evals_descending) - 1 - i)) * rate)]
+                    domain = [BabyBearExtElem([d, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for d in domain]
                     assert domain == domains[i], f"domain: {domain}, domains[i]: {domains[i]}"
                     if debug > 1:
                         print(f"P> FRI.prove domain={domain}")
                         print(f"P> FRI.prove q_cm={str(q_cm[i].root)}, domain={domains[i]}")
-                quotients_proof.append(FRI.prove(q_code_descending[i], q_cm[i], quotients_vals_descending[i], zeta, domains[i], rate, (1 << (len(quotients_evals_descending) - 1 - i)), gen, transcript, debug=debug > 1))
+                quotients_proof.append(FRI.prove(q_code_descending[i], q_cm[i], quotients_vals_descending[i], zeta, domains[i], rate, (1 << (len(quotients_evals_descending) - 1 - i)), BabyBearExtElem([gen, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]), transcript, BabyBearExtElem.one(), debug=debug > 1))
 
         if debug > 0:
             # compute r(X) = f(X) - v * phi_n(zeta) - ∑_i (c_i * qi(X))
-            phi_uni_at_zeta = cls.periodic_poly(k, 1).evaluate(zeta)
+            phi_uni_at_zeta = cls.periodic_poly(k, 1, BabyBearExtElem.one()).evaluate(zeta, BabyBearExtElem.one())
             if debug > 1:
                 print(f"P> f_uni={f_uni}, v={v}, phi_uni_at_zeta={phi_uni_at_zeta}")
 
@@ -181,11 +194,11 @@ class ZeroFRI:
             if debug > 1:
                 print(f"P> quotients_vals={quotients_vals_ascending}")
             for i in range(k):
-                c_i = zeta ** (pow_2(i)) * cls.periodic_poly(k-i-1, pow_2(i+1)).evaluate(zeta) \
-                        - point[i] * cls.periodic_poly(k-i, pow_2(i)).evaluate(zeta)
+                c_i = zeta ** (pow_2(i)) * cls.periodic_poly(k-i-1, pow_2(i+1), BabyBearExtElem.one()).evaluate(zeta, BabyBearExtElem.one()) \
+                        - point[i] * cls.periodic_poly(k-i, pow_2(i), BabyBearExtElem.one()).evaluate(zeta, BabyBearExtElem.one())
                 r_val -= c_i * quotients_vals_ascending[i]
 
-            assert r_val == one - one, f"Evaluation does not match, {r_val}!=0"
+            assert r_val == BabyBearExtElem.zero(), f"Evaluation does not match, {r_val}!=0"
             if debug > 1:
                 print(f"P> 👀 r(zeta={zeta}) == 0 ✅")
                 print("P> r_val=", r_val)
@@ -229,33 +242,38 @@ class ZeroFRI:
 
         gen = g ** (g_order // ((1 << num_var) * rate))
 
-        zeta = int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big")
+        zeta = BabyBearExtElem([BabyBear(int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big")), \
+                                BabyBear(int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big")), \
+                                    BabyBear(int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big")), \
+                                        BabyBear(int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big"))])
         if debug > 1: print(f"V> send zeta: {zeta} = {gen} ** {zeta} * {g}")
+        point = [BabyBearExtElem([p, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for p in point]
 
         f_domain = [g ** (i * g_order // ((1 << num_var) * rate)) for i in range((1 << num_var) * rate)]
-        FRI.verify(1 << num_var, rate, f_proof, zeta, f_val, f_domain, f_domain[1], transcript, debug=debug > 1)
+        FRI.verify(1 << num_var, rate, f_proof, zeta, f_val, f_domain, f_domain[1], transcript, BabyBearExtElem.one(), debug=debug > 1)
+        print("verifier check:", transcript.challenge_bytes(b"queries", 4))
 
         gen = g ** (g_order // ((1 << (num_var - 1)) * rate))
         domains = [[gen ** (i * (1 << j)) for i in range((1 << (num_var - 1)) * rate)] for j in range(num_var)]
         if batch:
             if debug > 1: print(f"V> degree_bound={1 << (num_var - 1)}, rate={rate}, proof={quotients_proof}, vals={quotients_vals}, domains={domains}, gen={gen}, shift={g}")
-            BatchFRI.batch_verify(1 << (num_var - 1), rate, quotients_proof, zeta, quotients_vals, gen, one, transcript, debug=debug > 1)
+            BatchFRI.batch_verify(1 << (num_var - 1), rate, quotients_proof, zeta, quotients_vals, gen, one, transcript, debug=debug > 0)
         else:
             for i in range(num_var):
                 if debug > 1: 
                     print(f"V> degree_bound={1 << (num_var - 1 - i)}, rate={rate}, proof={quotients_proof[i]}, vals={quotients_vals[i]}, domain={domains[i]}, gen={gen}, shift={g}")
                     # print(f"V> FRI.verify q_cm={str(quotients_proof[i]['code_commitment'])}")
-                FRI.verify(1 << (num_var - 1 - i), rate, quotients_proof[i], zeta, quotients_vals[i], domains[i], gen ** (1 << i), transcript, debug=debug > 1)
+                FRI.verify(1 << (num_var - 1 - i), rate, quotients_proof[i], zeta, quotients_vals[i], domains[i], gen ** (1 << i), transcript, BabyBearExtElem.one(), debug=debug > 1)
 
-        phi_uni_at_zeta = cls.periodic_poly(k, 1).evaluate(zeta)
+        phi_uni_at_zeta = cls.periodic_poly(k, 1, BabyBearExtElem.one()).evaluate(zeta, BabyBearExtElem.one())
         r_val = f_val - phi_uni_at_zeta * v
         for i in range(k):
-            c_i = zeta ** (pow_2(i)) * cls.periodic_poly(k-i-1, pow_2(i+1)).evaluate(zeta) \
-                    - point[i] * cls.periodic_poly(k-i, pow_2(i)).evaluate(zeta)
+            c_i = zeta ** (pow_2(i)) * cls.periodic_poly(k-i-1, pow_2(i+1), BabyBearExtElem.one()).evaluate(zeta, BabyBearExtElem.one()) \
+                    - point[i] * cls.periodic_poly(k-i, pow_2(i), BabyBearExtElem.one()).evaluate(zeta, BabyBearExtElem.one())
             # query quotients_vals in descending order
             r_val -= c_i * quotients_vals[k - i - 1]
         if debug > 1:
             print(f"V> r_val={r_val}")
             print("V> 👀  r(zeta) == 0 ✅" if r_val == 0 else "👀  r(zeta) == 0 ❌")
 
-        assert r_val == one - one, f"Evaluation does not match, {r_val}!=0"
+        assert r_val == BabyBearExtElem.zero(), f"Evaluation does not match, {r_val}!=0"
