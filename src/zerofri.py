@@ -106,7 +106,7 @@ class ZeroFRI:
         q_cm = None
         q_code_descending = None
         if batch:
-            q_cm, q_code_descending = BatchFRI.batch_commit(evals=quotients_evals_descending, rate=rate, domains=domains, one=one, debug=False)
+            q_cm, q_code_descending = BatchFRI.batch_commit(evals=quotients_evals_descending[:-1], rate=rate, domains=domains, one=one, debug=False)
             if debug > 0:
                 if debug > 1:
                     print(f"P> q_code={q_code_descending}")
@@ -120,6 +120,7 @@ class ZeroFRI:
                 coeffs = new_coeffs
                 assert len(coeffs) <= len(q_code_descending[0]) // rate, f"coeffs: {coeffs}, q_code[0]: {q_code_descending[0]}, rate: {rate}"
             transcript.append_message(b"q_cm", bytes(str(q_cm['layers'][-1][0]), encoding='ascii'))
+            transcript.append_message(b"last q", bytes(str(quotients_evals_descending[-1][0]), encoding='ascii'))
 
             if debug > 1:
                 print(f"P> f_cm={str(f_cm.root)}, q_cm={str(q_cm['layers'][-1][0])}, q_uni_vec={q_uni_vec}")
@@ -143,6 +144,7 @@ class ZeroFRI:
                     assert len(coeffs) <= len(code) // rate, f"coeffs: {coeffs}, code: {code}, rate: {rate}"
                     if debug > 1: print(f"P> send q_cm={str(comm.root)}")
                 transcript.append_message(b"q_cm", bytes(str(comm.root), encoding='ascii'))
+            transcript.append_message(b"last q", bytes(str(quotients_evals_descending[-1][0]), encoding='ascii'))
 
         gen = g ** (g_order // (len(f) * rate))
         zeta = BabyBearExtElem([BabyBear(int.from_bytes(transcript.challenge_bytes(b"zeta", 4), "big")), \
@@ -167,12 +169,11 @@ class ZeroFRI:
         if debug > 1: print(f"P> ▶️▶️ f_proof={f_proof}")
 
         quotients_vals_descending = [UniPolynomialWithFft.evaluate_from_evals(q_code_descending_ext[i], zeta, domains[i][:len(q_code_descending[i])]) for i in range(len(q_code_descending))]
-        if not batch:
-            quotients_vals_descending.append(quotients_evals_descending[-1][0]) # last one is not verified
+        quotients_vals_descending.append(quotients_evals_descending[-1][0]) # last one is not verified
         quotients_proof = None
         if batch:
             gen = g ** (g_order // ((1 << (len(quotients_evals_descending) - 1)) * rate))
-            quotients_proof = BatchFRI.batch_prove(q_code_descending, q_cm, quotients_vals_descending, zeta, domains, rate, (1 << (len(quotients_evals_descending) - 1)), BabyBearExtElem([gen, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]), transcript, BabyBearExtElem.one(), debug=debug > 0)
+            quotients_proof = BatchFRI.batch_prove(q_code_descending, q_cm, quotients_vals_descending[:-1], zeta, domains, rate, (1 << (len(quotients_evals_descending) - 1)), BabyBearExtElem([gen, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]), transcript, BabyBearExtElem.one(), debug=debug > 0)
             if debug > 1: print(f"P> ▶️▶️ quotients_proof={quotients_proof}")
         else:
             quotients_proof = []
@@ -239,10 +240,12 @@ class ZeroFRI:
         if batch:
             if debug > 1: print(f"V> receive q_cm={str(quotients_proof['code_commitment'])}")
             transcript.append_message(b"q_cm", bytes(str(quotients_proof['code_commitment']), encoding='ascii'))
+            transcript.append_message(b"last q", bytes(str(quotients_vals[-1]), encoding='ascii'))
         else:
             for i in range(len(quotients_proof)):
                 if debug > 1: print(f"V> receive q_cm={str(quotients_proof[i]['proof']['first_oracle'])}")
                 transcript.append_message(b"q_cm", bytes(str(quotients_proof[i]['proof']['first_oracle']), encoding='ascii'))
+            transcript.append_message(b"last q", bytes(str(quotients_vals[-1]), encoding='ascii'))
 
         gen = g ** (g_order // ((1 << num_var) * rate))
 

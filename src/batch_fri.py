@@ -1,10 +1,14 @@
 from merkle import MerkleTree, verify_decommitment
 from merlin.merlin_transcript import MerlinTranscript
 from utils import from_bytes, log_2, is_power_of_two
-from unipolynomial import UniPolynomial
+from unipoly2 import UniPolynomialWithFft
 from mmcs import MMCS
 from hashlib import sha256
-from fri import FRI
+import sys
+
+sys.path.append('finite-field')
+sys.path.append('../src/ff')
+
 from babybear import BabyBear, BabyBearExtElem
 
 class BatchFRI:
@@ -16,10 +20,11 @@ class BatchFRI:
         MMCS.configure(lambda x: sha256(str(x).encode('ascii')).digest(), lambda x: sha256(sha256(x[0]).digest() + sha256(x[1]).digest()).digest(), b'default_digest')
         sorted_evals = sorted(evals, key=lambda x: len(x), reverse=True)
 
-        coeffs = [UniPolynomial.ntt_coeffs_from_evals(sorted_evals[i], log_2(len(sorted_evals[i])), domains[i][1] ** rate, one) for i in range(len(sorted_evals))]
+        UniPolynomialWithFft.set_field_type(BabyBear)
+        coeffs = [UniPolynomialWithFft.ifft(sorted_evals[i], log_2(len(sorted_evals[i])), domains[i][1] ** rate) for i in range(len(sorted_evals))]
         if debug: print("coeffs:", coeffs, ", domains:", domains)
 
-        codes = [UniPolynomial.ntt_evals_from_coeffs(coeffs[i] + [0] * (len(sorted_evals[i]) * rate - len(coeffs[i])), log_2(len(sorted_evals[i]) * rate), domains[i][1]) for i in range(len(sorted_evals))]
+        codes = [UniPolynomialWithFft.fft(coeffs[i] + [0] * (len(sorted_evals[i]) * rate - len(coeffs[i])), log_2(len(sorted_evals[i]) * rate), domains[i][1]) for i in range(len(sorted_evals))]
         if debug: print("codes:", codes)
         if debug: assert evals == [codes[i][:len(evals[i])] for i in range(len(evals))], f"evals: {evals}, codes: {codes}"
         return MMCS.commit(codes, debug=False), codes
@@ -92,7 +97,7 @@ class BatchFRI:
             if debug: print("alpha:", alpha)
             if debug: print("generator:", gen)
             if debug: print("domain:", [gen ** i for i in range(len(folded) // 2)])
-            if debug: print("evals[i + 1]:", quotients[i + 1])
+            # if debug: print("evals[i + 1]:", quotients[i + 1])
             folded = [x + (one + lambda_ * gen ** j) * y for j, (x, y) in enumerate(zip(folded, quotients[i]))]
             tree = MerkleTree(folded)
             trees.append(tree)
@@ -105,7 +110,7 @@ class BatchFRI:
             #         assert coeffs1[j] == one - one, f"i: {i}, coeffs1: {coeffs1}, folded: {folded}, rate: {rate}"
             #     for j in range(len(coeffs2), len(quotients[i + 1]) // rate):
             #         assert coeffs2[j] == one - one, f"i: {i}, coeffs2: {coeffs2}, evals[i + 1]: {quotients[i + 1]}, rate: {rate}"
-            assert len(folded) == len(quotients[i + 1]), f"len(folded): {len(folded)}, len(evals[i + 1]): {len(quotients[i + 1])}"
+            assert i == log_2(degree_bound) - 1 or len(folded) == len(quotients[i + 1]), f"len(folded): {len(folded)}, len(evals[i + 1]): {len(quotients[i + 1])}"
 
             transcript.append_message(b"oracle", tree.root.encode('ascii'))
 
@@ -184,10 +189,10 @@ class BatchFRI:
                     idx = min(idx, idx ^ (num_vars_copy // 2))
                     num_vars_copy >>= 1
                 assert mmcs_proof[0] == openings, f"mmcs_proof[0]: {mmcs_proof[0]}, openings: {openings}, codes[-1][0]: {codes[-1][0]}"
-                assert openings == reduced_openings, f"openings: {openings}, reduced_openings: {reduced_openings}"
+                assert openings == reduced_openings[:-1], f"openings: {openings}, reduced_openings: {reduced_openings}"
                 assert mmcs_proof[2] == first_tree['layers'][-1][0], f"mmcs_proof[2]: {mmcs_proof[2]}, first_tree['layers'][-1][0]: {first_tree['layers'][-1][0]}"
                 print("prover MMCS.verify:", q, reduced_openings, first_tree['layers'][-1][0])
-                MMCS.verify(q, reduced_openings, mmcs_proof[1], first_tree['layers'][-1][0], debug)
+                MMCS.verify(q, reduced_openings[:-1], mmcs_proof[1], first_tree['layers'][-1][0], debug)
 
         merkle_paths = []
         for cur_path, indices, _ in query_paths:
@@ -245,7 +250,7 @@ class BatchFRI:
             folded = BabyBearExtElem.zero()
 
             print("verifier MMCS.verify:", q, ros, first_oracle, fmp)
-            MMCS.verify(q, ros, fmp, first_oracle, debug)
+            MMCS.verify(q, ros[:-1], fmp, first_oracle, debug)
             # q = min(q, q ^ num_vars_copy)
 
             ros = [BabyBearExtElem([r, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for r in ros]
@@ -295,10 +300,11 @@ class BatchFRI:
         f1_evals = [(evals[i] - evals[half + i]) / (two * g ** i) for i in range(half)]
 
         if debug:
-            x = g ** 5
-            f_x = UniPolynomial.uni_eval_from_evals(evals, x, [g ** i for i in range(len(evals))])
-            f0_x = UniPolynomial.uni_eval_from_evals(f0_evals, x ** 2, [(g ** 2) ** i for i in range(len(f0_evals))])
-            f1_x = UniPolynomial.uni_eval_from_evals(f1_evals, x ** 2, [(g ** 2) ** i for i in range(len(f1_evals))])
+            x = BabyBearExtElem.random()
+            UniPolynomialWithFft.set_field_type(BabyBearExtElem)
+            f_x = UniPolynomialWithFft.evaluate_from_evals(evals, x, [ext_from_babybear(g) ** i for i in range(len(evals))])
+            f0_x = UniPolynomialWithFft.evaluate_from_evals(f0_evals, x ** 2, [(ext_from_babybear(g) ** 2) ** i for i in range(len(f0_evals))])
+            f1_x = UniPolynomialWithFft.evaluate_from_evals(f1_evals, x ** 2, [(ext_from_babybear(g) ** 2) ** i for i in range(len(f1_evals))])
             assert f_x == f0_x + x * f1_x, f"failed to fold, f_x: {f_x}, f0_x: {f0_x}, f1_x: {f1_x}, alpha: {alpha}"
 
         return [x + alpha * y for x, y in zip(f0_evals, f1_evals)]
@@ -311,4 +317,12 @@ class BatchFRI:
             # Compute f_m(alpha[i])
             code[i] = sum(m[j] * (alpha[i] ** j) for j in range(k0))
         return code
+
+def ext_from_babybear(e):
+    if isinstance(e, BabyBearExtElem):
+        return e
+    elif isinstance(e, BabyBear):
+        return BabyBearExtElem([e, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()])
+    else:
+        raise ValueError(f"Unsupported type: {type(e)}")
 
