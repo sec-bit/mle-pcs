@@ -1,5 +1,5 @@
 import random
-from typing import List
+from typing import List, ClassVar
 
 def convert_int_to_babybear(func):
     def wrapper(self, other):
@@ -10,6 +10,10 @@ def convert_int_to_babybear(func):
 
 class BabyBear:
     P = 15 * (1 << 27) + 1
+    TWO_ADICITY = 27
+    MULTIPLICATIVE_GENERATOR: ClassVar['BabyBear']
+    ROOT_OF_UNITY: ClassVar['BabyBear'] # Declare type for linter
+
     def __init__(self, value: int):
         self.value = value % self.P
 
@@ -28,6 +32,24 @@ class BabyBear:
     @classmethod
     def random(cls):
         return cls(random.randint(0, cls.P - 1))
+
+    @classmethod
+    def neg_one(cls):
+        return cls(cls.P - 1)
+
+    @classmethod
+    def nth_root_of_unity(cls, n: int):
+        if not (n > 0 and (n & (n - 1)) == 0): # Check if n is a power of 2
+            raise ValueError("n must be a positive power of 2 for nth_root_of_unity.")
+        
+        if n > (1 << cls.TWO_ADICITY): # n = 2^m, so m <= TWO_ADICITY
+            raise ValueError(f"n (a power of 2) cannot exceed 2^{cls.TWO_ADICITY} for nth_root_of_unity.")
+
+        # cls.ROOT_OF_UNITY is assumed to be a primitive (2^TWO_ADICITY)-th root of unity.
+        # To get a primitive n-th root of unity (where n is a power of 2),
+        # we compute (cls.ROOT_OF_UNITY) ^ ((2^TWO_ADICITY) / n).
+        exponent = (1 << cls.TWO_ADICITY) // n
+        return cls.ROOT_OF_UNITY.pow(exponent)
 
     def __repr__(self):
         return f"BabyBear({self.value})"
@@ -98,7 +120,13 @@ class BabyBear:
     def __rtruediv__(self, other):
         return BabyBear(other) / self
 
+BabyBear.ROOT_OF_UNITY = BabyBear(0x1a427a41)
+BabyBear.MULTIPLICATIVE_GENERATOR = BabyBear(31)
+
 class BabyBearExtElem:
+    TWO_ADICITY = 29
+    MULTIPLICATIVE_GENERATOR: ClassVar['BabyBearExtElem']
+    ROOT_OF_UNITY: ClassVar['BabyBearExtElem']
     BETA = BabyBear(11)
     NBETA = BabyBear(BabyBear.P - 11)
 
@@ -117,6 +145,17 @@ class BabyBearExtElem:
     @classmethod
     def random(cls):
         return cls([BabyBear.random() for _ in range(4)])
+
+    @classmethod
+    def nth_root_of_unity(cls, n: int):
+        if not (n > 0 and (n & (n - 1)) == 0): # Check if n is a power of 2
+            raise ValueError("n must be a positive power of 2 for nth_root_of_unity.")
+        
+        if n > (1 << cls.TWO_ADICITY): # n = 2^m, so m <= TWO_ADICITY
+            raise ValueError(f"n (a power of 2) cannot exceed 2^{cls.TWO_ADICITY} for nth_root_of_unity.")
+
+        exponent = (1 << cls.TWO_ADICITY) // n
+        return cls.ROOT_OF_UNITY.pow(exponent)
 
     def __repr__(self):
         return f"BabyBearExtElem({self.elems})"
@@ -186,6 +225,9 @@ class BabyBearExtElem:
             return self * BabyBearExtElem([other.inv()] + [BabyBear.zero()] * 3)
         raise TypeError("Unsupported operand type for /")
 
+BabyBearExtElem.MULTIPLICATIVE_GENERATOR = BabyBearExtElem([BabyBear(8), BabyBear(1), BabyBear(0), BabyBear(0)])
+BabyBearExtElem.ROOT_OF_UNITY = BabyBearExtElem([BabyBear(0), BabyBear(0), BabyBear(0), BabyBear(124907976)])
+
 # Example usage:
 if __name__ == "__main__":
     a = BabyBear(5)
@@ -225,3 +267,24 @@ if __name__ == "__main__":
     print(f"a / b = {a / b}")    # Should be same as a * b.inv()
     print(f"x ** 3 = {x ** 3}")  # Should be same as x.pow(3)
     print(f"x / y = {x / y}")    # Should be same as x * y.inv()
+
+primitive_root_of_unity = BabyBear.ROOT_OF_UNITY
+for i in range(0, BabyBear.TWO_ADICITY + 1):
+    print(f"2^{i}-th root of unity = {hex(BabyBear.nth_root_of_unity(2**i).value)}")
+'''
+same as baby_bear.rs in plonky3
+const TWO_ADIC_GENERATORS: Self::ArrayLike = &BabyBear::new_array([
+        0x1, 0x78000000, 0x67055c21, 0x5ee99486, 0xbb4c4e4, 0x2d4cc4da, 0x669d6090, 0x17b56c64,
+        0x67456167, 0x688442f9, 0x145e952d, 0x4fe61226, 0x4c734715, 0x11c33e2a, 0x62c3d2b1,
+        0x77cad399, 0x54c131f4, 0x4cabd6a6, 0x5cf5713f, 0x3e9430e8, 0xba067a3, 0x18adc27d,
+        0x21fd55bc, 0x4b859b3d, 0x3bd57996, 0x4483d85a, 0x3a26eef8, 0x1a427a41,
+    ]);
+'''
+
+for i in range(BabyBear.TWO_ADICITY, BabyBearExtElem.TWO_ADICITY + 1):
+    print(f"2^{i}-th root of unity = {BabyBearExtElem.nth_root_of_unity(2**i).elems}")
+
+'''
+2^28-th root of unity = [BabyBear(0), BabyBear(0), BabyBear(17094607), BabyBear(0)]
+17094607 is negative of 1996171314 in plonky3's code [0, 0, 1996171314, 0]
+'''
