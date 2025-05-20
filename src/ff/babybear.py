@@ -108,6 +108,10 @@ class BabyBear:
     def __truediv__(self, other):
         return self * other.inv()
 
+    @convert_int_to_babybear
+    def __floordiv__(self, other):
+        return BabyBear(self.value // other.value)
+
     def __radd__(self, other):
         return BabyBear(other) + self
 
@@ -119,6 +123,10 @@ class BabyBear:
 
     def __rtruediv__(self, other):
         return BabyBear(other) / self
+    
+    @convert_int_to_babybear
+    def __rfloordiv__(self, other):
+        return BabyBear(other.value // self.value)
 
 BabyBear.ROOT_OF_UNITY = BabyBear(0x1a427a41)
 BabyBear.MULTIPLICATIVE_GENERATOR = BabyBear(31)

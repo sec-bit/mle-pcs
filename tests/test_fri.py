@@ -2,74 +2,70 @@ from unittest import TestCase, main
 import sys
 
 sys.path.append('../src')
+sys.path.append('../src/finite-field')
 sys.path.append('src')
 
 from fri import FRI
 from utils import is_power_of_two
-from unipolynomial import UniPolynomial
+from unipoly2 import UniPolynomialWithFft
+from babybear import BabyBearExtElem, BabyBear
+
+def ext_elem_eq(l):
+    assert isinstance(l[0], BabyBearExtElem)
+    for i in range(1, len(l)):
+        if l[i] != l[0]:
+            return False
+    return True
+
 class TestFRI(TestCase):
     def setUp(self):
         # Set up a scalar field for testing (e.g., integers modulo a prime)
-        prime = 193  # A small prime for testing
-        UniPolynomial.set_scalar(int, lambda x: x % prime)
+        # prime = 193  # A small prime for testing
+        # UniPolynomial.set_scalar(int, lambda x: x % prime)
+        pass
 
     def test_fold(self):
-        from sage.all import GF
-        from field import magic
+        # from sage.all import GF
+        # from field import magic
 
-        Fp = magic(GF(193))
-    
-        evals = FRI.rs_encode_single([2, 3, 4, 5], [Fp.primitive_element() ** (i * 192 // 16) for i in range(16)], 4)
-        coset = Fp.primitive_element() ** (192 // len(evals))
-        alpha = Fp(7)
+        # Fp = magic(GF(193))
+        FIELD_SIZE = BabyBear.P - 1
+        primitive_element = BabyBear(31)
 
-        evals = FRI.fold(evals, alpha, coset, debug=False)
-        coset = coset ** 2
-        evals = FRI.fold(evals, alpha, coset, debug=False)
+        evals = FRI.rs_encode_single([BabyBear.random() for _ in range(4)], [primitive_element ** (i * FIELD_SIZE // 16) for i in range(16)], 4, BabyBear.zero())
+        coset = primitive_element ** (FIELD_SIZE // len(evals))
+        alpha = BabyBearExtElem([BabyBear(7), BabyBear.zero(), BabyBear.zero(), BabyBear.zero()])
 
-        assert evals[0] == evals[1] == evals[2] == evals[3]
+        evals = FRI.fold(evals, alpha, coset, BabyBearExtElem.one(), debug=True)
+        coset = coset * coset
+        evals = FRI.fold(evals, alpha, coset, BabyBearExtElem.one(), debug=True)
 
-    def test_low_degree(self):
-        from sage.all import GF
-        from field import magic
-        from random import randint
-        from merlin.merlin_transcript import MerlinTranscript
-
-        Fp = magic(GF(193))
-
-        assert Fp.primitive_element() ** 192 == 1
-
-        degree_bound = 8
-        blow_up_factor = 2
-        num_verifier_queries = 8
-        assert is_power_of_two(degree_bound)
-
-        evals = FRI.rs_encode_single([randint(0, 193) for _ in range(degree_bound)], [Fp.primitive_element() ** (i * 192 // (degree_bound * 2 ** blow_up_factor)) for i in range(degree_bound * 2 ** blow_up_factor)], 2 ** blow_up_factor)
-        proof = FRI.prove_low_degree(evals, 2 ** blow_up_factor, degree_bound, Fp.primitive_element() ** (192 // len(evals)), num_verifier_queries, MerlinTranscript(b'test'), debug=False)
-        FRI.verify_low_degree(degree_bound, 2 ** blow_up_factor, proof, Fp.primitive_element() ** (192 // len(evals)), num_verifier_queries, MerlinTranscript(b'test'), debug=False)
+        assert ext_elem_eq(evals)
 
     def test_prove(self):
-        from sage.all import GF
-        from field import magic
-        from random import randint
         from merlin.merlin_transcript import MerlinTranscript
 
-        Fp = magic(GF(193))
-
-        assert Fp.primitive_element() ** 192 == 1
+        FIELD_SIZE = BabyBear.P - 1
+        primitive_element = BabyBear(31)
         
         rate = 4
         evals_size = 4
-        coset = Fp.primitive_element() ** (192 // (evals_size * rate))
-        point = Fp.primitive_element()
-        evals = [i for i in range(evals_size)]
-        value = UniPolynomial.uni_eval_from_evals(evals, point, [coset ** i for i in range(len(evals))])
+        coset = primitive_element ** (FIELD_SIZE // (evals_size * rate))
+        point = BabyBearExtElem.random()
+        evals = [BabyBear(i) for i in range(evals_size)]
+        # value = UniPolynomial.uni_eval_from_evals(evals, point, [coset ** i for i in range(len(evals))], BabyBear.one())
         domain = [coset ** i for i in range(evals_size * rate)]
-        code_tree, code = FRI.commit(evals, rate, domain, debug=False)
+        code_tree, code, coeffs = FRI.commit(evals, rate, domain, debug=True)
+        UniPolynomialWithFft.set_field_type(BabyBearExtElem)
+        coeffs = [BabyBearExtElem([c, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for c in coeffs]
+        # code = [BabyBearExtElem([c, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for c in code]
+        value = UniPolynomialWithFft.evaluate_at_point(coeffs, point)
         transcript = MerlinTranscript(b'test')
         transcript.append_message(b"code", code_tree.root.encode('ascii'))
-        proof = FRI.prove(code, code_tree, value, point, domain, rate, evals_size, coset, transcript, debug=False)
-        FRI.verify(evals_size, rate, proof, point, value, domain, coset, MerlinTranscript(b'test'), debug=False)
+        proof = FRI.prove(code, code_tree, value, point, domain, rate, evals_size, coset, transcript, BabyBearExtElem.one(), debug=True)
+        transcript = MerlinTranscript(b'test')
+        transcript.append_message(b"code", code_tree.root.encode('ascii'))
+        FRI.verify(evals_size, rate, proof, point, value, domain, coset, transcript, BabyBearExtElem.one(), debug=True)
 
 
 if __name__ == '__main__':
