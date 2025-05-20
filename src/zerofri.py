@@ -126,7 +126,7 @@ class ZeroFRI:
         else:
             q_cm = []
             q_code_descending = []
-            for i in range(len(quotients_evals_descending)):
+            for i in range(len(quotients_evals_descending) - 1): # last one is not verified
                 if debug > 1: print(f"P> FRI.commit quotients_evals_descending[{i}]={quotients_evals_descending[i]}")
                 # assert rate < len(domains[i]), f"i: {i}, rate: {rate}, domains: {domains}"
                 comm, code, coeffs = FRI.commit(quotients_evals_descending[i], rate, domains[i], debug=debug > 1)
@@ -163,10 +163,12 @@ class ZeroFRI:
         if debug > 0:
             f_copy = [BabyBearExtElem([e, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for e in f]
             assert f_val == UniPolynomialWithFft.evaluate_at_point(f_copy, zeta), f"f_val: {f_val}, UniPolynomial.evaluate_at_point(f, zeta): {UniPolynomialWithFft.evaluate_at_point(f_copy, zeta)}"
-        f_proof = FRI.prove(f_code, f_cm, f_val, zeta, f_domain, rate, len(f), f_domain[1], transcript, BabyBearExtElem.one(), debug=debug > 1)
+        f_proof = FRI.prove(f_code, f_cm, f_val, zeta, f_domain, rate, len(f), f_domain[1].elems[0], transcript, BabyBearExtElem.one(), debug=debug > 1)
         if debug > 1: print(f"P> ▶️▶️ f_proof={f_proof}")
 
         quotients_vals_descending = [UniPolynomialWithFft.evaluate_from_evals(q_code_descending_ext[i], zeta, domains[i][:len(q_code_descending[i])]) for i in range(len(q_code_descending))]
+        if not batch:
+            quotients_vals_descending.append(quotients_evals_descending[-1][0]) # last one is not verified
         quotients_proof = None
         if batch:
             gen = g ** (g_order // ((1 << (len(quotients_evals_descending) - 1)) * rate))
@@ -174,7 +176,7 @@ class ZeroFRI:
             if debug > 1: print(f"P> ▶️▶️ quotients_proof={quotients_proof}")
         else:
             quotients_proof = []
-            for i in range(len(quotients_evals_descending)):
+            for i in range(len(quotients_evals_descending) - 1):
                 gen = g ** (g_order // ((1 << (len(quotients_evals_descending) - 1 - i)) * rate))
                 if debug > 0:
                     domain = [gen ** j for j in range((1 << (len(quotients_evals_descending) - 1 - i)) * rate)]
@@ -183,7 +185,7 @@ class ZeroFRI:
                     if debug > 1:
                         print(f"P> FRI.prove domain={domain}")
                         print(f"P> FRI.prove q_cm={str(q_cm[i].root)}, domain={domains[i]}")
-                quotients_proof.append(FRI.prove(q_code_descending[i], q_cm[i], quotients_vals_descending[i], zeta, domains[i], rate, (1 << (len(quotients_evals_descending) - 1 - i)), BabyBearExtElem([gen, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]), transcript, BabyBearExtElem.one(), debug=debug > 1))
+                quotients_proof.append(FRI.prove(q_code_descending[i], q_cm[i], quotients_vals_descending[i], zeta, domains[i], rate, (1 << (len(quotients_evals_descending) - 1 - i)), gen, transcript, BabyBearExtElem.one(), debug=debug > 1))
 
         if debug > 0:
             # compute r(X) = f(X) - v * phi_n(zeta) - ∑_i (c_i * qi(X))
@@ -260,7 +262,7 @@ class ZeroFRI:
             if debug > 1: print(f"V> degree_bound={1 << (num_var - 1)}, rate={rate}, proof={quotients_proof}, vals={quotients_vals}, domains={domains}, gen={gen}, shift={g}")
             BatchFRI.batch_verify(1 << (num_var - 1), rate, quotients_proof, zeta, quotients_vals, gen, one, transcript, debug=debug > 0)
         else:
-            for i in range(num_var):
+            for i in range(num_var - 1): # last one is not verified
                 if debug > 1: 
                     print(f"V> degree_bound={1 << (num_var - 1 - i)}, rate={rate}, proof={quotients_proof[i]}, vals={quotients_vals[i]}, domain={domains[i]}, gen={gen}, shift={g}")
                     # print(f"V> FRI.verify q_cm={str(quotients_proof[i]['code_commitment'])}")

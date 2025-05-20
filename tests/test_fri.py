@@ -7,7 +7,7 @@ sys.path.append('src')
 
 from fri import FRI
 from utils import is_power_of_two
-from unipolynomial import UniPolynomial
+from unipoly2 import UniPolynomialWithFft
 from babybear import BabyBearExtElem, BabyBear
 
 def ext_elem_eq(l):
@@ -22,7 +22,7 @@ class TestFRI(TestCase):
         # Set up a scalar field for testing (e.g., integers modulo a prime)
         # prime = 193  # A small prime for testing
         # UniPolynomial.set_scalar(int, lambda x: x % prime)
-        UniPolynomial.set_scalar(BabyBearExtElem, lambda x: x)
+        pass
 
     def test_fold(self):
         # from sage.all import GF
@@ -36,9 +36,9 @@ class TestFRI(TestCase):
         coset = primitive_element ** (FIELD_SIZE // len(evals))
         alpha = BabyBearExtElem([BabyBear(7), BabyBear.zero(), BabyBear.zero(), BabyBear.zero()])
 
-        evals = FRI.fold(evals, alpha, coset, BabyBear.one(), debug=False)
+        evals = FRI.fold(evals, alpha, coset, BabyBearExtElem.one(), debug=True)
         coset = coset * coset
-        evals = FRI.fold(evals, alpha, coset, BabyBear.one(), debug=False)
+        evals = FRI.fold(evals, alpha, coset, BabyBearExtElem.one(), debug=True)
 
         assert ext_elem_eq(evals)
 
@@ -51,18 +51,21 @@ class TestFRI(TestCase):
         rate = 4
         evals_size = 4
         coset = primitive_element ** (FIELD_SIZE // (evals_size * rate))
-        point = primitive_element
+        point = BabyBearExtElem.random()
         evals = [BabyBear(i) for i in range(evals_size)]
         # value = UniPolynomial.uni_eval_from_evals(evals, point, [coset ** i for i in range(len(evals))], BabyBear.one())
         domain = [coset ** i for i in range(evals_size * rate)]
-        code_tree, code, coeffs = FRI.commit(evals, rate, domain, debug=False)
-        value = UniPolynomial.evaluate_at_point(coeffs, point)
+        code_tree, code, coeffs = FRI.commit(evals, rate, domain, debug=True)
+        UniPolynomialWithFft.set_field_type(BabyBearExtElem)
+        coeffs = [BabyBearExtElem([c, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for c in coeffs]
+        # code = [BabyBearExtElem([c, BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) for c in code]
+        value = UniPolynomialWithFft.evaluate_at_point(coeffs, point)
         transcript = MerlinTranscript(b'test')
         transcript.append_message(b"code", code_tree.root.encode('ascii'))
-        proof = FRI.prove(code, code_tree, value, point, domain, rate, evals_size, coset, transcript, debug=False)
+        proof = FRI.prove(code, code_tree, value, point, domain, rate, evals_size, coset, transcript, BabyBearExtElem.one(), debug=True)
         transcript = MerlinTranscript(b'test')
         transcript.append_message(b"code", code_tree.root.encode('ascii'))
-        FRI.verify(evals_size, rate, proof, point, value, domain, coset, transcript, BabyBear.one(), debug=False)
+        FRI.verify(evals_size, rate, proof, point, value, domain, coset, transcript, BabyBearExtElem.one(), debug=True)
 
 
 if __name__ == '__main__':

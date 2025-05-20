@@ -1,7 +1,7 @@
 from merkle import MerkleTree, verify_decommitment
 from merlin.merlin_transcript import MerlinTranscript
 from utils import from_bytes, log_2, is_power_of_two
-from unipolynomial import UniPolynomial
+from unipoly2 import UniPolynomialWithFft
 import sys
 
 sys.path.append('finite-field')
@@ -27,9 +27,10 @@ class FRI:
         assert is_power_of_two(N)
         degree_bound = N
         if debug: print("degree_bound:", degree_bound)
-        coeffs = UniPolynomial.ntt_coeffs_from_evals(evals, log_2(N), domain[1] ** rate, BabyBear.one())
+        UniPolynomialWithFft.set_field_type(BabyBear)
+        coeffs = UniPolynomialWithFft.ifft(evals, log_2(N), domain[1] ** rate)
         if debug: print("coeffs:", coeffs)
-        code = UniPolynomial.ntt_evals_from_coeffs(coeffs + [0] * (N * rate - len(coeffs)), log_2(N * rate), domain[1])
+        code = UniPolynomialWithFft.fft(coeffs + [0] * (N * rate - len(coeffs)), log_2(N * rate), domain[1])
         if debug: print("code:", code)
         assert len(code) == N * rate, f"code: {code}, degree_bound: {degree_bound}, rate: {rate}"
         
@@ -42,6 +43,7 @@ class FRI:
         assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
         
         if type(one) is BabyBearExtElem:
+            domain = [ext_from_babybear(d) for d in domain]
             quotient = [(BabyBearExtElem([code[i], BabyBear.zero(), BabyBear.zero(), BabyBear.zero()]) - val) / (domain[i] - point) for i in range(len(code))]
         else:
             quotient = [(code[i] - val) / (domain[i] - point) for i in range(len(code))]
@@ -94,7 +96,6 @@ class FRI:
             if debug: print("evals:", evals)
             if debug: print("alpha:", alpha)
             if debug: print("generator:", gen)
-            gen = ext_from_babybear(gen)
             evals = FRI.fold(evals, alpha, gen, BabyBearExtElem.one())
             tree = MerkleTree(evals)
             trees.append(tree)
@@ -133,17 +134,20 @@ class FRI:
     @staticmethod
     def fold(evals, alpha, g, one=1, debug=False):
         assert len(evals) % 2 == 0
-        two = one + one
+        inv_two = BabyBear.one() / (BabyBear.one() + BabyBear.one())
+
+        evals = [ext_from_babybear(e) for e in evals]
 
         half = len(evals) // 2
-        f0_evals = [ext_from_babybear((evals[i] + evals[half + i]) / two) for i in range(half)]
-        f1_evals = [(evals[i] - evals[half + i]) / (two * g ** i) for i in range(half)]
+        f0_evals = [(evals[i] + evals[half + i]) * inv_two for i in range(half)]
+        f1_evals = [(evals[i] - evals[half + i]) * inv_two * ext_from_babybear(BabyBear.one() / (g ** i)) for i in range(half)]
 
         if debug:
-            x = g ** 5
-            f_x = UniPolynomial.uni_eval_from_evals(evals, x, [g ** i for i in range(len(evals))])
-            f0_x = UniPolynomial.uni_eval_from_evals(f0_evals, x ** 2, [(g ** 2) ** i for i in range(len(f0_evals))])
-            f1_x = UniPolynomial.uni_eval_from_evals(f1_evals, x ** 2, [(g ** 2) ** i for i in range(len(f1_evals))])
+            x = BabyBearExtElem.random()
+            UniPolynomialWithFft.set_field_type(BabyBearExtElem)
+            f_x = UniPolynomialWithFft.evaluate_from_evals(evals, x, [ext_from_babybear(g ** i) for i in range(len(evals))])
+            f0_x = UniPolynomialWithFft.evaluate_from_evals(f0_evals, x ** 2, [ext_from_babybear((g ** 2) ** i) for i in range(len(f0_evals))])
+            f1_x = UniPolynomialWithFft.evaluate_from_evals(f1_evals, x ** 2, [ext_from_babybear((g ** 2) ** i) for i in range(len(f1_evals))])
             assert f_x == f0_x + x * f1_x, f"failed to fold, f_x: {f_x}, f0_x: {f0_x}, f1_x: {f1_x}, alpha: {alpha}"
 
         return [x + alpha * y for x, y in zip(f0_evals, f1_evals)]
