@@ -228,6 +228,182 @@ class BabyBearExtElem:
 BabyBearExtElem.MULTIPLICATIVE_GENERATOR = BabyBearExtElem([BabyBear(8), BabyBear(1), BabyBear(0), BabyBear(0)])
 BabyBearExtElem.ROOT_OF_UNITY = BabyBearExtElem([BabyBear(0), BabyBear(0), BabyBear(0), BabyBear(124907976)])
 
+class BabyBearExtElem5:
+    '''
+    const W: BabyBear = BabyBear::new(2);
+    const DTH_ROOT: BabyBear = BabyBear::new(815036133);
+    const EXT_GENERATOR: [BabyBear; 5] = BabyBear::new_array([8, 1, 0, 0, 0]);
+    const EXT_TWO_ADICITY: usize = 27;
+    '''
+    TWO_ADICITY = 27
+    MULTIPLICATIVE_GENERATOR: ClassVar['BabyBearExtElem5']
+    ROOT_OF_UNITY: ClassVar['BabyBearExtElem5']
+    BETA = BabyBear(2)
+    NBETA = BabyBear(BabyBear.P - 2)
+    
+    def __init__(self, elems: List[BabyBear]):
+        assert len(elems) == 5, "BabyBearExtElem5 must have 5 elements"
+        self.elems = elems
+
+    @classmethod
+    def zero(cls):
+        return cls([BabyBear.zero()] * 5)
+
+    @classmethod
+    def one(cls):
+        return cls([BabyBear.one()] + [BabyBear.zero()] * 4)
+
+    @classmethod
+    def random(cls):
+        return cls([BabyBear.random() for _ in range(5)])
+
+    @classmethod
+    def nth_root_of_unity(cls, n: int):
+        if not (n > 0 and (n & (n - 1)) == 0):  # Check if n is a power of 2
+            raise ValueError("n must be a positive power of 2 for nth_root_of_unity.")
+        
+        if n > (1 << cls.TWO_ADICITY):  # n = 2^m, so m <= TWO_ADICITY
+            raise ValueError(f"n (a power of 2) cannot exceed 2^{cls.TWO_ADICITY} for nth_root_of_unity.")
+
+        exponent = (1 << cls.TWO_ADICITY) // n
+        return cls.ROOT_OF_UNITY.pow(exponent)
+
+    def __repr__(self):
+        return f"BabyBearExtElem5({self.elems})"
+
+    def __eq__(self, other):
+        if isinstance(other, BabyBearExtElem5):
+            return self.elems == other.elems
+        return False
+
+    def __add__(self, other):
+        if isinstance(other, BabyBearExtElem5):
+            return BabyBearExtElem5([a + b for a, b in zip(self.elems, other.elems)])
+        raise TypeError("Unsupported operand type for +")
+
+    def __sub__(self, other):
+        if isinstance(other, BabyBearExtElem5):
+            return BabyBearExtElem5([a - b for a, b in zip(self.elems, other.elems)])
+        raise TypeError("Unsupported operand type for -")
+
+    def __mul__(self, other):
+        if isinstance(other, BabyBearExtElem5):
+            a, b = self.elems, other.elems
+            # Multiplication for quintic extension field
+            # Using the irreducible polynomial x^5 - BETA
+            c = [BabyBear.zero() for _ in range(5)]
+            
+            # Multiply as polynomials
+            for i in range(5):
+                for j in range(5):
+                    if i + j < 5:
+                        c[i + j] += a[i] * b[j]
+                    else:
+                        # Reduce modulo x^5 - BETA
+                        # If x^n where n >= 5, replace with BETA * x^(n-5)
+                        c[(i + j) % 5] += self.BETA * a[i] * b[j]
+            
+            return BabyBearExtElem5(c)
+        elif isinstance(other, BabyBear):
+            return BabyBearExtElem5([elem * other for elem in self.elems])
+        raise TypeError("Unsupported operand type for *")
+
+    def __neg__(self):
+        return BabyBearExtElem5([-elem for elem in self.elems])
+
+    def frobenius(self):
+        """
+        Computes the Frobenius automorphism a -> a^P.
+        For a(X) = sum c_i X^i in F_P[X]/(X^5-BETA), this is sum c_i (phi X)^i,
+        where phi = BETA^((P-1)/5).
+        The new coefficients are c_i * phi^i.
+        """
+        # P = BabyBear.P
+        # k = (P - 1) // 5
+        # phi = self.BETA.pow(k)
+        
+        # Integer literal for k to avoid large number arithmetic during class loading
+        # P = 15 * (1 << 27) + 1
+        # (P - 1) // 5 = (15 * (1 << 27)) // 5 = 3 * (1 << 27)
+        k = 3 * (1 << 27)
+        
+        phi = self.BETA.pow(k)
+        
+        new_elems = [BabyBear.zero()] * 5
+        current_phi_power = BabyBear.one()
+        for i in range(5):
+            new_elems[i] = self.elems[i] * current_phi_power
+            current_phi_power *= phi
+            
+        return BabyBearExtElem5(new_elems)
+
+    def repeated_frobenius(self, count: int):
+        """
+        Computes the Frobenius automorphism count times.
+        sigma^count(a).
+        """
+        res = self
+        for _ in range(count):
+            res = res.frobenius()
+        return res
+
+    def inv(self):
+        # Based on 
+        #   Norm(a) = a^(P^0) * a^(P^1) * a^(P^2) * a^(P^3) * a^(P^4)
+        #   a.inv() = a^(P^4 + P^3 + P^2 + P) / Norm(a)
+        
+        # Calculate a^P, a^(P^2), a^(P^3), a^(P^4)
+        a_p = self.frobenius()
+        a_p2 = a_p.frobenius()
+        a_p3 = a_p2.frobenius()
+        a_p4 = a_p3.frobenius()
+
+        # Calculate product of conjugates (a^P * a^(P^2) * a^(P^3) * a^(P^4))
+        a_exp_q_plus_q_sq = a_p * a_p2  # a^P * a^(P^2)
+        a_exp_q3_plus_q4 = a_p3 * a_p4  # a^(P^3) * a^(P^4)
+        prod_conj = a_exp_q_plus_q_sq * a_exp_q3_plus_q4
+        
+        # Calculate norm value scalar
+        pc_elems = prod_conj.elems
+        a_elems = self.elems
+        
+        # Calculate the constant term of the norm
+        w_coeff = BabyBear.zero()
+        for i in range(1, 5):
+            w_coeff += a_elems[i] * pc_elems[5-i]
+            
+        norm_val_scalar = a_elems[0] * pc_elems[0] + self.BETA * w_coeff
+        
+        # Inverse of the norm
+        norm_inv_scalar = norm_val_scalar.inv()
+        
+        # Result is prod_conj * norm_inv_scalar
+        return prod_conj * norm_inv_scalar
+
+    def pow(self, n: int):
+        result = BabyBearExtElem5.one()
+        base = self
+        while n > 0:
+            if n & 1:
+                result *= base
+            base *= base
+            n >>= 1
+        return result
+
+    def __pow__(self, n: int):
+        return self.pow(n)
+
+    def __truediv__(self, other):
+        if isinstance(other, BabyBearExtElem5):
+            return self * other.inv()
+        elif isinstance(other, BabyBear):
+            return self * BabyBearExtElem5([other.inv()] + [BabyBear.zero()] * 4)
+        raise TypeError("Unsupported operand type for /")
+
+# Initialize class variables after the class definition
+BabyBearExtElem5.MULTIPLICATIVE_GENERATOR = BabyBearExtElem5([BabyBear(8), BabyBear(1), BabyBear(0), BabyBear(0), BabyBear(0)])
+BabyBearExtElem5.ROOT_OF_UNITY = BabyBearExtElem5([BabyBear(0x1a427a41), BabyBear(0), BabyBear(0), BabyBear(0), BabyBear(0)])
+
 # Example usage:
 if __name__ == "__main__":
     a = BabyBear(5)
@@ -288,3 +464,20 @@ if __name__ == "__main__":
     2^28-th root of unity = [BabyBear(0), BabyBear(0), BabyBear(17094607), BabyBear(0)]
     17094607 is negative of 1996171314 in plonky3's code [0, 0, 1996171314, 0]
     '''
+
+    for i in range(0, BabyBearExtElem5.TWO_ADICITY + 1):
+        print(f"2^{i}-th root of unity = {BabyBearExtElem5.nth_root_of_unity(2**i).elems}")
+
+    # Test BabyBearExtElem5
+    x = BabyBearExtElem5.random()
+    y = BabyBearExtElem5.random()
+    print(f"x = {x}")
+    print(f"y = {y}")
+    print(f"x + y = {x + y}")
+    print(f"x - y = {x - y}")
+    print(f"x * y = {x * y}")
+    print(f"x.inv() = {x.inv()}")
+    print(f"x.pow(3) = {x.pow(3)}")
+    print(f"x * x.inv() = {x * x.inv()}")  # Should be 1
+    print(f"x_neg = {-x}, x + x_neg = {x+(-x)}")
+    
