@@ -268,23 +268,23 @@ if __name__ == "__main__":
     print(f"x ** 3 = {x ** 3}")  # Should be same as x.pow(3)
     print(f"x / y = {x / y}")    # Should be same as x * y.inv()
 
-primitive_root_of_unity = BabyBear.ROOT_OF_UNITY
-for i in range(0, BabyBear.TWO_ADICITY + 1):
-    print(f"2^{i}-th root of unity = {hex(BabyBear.nth_root_of_unity(2**i).value)}")
-'''
-same as baby_bear.rs in plonky3
-const TWO_ADIC_GENERATORS: Self::ArrayLike = &BabyBear::new_array([
-        0x1, 0x78000000, 0x67055c21, 0x5ee99486, 0xbb4c4e4, 0x2d4cc4da, 0x669d6090, 0x17b56c64,
-        0x67456167, 0x688442f9, 0x145e952d, 0x4fe61226, 0x4c734715, 0x11c33e2a, 0x62c3d2b1,
-        0x77cad399, 0x54c131f4, 0x4cabd6a6, 0x5cf5713f, 0x3e9430e8, 0xba067a3, 0x18adc27d,
-        0x21fd55bc, 0x4b859b3d, 0x3bd57996, 0x4483d85a, 0x3a26eef8, 0x1a427a41,
-    ]);
-'''
+    primitive_root_of_unity = BabyBear.ROOT_OF_UNITY
+    for i in range(0, BabyBear.TWO_ADICITY + 1):
+        print(f"2^{i}-th root of unity = {hex(BabyBear.nth_root_of_unity(2**i).value)}")
+    '''
+    same as baby_bear.rs in plonky3
+    const TWO_ADIC_GENERATORS: Self::ArrayLike = &BabyBear::new_array([
+            0x1, 0x78000000, 0x67055c21, 0x5ee99486, 0xbb4c4e4, 0x2d4cc4da, 0x669d6090, 0x17b56c64,
+            0x67456167, 0x688442f9, 0x145e952d, 0x4fe61226, 0x4c734715, 0x11c33e2a, 0x62c3d2b1,
+            0x77cad399, 0x54c131f4, 0x4cabd6a6, 0x5cf5713f, 0x3e9430e8, 0xba067a3, 0x18adc27d,
+            0x21fd55bc, 0x4b859b3d, 0x3bd57996, 0x4483d85a, 0x3a26eef8, 0x1a427a41,
+        ]);
+    '''
 
-for i in range(BabyBear.TWO_ADICITY, BabyBearExtElem.TWO_ADICITY + 1):
-    print(f"2^{i}-th root of unity = {BabyBearExtElem.nth_root_of_unity(2**i).elems}")
+    for i in range(BabyBear.TWO_ADICITY, BabyBearExtElem.TWO_ADICITY + 1):
+        print(f"2^{i}-th root of unity = {BabyBearExtElem.nth_root_of_unity(2**i).elems}")
 
-'''
-2^28-th root of unity = [BabyBear(0), BabyBear(0), BabyBear(17094607), BabyBear(0)]
-17094607 is negative of 1996171314 in plonky3's code [0, 0, 1996171314, 0]
-'''
+    '''
+    2^28-th root of unity = [BabyBear(0), BabyBear(0), BabyBear(17094607), BabyBear(0)]
+    17094607 is negative of 1996171314 in plonky3's code [0, 0, 1996171314, 0]
+    '''
