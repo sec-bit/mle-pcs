@@ -1,5 +1,5 @@
 import random
-from typing import List
+from typing import List, ClassVar
 
 def convert_int_to_koalabear(func):
     def wrapper(self, other):
@@ -11,6 +11,9 @@ def convert_int_to_koalabear(func):
 class KoalaBear:
     # The KoalaBear prime: 2^31 - 2^24 + 1
     P = (1 << 31) - (1 << 24) + 1
+    TWO_ADICITY = 24
+    MULTIPLICATIVE_GENERATOR: ClassVar['KoalaBear']
+    ROOT_OF_UNITY: ClassVar['KoalaBear']
     
     def __init__(self, value: int):
         self.value = value % self.P
@@ -30,6 +33,21 @@ class KoalaBear:
     @classmethod
     def random(cls):
         return cls(random.randint(0, cls.P - 1))
+
+    @classmethod
+    def neg_one(cls):
+        return cls(cls.P - 1)
+
+    @classmethod
+    def nth_root_of_unity(cls, n: int):
+        if not (n > 0 and (n & (n - 1)) == 0): # Check if n is a power of 2
+            raise ValueError("n must be a positive power of 2 for nth_root_of_unity.")
+        
+        if n > (1 << cls.TWO_ADICITY): # n = 2^m, so m <= TWO_ADICITY
+            raise ValueError(f"n (a power of 2) cannot exceed 2^{cls.TWO_ADICITY} for nth_root_of_unity.")
+
+        exponent = (1 << cls.TWO_ADICITY) // n
+        return cls.ROOT_OF_UNITY.pow(exponent)
 
     def __repr__(self):
         return f"KoalaBear({self.value})"
@@ -110,10 +128,17 @@ class KoalaBear:
         """Helper method for creating 2D arrays of field elements"""
         return [[cls(v) for v in row] for row in values]
 
+KoalaBear.ROOT_OF_UNITY = KoalaBear(0x6ac49f88)
+KoalaBear.MULTIPLICATIVE_GENERATOR = KoalaBear(value=3)
+
 
 class KoalaBearExtElem:
     W: KoalaBear = KoalaBear(KoalaBear.P - 3)  # The parameter for the binomial extension
     NW: KoalaBear = KoalaBear(3)
+
+    TWO_ADICITY = 26
+    MULTIPLICATIVE_GENERATOR: ClassVar['KoalaBearExtElem']
+    ROOT_OF_UNITY: ClassVar['KoalaBearExtElem']
 
     def __init__(self, elems: List[KoalaBear]):
         assert len(elems) == 4, "ExtElem must have 4 elements"
@@ -138,6 +163,21 @@ class KoalaBearExtElem:
         if isinstance(other, KoalaBearExtElem):
             return self.elems == other.elems
         return False
+
+    @classmethod
+    def neg_one(cls):
+        return cls([KoalaBear.neg_one()] + [KoalaBear.zero()] * 3)
+
+    @classmethod
+    def nth_root_of_unity(cls, n: int):
+        if not (n > 0 and (n & (n - 1)) == 0): # Check if n is a power of 2
+            raise ValueError("n must be a positive power of 2 for nth_root_of_unity.")
+        
+        if n > (1 << cls.TWO_ADICITY): # n = 2^m, so m <= TWO_ADICITY
+            raise ValueError(f"n (a power of 2) cannot exceed 2^{cls.TWO_ADICITY} for nth_root_of_unity.")
+
+        exponent = (1 << cls.TWO_ADICITY) // n
+        return cls.ROOT_OF_UNITY.pow(exponent)
 
     def __add__(self, other):
         if isinstance(other, KoalaBearExtElem):
@@ -205,6 +245,8 @@ class KoalaBearExtElem:
             return self * KoalaBearExtElem([other.inv()] + [KoalaBear.zero()] * 3)
         raise TypeError("Unsupported operand type for /")
 
+KoalaBearExtElem.ROOT_OF_UNITY = KoalaBearExtElem([KoalaBear(0), KoalaBear(0), KoalaBear(0), KoalaBear(777715144)])
+KoalaBearExtElem.MULTIPLICATIVE_GENERATOR = KoalaBearExtElem([KoalaBear(2), KoalaBear(1), KoalaBear(0), KoalaBear(0)])
 
 # Example usage:
 if __name__ == "__main__":
@@ -243,3 +285,27 @@ if __name__ == "__main__":
     print(f"x - y = {x - y}")
     print(f"x * y = {x * y}")
     print(f"x_neg = {-x}, x + x_neg = {x+(-x)}")
+
+    # [0,0,0,777715144] ** 2
+    last_root_of_unity = KoalaBearExtElem([KoalaBear(0), KoalaBear(0), KoalaBear(0), KoalaBear(777715144)])
+    print(f"last_root_of_unity = {last_root_of_unity}")
+    print(f"last_root_of_unity ** 2 = {last_root_of_unity ** 2}")
+    
+    for i in range(0, KoalaBear.TWO_ADICITY + 1):
+        print(f"2^{i}-th root of unity = {hex(KoalaBear.nth_root_of_unity(2**i).value)}")
+
+    '''
+    same as plonky3's koala_bear.rs
+    const TWO_ADIC_GENERATORS: Self::ArrayLike = &KoalaBear::new_array([
+        0x1, 0x7f000000, 0x7e010002, 0x6832fe4a, 0x8dbd69c, 0xa28f031, 0x5c4a5b99, 0x29b75a80,
+        0x17668b8a, 0x27ad539b, 0x334d48c7, 0x7744959c, 0x768fc6fa, 0x303964b2, 0x3e687d4d,
+        0x45a60e61, 0x6e2f4d7a, 0x163bd499, 0x6c4a8a45, 0x143ef899, 0x514ddcad, 0x484ef19b,
+        0x205d63c3, 0x68e7dd49, 0x6ac49f88,
+    ]);
+    '''
+    for i in range(KoalaBear.TWO_ADICITY, KoalaBearExtElem.TWO_ADICITY + 1):
+        print(f"2^{i}-th root of unity = {KoalaBearExtElem.nth_root_of_unity(2**i).elems}")
+    '''
+    same as plonky3's koala_bear.rs
+    [0, 0, 1759267465, 0], [0, 0, 0, 777715144]
+    '''
