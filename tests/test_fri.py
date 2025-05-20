@@ -36,9 +36,9 @@ class TestFRI(TestCase):
         coset = primitive_element ** (FIELD_SIZE // len(evals))
         alpha = BabyBearExtElem([BabyBear(7), BabyBear.zero(), BabyBear.zero(), BabyBear.zero()])
 
-        evals = FRI.fold(evals, alpha, coset, debug=False)
+        evals = FRI.fold(evals, alpha, coset, BabyBear.one(), debug=False)
         coset = coset * coset
-        evals = FRI.fold(evals, alpha, coset, debug=False)
+        evals = FRI.fold(evals, alpha, coset, BabyBear.one(), debug=False)
 
         assert ext_elem_eq(evals)
 
@@ -62,7 +62,7 @@ class TestFRI(TestCase):
         proof = FRI.prove(code, code_tree, value, point, domain, rate, evals_size, coset, transcript, debug=False)
         transcript = MerlinTranscript(b'test')
         transcript.append_message(b"code", code_tree.root.encode('ascii'))
-        FRI.verify(evals_size, rate, proof, point, value, domain, coset, transcript, debug=False)
+        FRI.verify(evals_size, rate, proof, point, value, domain, coset, transcript, BabyBear.one(), debug=False)
 
 
 if __name__ == '__main__':

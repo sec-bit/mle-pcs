@@ -94,7 +94,8 @@ class FRI:
             if debug: print("evals:", evals)
             if debug: print("alpha:", alpha)
             if debug: print("generator:", gen)
-            evals = FRI.fold(evals, alpha, gen, one)
+            gen = ext_from_babybear(gen)
+            evals = FRI.fold(evals, alpha, gen, BabyBearExtElem.one())
             tree = MerkleTree(evals)
             trees.append(tree)
             tree_evals.append(evals)
@@ -222,6 +223,8 @@ class FRI:
 
         alpha = BabyBearExtElem([BabyBear(from_bytes(transcript.challenge_bytes(b"alpha", 4))) for _ in range(4)])
 
+        point = ext_from_babybear(point)
+
         fold_challenges = [alpha]
         for i in range(k):
             transcript.append_message(bytes(f'oracle', 'ascii'), bytes(proof['intermediate_oracles'][i], 'ascii'))
@@ -259,6 +262,7 @@ class FRI:
                     f_code_folded = cur_path[i + 1][0 if x0 < num_vars_copy / 4 else 1]
                     alpha = fold_challenges[i]
                     two = one + one
+                    two = ext_from_babybear(two)
                     left = (code_left + code_right)/two
                     right = alpha * (code_left - code_right)/(two*table[x0])
                     if not isinstance(left, BabyBearExtElem):

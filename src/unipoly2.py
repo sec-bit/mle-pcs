@@ -784,7 +784,7 @@ class UniPolynomial(Generic[Field]):
                     # weights[i] *= 1
                     continue
                 weights[i] *= (D[i] - D[j])
-            weights[i] = 1/weights[i]
+            weights[i] = cls.F.one() / weights[i]
         return weights
     
     @classmethod
@@ -824,8 +824,8 @@ class UniPolynomial(Generic[Field]):
         weights = cls.barycentric_weights(D)
         # print("weights={}".format(weights))
         e_vec = [weights[i] / (z - D[i]) for i in range(n)]
-        numerator = sum([e_vec[i] * evals[i] for i in range(n)])
-        denominator = sum([e_vec[i] for i in range(n)])
+        numerator = sum([e_vec[i] * evals[i] for i in range(n)], cls.F.zero())
+        denominator = sum([e_vec[i] for i in range(n)], cls.F.zero())
         return (numerator / denominator)
     
     def shift(self, shift_value):
