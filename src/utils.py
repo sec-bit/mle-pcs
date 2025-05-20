@@ -127,6 +127,11 @@ def bit_reverse_inplace(f, k):
             f[i] = f[i_rev]
             f[i_rev] = tmp
 
+
+def test_log_2():
+    x = 1
+    print(log_2(x))
+
 if __name__ == "__main__":
     import random
     k = random.randint(0, 15)
@@ -137,3 +142,5 @@ if __name__ == "__main__":
     print(f"k: {k}, k_rev: {k_rev}")
     assert k == bit_reverse(k_rev, 4)
     print(f"test passed")
+
+    test_log_2()

@@ -49,3 +49,4 @@ class MerlinTranscript:
             The value squeezed from the transcript.
         """
         return _class.from_bytes(self.challenge_bytes(label, length))
+

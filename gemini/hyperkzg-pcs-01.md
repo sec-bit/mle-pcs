@@ -151,18 +151,18 @@ $$
 E_i(X_0, X_1, \ldots, X_{n-1}) = \prod_{j=0}^{n-1} \big(\mathsf{bits}(i)_j\cdot X_j + (1-\mathsf{bits}(i)_j)(1-X_j)\big)
 $$
 
-where $\mathsf{bits}(i)_j$ is the $j$-th bit of the binary representation of $i$ (note that Big-endian representation is used here). For example, if $i=5$, its binary representation is $101$, then $\mathsf{bits}(5)_0=1$, $\mathsf{bits}(5)_1=0$, $\mathsf{bits}(5)_2=1$.
+where $\mathsf{bits}(i)_j$ is the $j$-th bit of the binary representation of $i$ (note that Big-endian representation is used here). For example, if $i=5$, its binary representation is $101$, then $\mathsf{bits}(5)_0=1$, $\mathsf{bits}(5)_1=0$, $\mathsf{bits}(5)_2=1$.fv
 
 It's easy to see from the definition that $E_i(\vec{X})$ satisfies the following splitting property (Tensor Structure):
 
 $$
-E_{i\parallel j}(\vec{X}, \vec{Y}) = E_i(\vec{X})\cdot E_i(\vec{Y})
+E_{i\parallel j}(\vec{X}, \vec{Y}) = E_i(\vec{X})\cdot E_j(\vec{Y})
 $$
 
 where $k = i\parallel j$ is the splitting of the binary bit vector of $k$. For example, $i=23$, its binary representation is $10111$, which can be split into $10\parallel 111$, or written as $23=2\parallel 7$. According to the splitting property, we can get:
 
 $$
-E_{i\parallel b}(X_0, (X_1, \ldots, X_{n-1})) = E_b(X_0)\cdot E_i(X_1, \ldots, X_{n-1})
+E_{b\parallel i}(X_0, (X_1, \ldots, X_{n-1})) = E_b(X_0)\cdot E_i(X_1, \ldots, X_{n-1})
 $$
 
 Then let's observe what $\tilde{f}$ looks like after one Partial Evaluation, let $X_0=u_0$, $\vec{X}=(X_1, \ldots, X_{n-1})$:
@@ -266,11 +266,11 @@ $\Big(\pi_{1,\beta}, \pi_{1,-\beta}, \pi_{1,\beta^2}\Big)$, $\ldots$, $\Big(\pi_
 
 $$
 \begin{split}
-h^{(1)}(\beta^2) &\overset{?}{=} \frac{h^{(0)}(\beta) + h^{(0)}(-\beta)}{2} + u_0\cdot \frac{h^{(0)}(\beta) - h^{(0)}(-\beta)}{2\beta} \\
-h^{(2)}(\beta^2) &\overset{?}{=} \frac{h^{(1)}(\beta) + h^{(1)}(-\beta)}{2} + u_1\cdot \frac{h^{(1)}(\beta) - h^{(1)}(-\beta)}{2\beta} \\
+h^{(1)}(\beta^2) &\overset{?}{=} (1-u_0)\cdot \frac{h^{(0)}(\beta) + h^{(0)}(-\beta)}{2} + u_0\cdot \frac{h^{(0)}(\beta) - h^{(0)}(-\beta)}{2\beta} \\
+h^{(2)}(\beta^2) &\overset{?}{=} (1-u_1)\cdot \frac{h^{(1)}(\beta) + h^{(1)}(-\beta)}{2} + u_1\cdot \frac{h^{(1)}(\beta) - h^{(1)}(-\beta)}{2\beta} \\
 \vdots & \\
-h^{(n-1)}(\beta^2) &\overset{?}{=} \frac{h^{(n-2)}(\beta) + h^{(n-2)}(-\beta)}{2} + u_{n-2}\cdot \frac{h^{(n-2)}(\beta) - h^{(n-2)}(-\beta)}{2\beta} \\
- v &\overset{?}{=} \frac{h^{(n-1)}(\beta) + h^{(n-1)}(-\beta)}{2} + u_{n-1}\cdot \frac{h^{(n-1)}(\beta) - h^{(n-1)}(-\beta)}{2\beta} \\
+h^{(n-1)}(\beta^2) &\overset{?}{=} (1-u_{n-2})\cdot\frac{h^{(n-2)}(\beta) + h^{(n-2)}(-\beta)}{2} + u_{n-2}\cdot \frac{h^{(n-2)}(\beta) - h^{(n-2)}(-\beta)}{2\beta} \\
+ v &\overset{?}{=} (1-u_{n-1})\cdot \frac{h^{(n-1)}(\beta) + h^{(n-1)}(-\beta)}{2} + u_{n-1}\cdot \frac{h^{(n-1)}(\beta) - h^{(n-1)}(-\beta)}{2\beta} \\
 \end{split}
 $$
 
@@ -389,10 +389,10 @@ Prover sends $C_w=[w(x)]_1$
 
 $$
 \begin{split}
-h^{(1)}(\beta^2) &= \frac{h^{(0)}(\beta) + h^{(0)}(-\beta)}{2} + u_0\cdot \frac{h^{(0)}(\beta) - h^{(0)}(-\beta)}{2\beta} \\
-h^{(2)}(\beta^2) &= \frac{h^{(1)}(\beta) + h^{(1)}(-\beta)}{2} + u_1\cdot \frac{h^{(1)}(\beta) - h^{(1)}(-\beta)}{2\beta} \\
+h^{(1)}(\beta^2) &= (1-u_0)\cdot\frac{h^{(0)}(\beta) + h^{(0)}(-\beta)}{2} + u_0\cdot \frac{h^{(0)}(\beta) - h^{(0)}(-\beta)}{2\beta} \\
+h^{(2)}(\beta^2) &= (1-u_1)\cdot\frac{h^{(1)}(\beta) + h^{(1)}(-\beta)}{2} + u_1\cdot \frac{h^{(1)}(\beta) - h^{(1)}(-\beta)}{2\beta} \\
 \vdots & \\
-h^{(n-1)}(\beta^2) &=\frac{h^{(n-2)}(\beta) + h^{(n-2)}(-\beta)}{2} + u_{n-2}\cdot \frac{h^{(n-2)}(\beta) - h^{(n-2)}(-\beta)}{2\beta} \\
+h^{(n-1)}(\beta^2) &=(1-u_{n-2})\cdot\frac{h^{(n-2)}(\beta) + h^{(n-2)}(-\beta)}{2} + u_{n-2}\cdot \frac{h^{(n-2)}(\beta) - h^{(n-2)}(-\beta)}{2\beta} \\
 \end{split}
 $$
 
