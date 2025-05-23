@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
-# WARNING: This implementation may contain bugs and has not been audited. 
-# It is only for educational purposes. DO NOT use it in production.
+# WARNING: This implementation may contain bugs and has not undergone auditing. 
+# It is intended for educational and research purposes only with insecure randomness. 
+# DO NOT use it in a production environment.
 
 from curve import Fr as Field, G1Point as G1, G2Point as G2
-from unipoly import UniPolynomial
+from unipoly2 import UniPolynomial
 from random import randint
 from utils import is_power_of_two
 from mle2 import MLEPolynomial
-from kzg10_non_hiding import Commitment, KZG10_PCS
+from kzg10_non_hiding2 import Commitment, KZG10_PCS
 from merlin.merlin_transcript import MerlinTranscript
 
 
@@ -16,11 +17,7 @@ from merlin.merlin_transcript import MerlinTranscript
 #
 #   https://github.com/microsoft/Nova/blob/main/src/provider/hyperkzg.rs
 #
-# There are some modifications
-#
-#   - BDFG20 multiple-point evaluation argument
-#   - ...
-#
+
 # NOTE: this HyperKZG-POC is almost identical to the BCHO-PCS implementation.
 #       The only difference is the folding function, as defined in `interp_and_eval_line()`.
 
@@ -45,44 +42,51 @@ class HYPERKZG_PCS:
         """
         pass
 
-    def commit(self, f: UniPolynomial) -> Commitment:
+    def commit(self, f: MLEPolynomial) -> Commitment:
         """
         Commit to a polynomial.
         """
-        pass
+        
+        f_evals = f.evals
+        f = UniPolynomial(f_evals)
 
-    def prove_eval(self, commitment: Commitment, \
-                               polynomial: MLEPolynomial, \
-                               point: list[Field], \
-                               transcript: MerlinTranscript, \
-                               debug=0):
+        assert f.degree < self.kzg_pcs.max_degree, \
+            "f.degree must be less than max_degree of the KZG10 PCS"
+        
+        f_cm = self.kzg_pcs.commit(f)
+        return f_cm
+
+    def prove_eval(self, 
+                   f_cm: Commitment, 
+                   f_mle: MLEPolynomial, 
+                   us: list[Field], 
+                   tr: MerlinTranscript) -> tuple[Field, dict]:
         """
         Prove evaluation argument 
 
         Args:
-            commitment: commitment to the multilinear polynomial
-            polynomial: multilinear polynomial
-            point: evaluation point
-            transcript: transcript
-            debug: debug level
+            f_cm: commitment to the multilinear polynomial
+            f_mle: multilinear polynomial
+            us: evaluation point
+            tr: transcript
         """
         
-        k = polynomial.num_var
+        k = f_mle.num_var
         n = 2**k
-        h_evals = polynomial.evals
+        f_evals = f_mle.evals
 
-        if len(point) != k:
-            raise ValueError("Invalid evaluation point, k={}, while len(point)={}".format(k, len(point)))
+        if len(us) != k:
+            raise ValueError("Invalid evaluation point, k={}, while len(point)={}".format(k, len(us)))
         if not is_power_of_two(n):
             raise ValueError("Invalid polynomial length")
         
-        value = polynomial.evaluate(point)
+        value = f_mle.evaluate(us)
 
         # > Round 0
 
-        transcript.absorb(b"polynomial", commitment.cm)
-        transcript.absorb(b"point", point)
-        transcript.absorb(b"value", value)
+        tr.absorb(b"polynomial", f_cm.cm)
+        tr.absorb(b"point", us)
+        tr.absorb(b"value", value)
 
         # > Round 1
 
@@ -93,21 +97,24 @@ class HYPERKZG_PCS:
         #   = a_{2i} + ui * (a_{2i+1} - a_{2i})
         
         h_poly_cm_vec = []
-        h_poly_vec = [h_evals]
+        h_poly_vec = [f_evals]
         for i in range(k-1):
-            h_even = h_evals[::2]
-            h_odd = h_evals[1::2]
-            h_evals = [h_even[j] + point[i] * (h_odd[j] - h_even[j]) for j in range(len(h_even))]
+            h_even = f_evals[::2]
+            h_odd = f_evals[1::2]
+            h_evals = [h_even[j] + us[i] * (h_odd[j] - h_even[j]) for j in range(len(h_even))]
             h_cm = self.kzg_pcs.commit(UniPolynomial(h_evals))
             h_poly_vec.append(h_evals)
             h_poly_cm_vec.append(h_cm)
 
         for i in range(len(h_poly_cm_vec)):
-            transcript.absorb(b"h_cm", h_poly_cm_vec[i])
+            tr.absorb(b"h_cm", h_poly_cm_vec[i])
 
-        if debug > 1: 
+        if self.debug > 0:
+            print("P> send h_poly_cm_vec=", h_poly_cm_vec)
+
+        if self.debug > 1: 
             print("P> check: folded polynomial")
-            h_evals = [h_evals[i] + point[k-1] * (h_evals[i+1] - h_evals[i]) for i in range(0, len(h_evals), 2)]
+            h_evals = [h_evals[i] + us[k-1] * (h_evals[i+1] - h_evals[i]) for i in range(0, len(h_evals), 2)]
             print("P> check: fully folded polynomial must be equal to the claimed evaluation: {} = {}".format(h_evals[0], value))
             assert (h_evals[0] == value)
             assert len(h_evals) == 1
@@ -116,8 +123,8 @@ class HYPERKZG_PCS:
         # > Round 2
 
         # Sample randomness and reply evaluations
-        beta: Field = transcript.squeeze(Field, b"beta", 4)
-        if debug > 0:
+        beta: Field = tr.squeeze(Field, b"beta", 4)
+        if self.debug > 0:
             print("P> beta = {}".format(beta))
 
         # Compute evaluations of h_i(X) at beta, -beta, beta^2
@@ -135,15 +142,20 @@ class HYPERKZG_PCS:
 
         # Send evaluations
         for i in range(k):
-            transcript.absorb(b"poly_at_beta", evals_pos[i])
-            transcript.absorb(b"poly_at_neg_beta", evals_neg[i])
-        transcript.absorb(b"evals_sq", evals_sq[0])
+            tr.absorb(b"poly_at_beta", evals_pos[i])
+            tr.absorb(b"poly_at_neg_beta", evals_neg[i])
+        tr.absorb(b"evals_sq", evals_sq[0])
+
+        if self.debug > 0:
+            print("P> send evals_pos=", evals_pos)
+            print("P> send evals_neg=", evals_neg)
+            print("P> send evals_sq=", evals_sq)
 
         # > Round 3
 
-        gamma: Field = transcript.squeeze(Field, b"gamma", 4)
+        gamma: Field = tr.squeeze(Field, b"gamma", 4)
         
-        if debug > 0: print("P> gamma=", gamma)
+        if self.debug > 0: print("P> gamma=", gamma)
 
         # Compute h(X)
         #
@@ -160,16 +172,14 @@ class HYPERKZG_PCS:
         h_agg_poly_at_neg_beta = UniPolynomial.evaluate_at_point(h_agg, -beta)
         h_agg_poly_at_beta_sq = UniPolynomial.evaluate_at_point(h_agg, beta * beta)
 
-        # DEBUG: verify h_agg
-        if debug > 0:
+        if self.debug > 1:
             print("P> check: h(X) must be equal to sum(h_i(X)) at (beta, -beta, beta^2)")
             assert h_agg_poly_at_beta == sum([evals_pos[i]*(gamma**i) for i in range(k)])
             assert h_agg_poly_at_neg_beta == sum([evals_neg[i]*(gamma**i) for i in range(k)])
             assert h_agg_poly_at_beta_sq == sum([evals_sq[i]*(gamma**i) for i in range(k)])
             print("P> check: h(X) passed")
 
-        # DEBUG: verify evaluations
-        if debug > 0:
+        if self.debug > 1:
             print("P> check: hi(X) evaluations")
             dbg_evals_sq = evals_sq[:] + [value]
             print("P> dbg_evals_sq=", dbg_evals_sq)
@@ -199,22 +209,25 @@ class HYPERKZG_PCS:
         g_poly = h_agg_poly - interp_poly
         quo_poly, rem = divmod(g_poly, vanishing_poly)
 
-        if debug > 0: 
+        if self.debug > 1: 
             print("P> check: g(X) divisibility")
             assert rem == UniPolynomial([0])
             print("P> check: g(X) divisibility passed")
         
         # Commit to q(X)
-        Cq = self.kzg_pcs.commit(UniPolynomial(quo_poly.coeffs))
+        q_cm = self.kzg_pcs.commit(UniPolynomial(quo_poly.coeffs))
 
         # Send Cq
-        transcript.absorb(b"q_commitment", Cq)
+        tr.absorb(b"q_commitment", q_cm)
+
+        if self.debug > 0:
+            print("P> send q_cm=", q_cm)
 
         # > Round 4
 
-        zeta: Field = transcript.squeeze(Field, b"zeta", 4)
+        zeta: Field = tr.squeeze(Field, b"zeta", 4)
 
-        if debug > 0: print("P> zeta={}".format(zeta))
+        if self.debug > 0: print("P> zeta={}".format(zeta))
         
         # Compute r(X)
         #
@@ -224,54 +237,61 @@ class HYPERKZG_PCS:
         r_poly = h_agg_poly - UniPolynomial([interp_at_zeta]) - quo_poly * UniPolynomial([(zeta - beta) * (zeta + beta) * (zeta - beta*beta)])
 
         # Commit to r(X)
-        Cr = self.kzg_pcs.commit(UniPolynomial(r_poly.coeffs))
+        r_cm = self.kzg_pcs.commit(UniPolynomial(r_poly.coeffs))
 
         # Compute [w(tau)]_1 which is a commitment of w(X)
         #
         #    w(X) = r(X) / (X-zeta)
         #
         v, arg_r_poly_at_zeta = self.kzg_pcs.prove_evaluation(UniPolynomial(r_poly.coeffs), zeta)
-        if debug > 1: 
+        if self.debug > 1: 
             print("P> check: r(zeta)=0")
             assert v == Field.zero(), "r(zeta) must be 0"
             print("P> check: r(zeta)=0 passed")
+        
+        if self.debug > 0:
+            print("P> send the proof of `r(zeta)=0`", arg_r_poly_at_zeta)
 
-        # DEBUG: verify r_poly argument
-        if debug > 0:
-            assert self.kzg_pcs.verify_evaluation(Cr, zeta, Field.zero(), arg_r_poly_at_zeta), "kzg10 verify r_poly failed"
+        if self.debug > 1:
+            assert self.kzg_pcs.verify_evaluation(r_cm, zeta, Field.zero(), arg_r_poly_at_zeta), "kzg10 verify r_poly failed"
 
         return value, {
             "h_poly_cm_vec": h_poly_cm_vec,
             "evals_pos_beta": evals_pos,
             "evals_neg_beta": evals_neg,
             "evals_sq_beta": evals_sq[:1],
-            "q_commitment": Cq,
+            "q_commitment": q_cm,
             "kzg_arg_r_poly_at_zeta": arg_r_poly_at_zeta
         }
 
 
-    def verify_eval(self, C, arg, point, v, transcript, debug=0):
+    def verify_eval(self, 
+                    f_cm: Commitment, 
+                    us: list[Field], 
+                    v: Field, 
+                    arg: dict, 
+                    tr: MerlinTranscript):
         """
         Verify an optimized evaluation argument proof.
 
         Args:
             C: commitment to f
-            arg: argument to be verified (output of prove_eval_arg_opt)
             point: evaluation point
             v: claimed evaluation value
-            transcript: proof transcript
+            arg: argument to be verified (output of prove_eval_arg_opt)
+            tr: proof transcript
         """
-        k = len(point)
+        k = len(us)
         n = 1 << k
         
-        if debug > 1:
+        if self.debug > 1:
             print("V> C={}, arg={}, point={}, v={}".format(C, arg, point, v))
 
         # > Round 0
 
-        transcript.absorb(b"polynomial", C.cm)
-        transcript.absorb(b"point", point)
-        transcript.absorb(b"value", v)
+        tr.absorb(b"polynomial", f_cm.cm)
+        tr.absorb(b"point", us)
+        tr.absorb(b"value", v)
 
         h_poly_cm_vec = arg["h_poly_cm_vec"]
         evals_pos = arg["evals_pos_beta"]
@@ -283,21 +303,21 @@ class HYPERKZG_PCS:
         # > Round 1
 
         for i in range(len(h_poly_cm_vec)):
-            transcript.absorb(b"h_cm", h_poly_cm_vec[i])
+            tr.absorb(b"h_cm", h_poly_cm_vec[i])
         
         # > Round 2
 
-        beta = transcript.squeeze(Field, b"beta", 4)
-        if debug > 0:
+        beta = tr.squeeze(Field, b"beta", 4)
+        if self.debug > 0:
             print("V> beta = {}".format(beta))
 
         for i in range(k):
-            transcript.absorb(b"poly_at_beta", evals_pos[i])
-            transcript.absorb(b"poly_at_neg_beta", evals_neg[i])
-            evals_sq.append(interp_and_eval_line(evals_pos[i], evals_neg[i], point[i], beta))
-        transcript.absorb(b"evals_sq", evals_sq[0])
+            tr.absorb(b"poly_at_beta", evals_pos[i])
+            tr.absorb(b"poly_at_neg_beta", evals_neg[i])
+            evals_sq.append(interp_and_eval_line(evals_pos[i], evals_neg[i], us[i], beta))
+        tr.absorb(b"evals_sq", evals_sq[0])
 
-        if debug > 1:
+        if self.debug > 1:
             print("V> evals_sq = {}".format(evals_sq))
         
         # 1st check: if h_n(beta^2) = v
@@ -306,15 +326,15 @@ class HYPERKZG_PCS:
         
         # > Round 3
 
-        gamma: Field = transcript.squeeze(Field, b"gamma", 4)
-        if debug > 0:
+        gamma: Field = tr.squeeze(Field, b"gamma", 4)
+        if self.debug > 0:
             print("V> gamma = {}".format(gamma))
 
-        Ch = C
+        Ch = f_cm
         for i in range(0, k-1):
             Ch = Ch + h_poly_cm_vec[i].scalar_mul(gamma**(i+1))
 
-        if debug > 1:
+        if self.debug > 1:
             print("V> Commitment of h(X): Ch={}".format(Ch))
         
         # Compute h(beta), h(-beta), h(beta^2)
@@ -322,7 +342,7 @@ class HYPERKZG_PCS:
         h_agg_poly_at_neg_beta = sum([evals_neg[i]*(gamma**i) for i in range(k)])
         h_agg_poly_at_beta_sq = sum([evals_sq[i]*(gamma**i) for i in range(k)])
 
-        if debug > 1:
+        if self.debug > 1:
             print("V> h_agg_poly_at_beta={}".format(h_agg_poly_at_beta))
             print("V> h_agg_poly_at_neg_beta={}".format(h_agg_poly_at_neg_beta))
             print("V> h_agg_poly_at_beta_sq={}".format(h_agg_poly_at_beta_sq))
@@ -330,21 +350,21 @@ class HYPERKZG_PCS:
         # h(X) - h*(X) = q(X) * (X^2-beta^2)(X-beta^2)
         #
         # Receive Cq = Commit(c(X)) 
-        transcript.absorb(b"q_commitment", Cq)
+        tr.absorb(b"q_commitment", Cq)
 
         # > Round 4
 
         # Sample randomness
-        zeta: Field = transcript.squeeze(Field, b"zeta", 4)
+        zeta: Field = tr.squeeze(Field, b"zeta", 4)
 
-        if debug > 0: print("V> zeta = {}".format(zeta))
+        if self.debug > 0: print("V> zeta = {}".format(zeta))
         
         # Evaluate h*(zeta) by barycentric evaluation: 
-        interp_poly_at_zeta = UniPolynomial.uni_eval_from_evals(
+        interp_poly_at_zeta = UniPolynomial.evaluate_from_evals(
                 [h_agg_poly_at_beta, h_agg_poly_at_neg_beta, h_agg_poly_at_beta_sq],
                 zeta, [beta, -beta, beta*beta])
         
-        if debug > 0:
+        if self.debug > 1:
             print("V> interp_poly_at_zeta={}".format(interp_poly_at_zeta))
             interp_poly = UniPolynomial.interpolate(
                 [h_agg_poly_at_beta, h_agg_poly_at_neg_beta, h_agg_poly_at_beta_sq], 
@@ -356,7 +376,7 @@ class HYPERKZG_PCS:
         # Compute Cr = Ch - [h*(zeta)] - (zeta^2-beta^2)(zeta-beta^2) * Cq
         Cr = Ch - self.kzg_pcs.commit(UniPolynomial([interp_poly_at_zeta])) - Cq.scalar_mul(vanishing_poly_at_zeta)
 
-        if debug > 1:
+        if self.debug > 1:
             print("V> Cr={}".format(Cr))
             print("V> Cq={}".format(Cq))
 
@@ -365,7 +385,7 @@ class HYPERKZG_PCS:
         # 2nd check: if r(z)=0
         Cw_verified = self.kzg_pcs.verify_evaluation(Cr, zeta, Field.zero(), Cw)
 
-        if debug > 0:
+        if self.debug > 0:
             if Cw_verified: print("V> check if r(z)=0 😀 ✅")
             else: print("V> check if r(z)=0 😢 ❌")
 
@@ -414,9 +434,9 @@ if __name__ == "__main__":
     print(f"value={value}")
 
     value, arg = hyperkzg_pcs.prove_eval(f_cm, f, 
-            point, transcript=tr.fork(b"hyperkzg_pcs"), debug=1)
+            point, tr.fork(b"hyperkzg_pcs"))
     print(f"arg={arg}")
 
-    verified = hyperkzg_pcs.verify_eval(f_cm, arg, point, value, tr.fork(b"hyperkzg_pcs"), debug=1)
+    verified = hyperkzg_pcs.verify_eval(f_cm, point, value, arg, tr.fork(b"hyperkzg_pcs"))
     assert verified
     print("✅ test_prove_verify() passed")
