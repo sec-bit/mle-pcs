@@ -13,7 +13,7 @@
 
 from typing import Optional
 from curve import Fp, Fr as Field, ec_mul, ec_mul_group2, G1Point as G1, G2Point as G2, ec_pairing_check
-from unipoly import UniPolynomial, Domain_FFT_2Radix
+from unipoly2 import UniPolynomial, Domain_FFT_2Radix, UniPolynomialWithFft
 # from field import Field
 from random import randint
 from utils import is_power_of_two, bit_reverse, log_2
@@ -86,7 +86,6 @@ class KZG10_PCS:
         Args:
             G1, G2: Elliptic curve groups
             max_degree: Maximum polynomial degree supported
-            hiding_bound: Upper bound for the hiding polynomial degree (optional)
             debug: Enable debug assertions
         """
         self.G1 = G1
@@ -180,7 +179,7 @@ class KZG10_PCS:
 
         return
 
-    def commit_with_lagrange_basis(self, evaluations: list[Field], hiding_bound: Optional[int] = None):
+    def commit_with_lagrange_basis(self, evaluations: list[Field]):
         """
         Commit to a polynomial with Lagrange basis.
         
@@ -203,7 +202,7 @@ class KZG10_PCS:
 
         return Commitment(commitment)
     
-    def compute_quotient_polynomial(self, polynomial: UniPolynomial, point: Field):
+    def compute_quotient_polynomial(self, f: UniPolynomial, point: Field):
         """
         Compute the quotient polynomial for a given polynomial and point.
         
@@ -214,7 +213,7 @@ class KZG10_PCS:
         Returns:
             tuple: (witness polynomial, evaluation)
         """
-        quotient, evaluation = polynomial.division_by_linear_divisor(point)
+        quotient, evaluation = f.div_by_linear_divisor(point)
         return quotient, evaluation
     
     def commit(self, polynomial: UniPolynomial) -> Commitment:
@@ -329,19 +328,14 @@ class KZG10_PCS:
         gamma_g_multiplier = 0
 
         for Ci, zi, vi, proofi in zip(commitments, points, values, proofs):
-            Wi = proofi['w']
-            hiding_vi = proofi['hiding_v']
-            C = Wi.ec_mul(zi) + Ci.cm
+            Wi = proofi['w_cm']
+            C = Wi.cm.ec_mul(zi) + Ci.cm
             g_multiplier += rho * vi
-            if self.hiding_bound is not None:
-                gamma_g_multiplier += rho * hiding_vi
             batched_C += C.ec_mul(rho)
-            batched_W += Wi.ec_mul(rho)
+            batched_W += Wi.cm.ec_mul(rho)
             rho = self.Scalar.rand()
 
         batched_C -= self.params['powers_of_g'][0].ec_mul(g_multiplier)
-        if self.hiding_bound is not None:
-            batched_C -= self.params['powers_of_gamma_g'][0].ec_mul(gamma_g_multiplier)
         
         lhs = (batched_C, self.params['h'])
         rhs = (batched_W, self.params['tau_h'])
@@ -536,14 +530,14 @@ def msm_basic(bases, scalars):
 
 def test_lagrange_basis(kzg):
 
-    f = UniPolynomial([Field.rand() for _ in range(randint(5, 10))])
+    f = UniPolynomialWithFft([Field.rand() for _ in range(randint(5, 10))])
 
     kzg.setup_lagrange_basis(16)
 
     omega = Field.nth_root_of_unity(16)
 
-    evals = f.compute_evaluations_fft(16, omega)
-    f2 = UniPolynomial.interpolate_fft(evals, omega)
+    evals = f.compute_evaluations(16)
+    f2 = UniPolynomialWithFft.interpolate(evals, 16)
     assert f.coeffs == f2.coeffs, "Interpolation should be the same polynomial"
 
     C1 = kzg.commit(f)

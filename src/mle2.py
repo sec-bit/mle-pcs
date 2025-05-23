@@ -1,18 +1,48 @@
 #!/usr/bin/env sage -python
 
 from functools import reduce
-from utils import log_2, pow_2, bits_le_with_width
-from curve import Fr as Field
+from utils import log_2, pow_2, bits_le_with_width, Scalar
+from curve import Fr as BN254_Fr
+from typing import TypeVar, Generic
 
-# from sage.all import product, GF
+# TODO:
+#  1. mle addition with different number of variables
+#  2. mle multiplication
 
-class MLEPolynomial:
+Field = TypeVar('Field')
+
+class MLEPolynomial(Generic[Field]):
+
+    F = BN254_Fr # default finite field 
+
+    @classmethod
+    def set_field_type(cls, field_type: type):
+        cls.F = field_type
+        one = cls.F.one()
+        zero = cls.F.zero()
+        assert one + zero == one, f"one + zero: {one + zero}"
+        assert one * one == one, f"one * one: {one * one}"
+        assert one * zero == zero, f"one * zero: {one * zero}"
+
+        return
+
     def __init__(self, evals, num_var):
         assert len(evals) <= 2**num_var, "Evaluation length must be less than or equal to 2^num_var"
 
-        self.evals = evals + [Field(0)] * (2**num_var - len(evals))
+        self.evals = evals + [self.F.zero()] * (2**num_var - len(evals))
         self.num_var = num_var
 
+    @classmethod
+    def zero_polynomial(cls):
+        f = cls([cls.F.zero()], 0)
+        return f
+    
+    def is_zero(self):
+        for i in range(2**self.num_var):
+            if self.evals[i] != self.F.zero():
+                return False
+        return True
+    
     def __repr__(self):
         return f"MLEPolynomial({self.evals}, {self.num_var})"
     
@@ -34,12 +64,58 @@ class MLEPolynomial:
             return self.evals[index]
         else:
             raise IndexError("Evaluation index out of range")
+    
+    def __len__(self):
+        return len(self.evals)
+
+    def sub(self, g: 'MLEPolynomial'):
+        if g.is_zero():
+            return self
+        neg_g = g.scalar_mul(Scalar(self.F(-1)))
+        return self.add(neg_g)
+
+    def add(self, g: 'MLEPolynomial'):
+        if g.is_zero() or self.is_zero():
+            return g if self.is_zero() else self
+        assert self.num_var == g.num_var, "Number of variables must match"
+        evals = [self.evals[i] + g.evals[i] for i in range(len(self.evals))]
+        return MLEPolynomial(evals, self.num_var)
+    
+    def scalar_mul(self, s: Scalar):
+        if self.is_zero():
+            return self
+        evals = [self.evals[i] * s.value for i in range(len(self.evals))]
+        return MLEPolynomial(evals, self.num_var)
+    
+    def __add__(self, other):
+        return self.add(other)
+    
+    def __sub__(self, other):
+        return self.sub(other)
+    
+    def __neg__(self):
+        return self.scalar_mul(Scalar(self.F(-1)))
+
+    def __rmul__(self, other):
+        """
+        Overload the * operator for right multiplication (scalar * polynomial).
+
+        Args:
+            other (scalar): The scalar to multiply with this polynomial.
+
+        Returns:
+            UniPolynomial: Scalar multiplication result.
+        """
+        if isinstance(other, Scalar):
+            return self.scalar_mul(other)
+        else:
+            raise TypeError("Unsupported operand type for *: '{}' and '{}'".format(type(other).__name__, type(self).__name__))
 
     @classmethod
     def compute_monomials(cls, rs):
         k = len(rs)
         n = 1 << k
-        evals = [Field(1)] * n
+        evals = [cls.F.one()] * n
         half = 1
         for i in range(k):
             for j in range(half):
@@ -51,7 +127,7 @@ class MLEPolynomial:
     def eqs_over_hypercube(cls, rs):
         k = len(rs)
         n = 1 << k
-        evals = [Field(1)] * n
+        evals = [cls.F.one()] * n
         half = 1
         for i in range(k):
             for j in range(half):
@@ -73,7 +149,7 @@ class MLEPolynomial:
         return eqs
 
     @classmethod
-    def from_coeffs(cls, coeffs, num_var):
+    def from_coeffs(cls, coeffs: list[Field], num_var: int) -> 'MLEPolynomial':
         return cls(cls.compute_evals_from_coeffs(coeffs), num_var)
     
     def to_coeffs(self) -> list[Field]:
@@ -89,16 +165,16 @@ class MLEPolynomial:
                 for l in range(j, j+half):
                     vs[l+half] = vs[l+half] + twiddle * vs[l]
             half <<= 1
-        return vs
+        return vs   
 
     @classmethod
-    def compute_evals_from_coeffs(cls, f_coeffs):
+    def compute_evals_from_coeffs(cls, f_coeffs: list[Field]) -> list[Field]:
         """
         Compute the evaluations of the polynomial from the coefficients.
             Time: O(n * log(n))
         """
         coeffs = [f_coeffs[i] for i in range(len(f_coeffs))]
-        return cls.ntt_core(coeffs, Field(1))
+        return cls.ntt_core(coeffs, cls.F.one())
 
     @classmethod
     def compute_coeffs_from_evals(cls, f_evals):
@@ -107,10 +183,10 @@ class MLEPolynomial:
             Time: O(n * log(n))
         """
         evals = [f_evals[i] for i in range(len(f_evals))]
-        return cls.ntt_core(evals, Field(-1))
+        return cls.ntt_core(evals, cls.F(-1))
     
     @classmethod
-    def evaluate_from_evals(cls, evals, zs):
+    def evaluate_from_evals(cls, evals: list[Field], zs: list[Field]) -> Field:
         f = evals
 
         half = len(f) >> 1
@@ -122,7 +198,7 @@ class MLEPolynomial:
         return f[0]
     
     @classmethod
-    def evaluate_from_evals_2(cls, evals, zs):
+    def evaluate_from_evals_2(cls, evals: list[Field], zs: list[Field]) -> Field:
         k = len(zs)
         f = evals
 
@@ -150,6 +226,24 @@ class MLEPolynomial:
         
         return self.evaluate_from_evals(self.evals, zs)
     
+    def partial_evaluate(self, zs: list):
+        """
+        Partial evaluate the MLE polynomial at the given points.
+        """
+        assert self.num_var >= len(zs), \
+            f"Number of variables must be greater than or equal to the length of zs: {self.num_var} >= {len(zs)}"   
+        
+        k = self.num_var
+        l = len(zs)
+        f = self.evals
+        half = len(f) >> 1
+        for z in zs:
+            f_even = f[::2]
+            f_odd = f[1::2]
+            f = [(self.F(1) - z) * f_even[i] + z * f_odd[i] for i in range(half)]
+            half >>= 1
+        return MLEPolynomial(f, k-l)
+
     @staticmethod
     def evaluate_from_coeffs(coeffs, zs):
         z = len(zs)
@@ -195,8 +289,8 @@ class MLEPolynomial:
 
         return quotients, e[0]
     
-    @staticmethod
-    def decompose_by_div_from_coeffs(coeffs: list, point: list) -> list:
+    @classmethod
+    def decompose_by_div_from_coeffs(cls, coeffs: list[Field], point: list[Field]) -> tuple[list[Field], Field]:
         """
         Decompose the MLE polynomial into quotients by division.
 
@@ -230,7 +324,8 @@ class MLEPolynomial:
 
         return quotients, coeffs[0]
     
-    def mul_quotients(quotient, remainder, p):
+    @classmethod
+    def mul_quotients(cls, quotient: 'MLEPolynomial', remainder: 'MLEPolynomial', p: Field) -> 'MLEPolynomial':
         """
         r: current remainder
         q: current quotient

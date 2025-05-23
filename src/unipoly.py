@@ -38,21 +38,23 @@ class UniPolynomial(Generic[F]):
         Args:
             coeffs (list): Coefficients of the polynomial.
         """
+
+        c_list = coeffs.copy()
+        field_type = type(c_list[0])
+
         # Remove leading zeros
-        while len(coeffs) > 1 and coeffs[-1] == 0:
-            coeffs.pop()
-            
-        if len(coeffs) == 0:
-            self.coeffs = [Fr.zero()]
-            self.degree = 0
-            self.field_type = Fr
+        while len(c_list) > 1 and c_list[-1] == field_type(0):
+            c_list.pop()
+
+        if len(c_list) == 0:
+            self.coeffs = [field_type.zero()]
+            self.degree = None
+            self.field_type = field_type
             return
         
-        coeffs = [c for c in coeffs]
-
-        self.coeffs = coeffs
-        self.degree = len(coeffs) - 1 if coeffs else 0
-        self.field_type = type(coeffs[0])
+        self.coeffs = c_list
+        self.degree = len(c_list) - 1
+        self.field_type = field_type
         return
 
     def is_zero(self):
@@ -344,7 +346,7 @@ class UniPolynomial(Generic[F]):
 
         sep = 1
         for _ in range(k_log_size):
-            w = 1
+            w = Fr.one()
             for j in range(sep):
                 for i in range(0, domain_size, 2*sep):
                     l, r = i + j, i + j + sep
@@ -355,6 +357,43 @@ class UniPolynomial(Generic[F]):
             sep *= 2
 
         return coeffs
+    
+    @classmethod
+    def ntt_core_coset(cls, coeffs, omega, coset_factor, k_log_size):
+        """
+        Perform NTT on the given coefficients using the specified root of unity.
+
+        Args:
+            coeffs (list): Coefficients of the polynomial.
+            omega (Field): The root of unity.
+            k_log_size (int): The logarithm of the size of the domain.
+
+        Returns:
+            list: Coefficients after NTT.
+        """
+        domain_size = 2 ** k_log_size
+        assert len(coeffs) == domain_size, "Coefficients length must be a power of 2"
+
+        # Bit-reversing
+        for k in range(domain_size):
+            k_rev = cls.bit_reverse(k, k_log_size)
+            if k < k_rev:
+                coeffs[k], coeffs[k_rev] = coeffs[k_rev], coeffs[k]
+
+        sep = 1
+        g = coset_factor
+        for _ in range(k_log_size):
+            w = 1
+            for j in range(sep):
+                for i in range(0, domain_size, 2*sep):
+                    l, r = i + j, i + j + sep
+                    tmp = g * coeffs[r] * w
+                    coeffs[r] = coeffs[l] - tmp
+                    coeffs[l] = coeffs[l] + tmp
+                w = w * (omega**(domain_size // (2*sep)))
+            sep *= 2
+            g = g * g
+        return coeffs   
     
     @classmethod    
     def fft_with_twiddles(cls, coeffs, k_log_size, twiddles):
@@ -491,7 +530,60 @@ class UniPolynomial(Generic[F]):
         coeffs[0] = -Fr.one()
         coeffs[-1] = Fr.one()
         return UniPolynomial(coeffs)
+    
+    def compute_evaluations_fft(self, n:int, omega: F):
+        assert (n & (n - 1) == 0), "Domain size must be a power of 2"
+        k = log_2(n)
+        return UniPolynomial.ntt_evals_from_coeffs(self.coeffs, k, omega)
 
+    @classmethod
+    def interpolate_fft(cls, evals, omega):
+        """
+        Interpolate a polynomial from its evaluations using FFT.
+
+        Args:
+            evals (list): Evaluations of the polynomial.
+            omega: The omega root of unity.
+
+        Returns:
+        """
+
+        n = len(evals)
+        assert is_power_of_two(n), "Domain size must be a power of 2"
+        k_log_size = log_2(n)
+
+        coeffs = cls.ntt_coeffs_from_evals(evals, k_log_size, omega)
+        return cls(coeffs)
+    
+    @classmethod
+    def barycentric_weights_fft(cls, domain_size):
+        """
+        Compute barycentric weights for a given domain size using FFT.
+
+            H = (1, omega, omega^2, ..., omega^(n-1))
+
+            zH(X) = X^n - 1
+
+            zH'(X) = nX^(n-1)
+
+            w_i = 1/zH'(omega_i) = 1 / n*omega_i^{n-1} = (omega_i)/n
+
+        Args:
+            domain_size (int): The size of the domain.
+
+        Returns:
+            list: Barycentric weights.
+        """
+        n = domain_size
+        omega = Fr.nth_root_of_unity(n)
+        n_inv = Fr(n).inv()
+        
+        x = n_inv
+        weights = []
+        for i in range(n):
+            weights.append(x)
+            x *= omega
+        return weights
     ############################################################
     # Non-fft interpolation
     ############################################################
@@ -592,10 +684,6 @@ class UniPolynomial(Generic[F]):
     def evaluate(self, point):
         return self.evaluate_at_point(self.coeffs, point)
 
-    def compute_evaluations_fft(self, n:int, omega: F):
-        assert (n & (n - 1) == 0), "Domain size must be a power of 2"
-        k = log_2(n)
-        return UniPolynomial.ntt_evals_from_coeffs(self.coeffs, k, omega)
 
     # @staticmethod
     # def polynomial_division(dividend, divisor):
@@ -665,7 +753,6 @@ class UniPolynomial(Generic[F]):
         # 3. Compute barycentric weights
         z_derivative_at_u = cls.compute_eval_fix(tree, z_derivative, domain)
         ws = [1 / zd for zd in z_derivative_at_u]
-        ws = [w * e for w, e in zip(ws, evals)]
 
         # 4. Compute barycentric interpolation
         f = cls.compute_linear_combination_linear_moduli_fix(tree, ws, domain)
@@ -718,26 +805,42 @@ class UniPolynomial(Generic[F]):
         """
         coeffs = cls.compute_coeffs_from_evals_fast(evals, domain)
         return cls(coeffs)
-
+    
     @classmethod
-    def interpolate_fft(cls, evals, omega):
+    def interpolate_and_compute_vanishing_polynomial(cls, evals, domain):
         """
-        Interpolate a polynomial from its evaluations using FFT.
+        Interpolate a polynomial from its evaluations.
 
         Args:
             evals (list): Evaluations of the polynomial.
-            omega: The omega root of unity.
+            domain (list): Domain points where the polynomial was evaluated.
 
         Returns:
         """
+        n = len(domain)
+        assert len(evals) == n, "Number of evaluations must match domain size"
 
-        n = len(evals)
-        assert is_power_of_two(n), "Domain size must be a power of 2"
-        k_log_size = log_2(n)
+        # evals = [e for e in evals]
+        # domain = [d for d in domain]
 
-        coeffs = cls.ntt_coeffs_from_evals(evals, k_log_size, omega)
-        return cls(coeffs)
-    
+        # 1. Building up subproduct tree
+        tree = cls.construct_subproduct_tree_fix(domain)
+        z_poly = tree["poly"]
+
+        # 2. Construct z'(X) in O(n) time
+        z_derivative = cls.compute_z_derivative(z_poly)
+
+        # 3. Compute barycentric weights
+        z_derivative_at_u = cls.compute_eval_fix(tree, z_derivative, domain)
+        ws = [1 / zd for zd in z_derivative_at_u]
+        ws = [w * e for w, e in zip(ws, evals)]
+
+        # 4. Compute barycentric interpolation
+        coeffs = cls.compute_linear_combination_linear_moduli_fix(tree, ws, domain)
+
+        return cls(coeffs), cls(z_poly)
+
+
     @classmethod
     def from_evals(cls, evals):
         """
@@ -753,41 +856,6 @@ class UniPolynomial(Generic[F]):
     @classmethod
     def barycentric_weights(cls, D):
         n = len(D)
-        weights = [1] * n
-        for i in range(n):
-            # weights[i] = product([(D[i] - D[j]) if i !=j else Fp(1) for j in range(n)])
-            for j in range(n):
-                if i==j:
-                    weights[i] *= 1
-                    continue
-                weights[i] *= (D[i] - D[j])
-            weights[i] = 1/weights[i]
-        return weights
-    
-    # barycentric interpolation with O(nlog(n)) time complexity
-    @classmethod
-    def barycentric_weights_fft(cls, domain_size):
-        """
-        Compute barycentric weights for a given domain size using FFT.
-
-            H = (1, omega, omega^2, ..., omega^(n-1))
-
-            zH(X) = X^n - 1
-
-            zH'(X) = nX^(n-1)
-
-            w_i = 1/zH'(omega_i) = 1 / n*omega_i^{n-1} = (omega_i)/n
-
-        Args:
-            domain_size (int): The size of the domain.
-
-        Returns:
-            list: Barycentric weights.
-        """
-        n = domain_size
-        omega = Fr.nth_root_of_unity(n)
-        D = [omega**i for i in range(n)]
-
         weights = [1] * n
         for i in range(n):
             # weights[i] = product([(D[i] - D[j]) if i !=j else Fp(1) for j in range(n)])
@@ -888,25 +956,37 @@ def precompute_twiddles_for_fft(omega: F, domain_size: int, is_inversed: bool = 
 
 # Example usage
 if __name__ == "__main__":
+
+    a = UniPolynomial([Fr(2), Fr(3), Fr(4), Fr(2)])
+    b = UniPolynomial([Fr(3), Fr(1), Fr(2), Fr(9)])
+    omega = Fr.nth_root_of_unity(4)
+    c = a * b 
+    print(f"c: {c}")
+    z = UniPolynomial([Fr(1), Fr(0), Fr(0), Fr(0), Fr(1)])
+    q, r = divmod(c, z)
+    print(f"q: {q}")
+    print(f"r: {r}")
+    assert q * z + r == c
+
     # f(X) = X^3 + 3X^2 + 2X + 5
-    f = UniPolynomial([Fr(5), Fr(2), Fr(3), Fr(1)])
-    print(f"type of f is {type(f)}")
-    x = UniPolynomial([Fr(0), Fr(1)])  # Represents X
-    d = Fr(1)  # Dividing by (X - 1)
+    # f = UniPolynomial([Fr(5), Fr(2), Fr(3), Fr(1)])
+    # print(f"type of f is {type(f)}")
+    # x = UniPolynomial([Fr(0), Fr(1)])  # Represents X
+    # d = Fr(1)  # Dividing by (X - 1)
 
-    q, r = f.division_by_linear_divisor(d)
-    print(f"f(X) = {f}")
-    print(f"Dividing by (X - {d})")
-    print(f"Quotient: {q}")
-    print(f"Remainder: {r}")
+    # q, r = f.division_by_linear_divisor(d)
+    # print(f"f(X) = {f}")
+    # print(f"Dividing by (X - {d})")
+    # print(f"Quotient: {q}")
+    # print(f"Remainder: {r}")
 
-    # Verify the result
-    # f(X) should equal q(X) * (X - d) + r
-    linear_divisor = x - UniPolynomial([d])
-    result = q * linear_divisor + UniPolynomial([r])
-    print(f"Verification: {result}")
-    print(f"Original polynomial: {f}")
-    print(f"Equal: {result.coeffs == f.coeffs}")
+    # # Verify the result
+    # # f(X) should equal q(X) * (X - d) + r
+    # linear_divisor = x - UniPolynomial([d])
+    # result = q * linear_divisor + UniPolynomial([r])
+    # print(f"Verification: {result}")
+    # print(f"Original polynomial: {f}")
+    # print(f"Equal: {result.coeffs == f.coeffs}")
 
-    assert f.field_type == Fr, f"field_type: {f.field_type}, type(Fr): {type(Fr)}"
+    # assert f.field_type == Fr, f"field_type: {f.field_type}, type(Fr): {type(Fr)}"
 

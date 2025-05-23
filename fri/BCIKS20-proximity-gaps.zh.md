@@ -1,6 +1,7 @@
 # [BCIKS20] Proximity Gaps 论文 soundness 解析
 
-> 作者：Yu Guo(yu.guo@secbit.io) Jade Xie(jade@secbit.io)
+- Jade Xie <jade@secbit.io>
+- Yu Guo  <yu.guo@secbit.io>
 
 论文 [BCIKS20] 对 [BBHR18] 中的 FRI 协议的 soundness 进行了改进，主要分析了 batched FRI 的情况。本文将详细解析 [BCIKS20] 论文中关于 batched FRI soundness 的内容。
 
