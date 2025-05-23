@@ -71,9 +71,9 @@ class UniPolynomial(Generic[Field]):
         coeffs2 = coeffs.copy()
         self.remove_leading_zeros(coeffs2)
 
-        if len(coeffs2) == 0:
-            self.coeffs = [self.F.zero()]
+        if len(coeffs2) == 1 and coeffs2[0] == self.F.zero():
             self.degree = None
+            self.coeffs = coeffs2
             self.__class__.F = field_type
             return
         
@@ -175,7 +175,8 @@ class UniPolynomial(Generic[Field]):
         Returns:
             tuple: (quotient, remainder), where quotient and remainder are UniPolynomial instances.
         """
-        q, r = cls.polynomial_division_with_remainder(dividend.coeffs, divisor.coeffs)
+        # q, r = cls.polynomial_division_with_remainder(dividend.coeffs, divisor.coeffs)
+        q, r = cls.polynomial_division_with_remainder_fast(dividend.coeffs, divisor.coeffs)
         return cls(q), cls(r)
 
     def __neg__(self):
@@ -345,20 +346,20 @@ class UniPolynomial(Generic[Field]):
         
         return result
 
-    # @classmethod
-    # def polynomial_scalar_multiplication(cls, a: list[Field], s: Field) -> list[Field]:
-    #     """
-    #     Multiply a polynomial by a scalar.
+    @classmethod
+    def polynomial_scalar_multiplication(cls, a: list[Field], s: Field) -> list[Field]:
+        """
+        Multiply a polynomial by a scalar.
 
-    #     Args:
-    #         a (list): Coefficients of the polynomial.
-    #         s (F): The scalar to multiply the polynomial by.
+        Args:
+            a (list): Coefficients of the polynomial.
+            s (F): The scalar to multiply the polynomial by.
 
-    #     Returns:
-    #         list: Coefficients of the resulting polynomial.
-    #     """
-    #     assert len(a) > 0, "Polynomial degree must be at least 0"
-    #     return [coeff * s for coeff in a]
+        Returns:
+            list: Coefficients of the resulting polynomial.
+        """
+        assert len(a) > 0, "Polynomial degree must be at least 0"
+        return [coeff * s for coeff in a]
 
     # @staticmethod
     # def bit_reverse(k, k_log_size):
@@ -1279,6 +1280,8 @@ if __name__ == "__main__":
     print(f"r: {r}")
     assert q * z + r == c
 
+    a = UniPolynomial([Fr(0)])
+    assert a.is_zero()
     # f(X) = X^3 + 3X^2 + 2X + 5
     # f = UniPolynomial([Fr(5), Fr(2), Fr(3), Fr(1)])
     # print(f"type of f is {type(f)}")
