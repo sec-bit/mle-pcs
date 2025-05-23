@@ -5,10 +5,13 @@ from functools import reduce
 # WARNING: This implementation may contain bugs and has not been audited. 
 # It is only for educational purposes. DO NOT use it in production.
 
-from utils import log_2, next_power_of_two, is_power_of_two, bits_le_with_width
-from curve import Fr as Field, ec_mul, G1Point, G2Point, ec_pairing_check
+from utils import log_2, bits_le_with_width
+from curve import Fr as Field, G1Point, G2Point, ec_pairing_check
 from merlin.merlin_transcript import MerlinTranscript
 from mle2 import MLEPolynomial
+
+from unipoly2 import UniPolynomial, UniPolynomialWithFft
+from kzg10_non_hiding2 import KZG10_PCS, Commitment
 
 # WARNING: 
 #   1. For demonstration, we deliberately use an insecure random number 
@@ -32,8 +35,6 @@ import random
 # for MLE polynomials. The univariate PCS in this implementation is 
 # non-hiding KZG10 (BN254).
 
-from unipoly import UniPolynomial
-from kzg10_non_hiding import KZG10_PCS, Commitment
 
 # TODO:
 #
@@ -56,14 +57,14 @@ class PH23_PCS:
         self.rng = random.Random("ipa-pcs")
         self.debug = debug
 
-    def commit(self, polynomial: MLEPolynomial) -> Commitment:
+    def commit(self, f_mle: MLEPolynomial) -> Commitment:
         """
         Commit to a vector of coefficients.
         """
 
-        evals = polynomial.evals
+        evals = f_mle.evals
         logn = log_2(len(evals))
-        cm = self.kzg_pcs.commit(UniPolynomial.from_evals(evals))
+        cm = self.kzg_pcs.commit(UniPolynomialWithFft.interpolate(evals, len(evals)))
 
         return cm
 
@@ -104,13 +105,13 @@ class PH23_PCS:
         tr.absorb(b"value", v)
         
         # Convert f_mle to univariate polynomial
-        f_poly = UniPolynomial.from_evals(f_vec)
+        f_poly = UniPolynomialWithFft.interpolate(f_vec, len(f_vec))
         
         # > Round 1.
 
         # Construct c(X) (whose evaluations are the eq polynomial evaluations)
         c_vec = MLEPolynomial.eqs_over_hypercube(us)
-        c_poly = UniPolynomial.from_evals(c_vec)
+        c_poly = UniPolynomialWithFft.interpolate(c_vec, len(c_vec))
 
         if self.debug > 1:
             print(f"P> check v")
@@ -149,14 +150,14 @@ class PH23_PCS:
             print(f"P> alpha = {alpha}")
 
         # Construct vH(X), the vanishing polynomial for domain H
-        vH_poly = UniPolynomial.vanishing_polynomial_fft(domain_size)
+        vH_poly = UniPolynomialWithFft.vanishing_polynomial(domain_size)
         
         # Construct selector polynomials
         s_poly_vec = []
         for k in range(log_n):
-            vH_k = UniPolynomial.vanishing_polynomial_fft(2**k)
+            vH_k = UniPolynomialWithFft.vanishing_polynomial(2**k)
             s_poly, r_poly = divmod(vH_poly, vH_k)
-            assert r_poly.is_zero()
+            assert r_poly.is_zero(), f"r_poly={r_poly}, r_poly.coeffs={r_poly.coeffs}, r_poly.degree={r_poly.degree}, type(r_poly)={type(r_poly)}"
             s_poly_vec.append(s_poly)
             
         # Construct h(X), the overall constraint polynomial
@@ -206,11 +207,11 @@ class PH23_PCS:
             assert z_acc == v, f"z_acc={z_acc}, v={v}"
             print(f"P> check z_acc passed")
 
-        z_poly = UniPolynomial.from_evals(z_vec)
+        z_poly = UniPolynomialWithFft.interpolate(z_vec, len(z_vec))
 
         # Construct l0(X) and ln_1(X) lagrange polynomials
-        l0_poly = UniPolynomial.lagrange_polynomial_fft(0, domain_size)
-        ln_1_poly = UniPolynomial.lagrange_polynomial_fft(domain_size-1, domain_size)
+        l0_poly = UniPolynomialWithFft.lagrange_polynomial(0, domain_size)
+        ln_1_poly = UniPolynomialWithFft.lagrange_polynomial(domain_size-1, domain_size)
 
         # Construct h0(X), h1(X), h2(X) constraint polynomials
         h0_poly = l0_poly * (z_poly - CnstPoly(c_vec[0])*f_poly)
@@ -315,7 +316,7 @@ class PH23_PCS:
             assert r_poly.evaluate(zeta) == Field.zero()
             print(f"P> check r_poly passed")
 
-        q_poly, rem = r_poly.division_by_linear_divisor(zeta)
+        q_poly, rem = r_poly.div_by_linear_divisor(zeta)
         if self.debug > 1:
             print(f"P> check divisibility of r_poly")
             assert rem == Field.zero()
@@ -344,7 +345,7 @@ class PH23_PCS:
             print(f"P> check divisibility of qc_poly passed")
 
         # Construct q_omega(X), which is the quotient of (z(X) - z(zeta/omega)) / (X - zeta/omega)
-        q_omega_poly, rem_q_omega = (z_poly - CnstPoly(z_shifted_eval)).division_by_linear_divisor(zeta * omega.inv())
+        q_omega_poly, rem_q_omega = (z_poly - CnstPoly(z_shifted_eval)).div_by_linear_divisor(zeta * omega.inv())
 
         if self.debug > 0:
             print(f"P> check divisibility of q_omega_poly")
@@ -379,7 +380,7 @@ class PH23_PCS:
         c_final_poly -= qc_poly * CnstPoly(zD_poly.evaluate(xi))
 
         # Construct q_xi(X), which is the quotient of (c(X) - c*(xi) -  zD(xi) * qc(X)) / (X - xi)
-        q_xi_poly, rem_q_xi = c_final_poly.division_by_linear_divisor(xi)
+        q_xi_poly, rem_q_xi = c_final_poly.div_by_linear_divisor(xi)
 
         q_xi_cm = self.kzg_pcs.commit(q_xi_poly)
         tr.absorb(b"q_xi_commitment", q_xi_cm.cm)
@@ -400,18 +401,18 @@ class PH23_PCS:
             assert c_star_poly_at_xi == c_star_poly.evaluate(xi)
             print(f"P> check c_star_poly_at_xi passed")
 
-            H_weights = UniPolynomial.barycentric_weights_fft(domain_size)
+            H_weights = UniPolynomialWithFft.compute_barycentric_weights(domain_size)
             vH_poly_at_zeta = zeta**domain_size - Field.one()
-            assert vH_poly_at_zeta == UniPolynomial.vanishing_polynomial_fft(domain_size).evaluate(zeta)
+            assert vH_poly_at_zeta == UniPolynomialWithFft.vanishing_polynomial(domain_size).evaluate(zeta)
             print(f"P> check vH_poly_at_zeta passed")
 
             l0_poly_at_zeta = H_weights[0] * vH_poly_at_zeta * (zeta - Field.one()).inv()
-            assert l0_poly_at_zeta == UniPolynomial.lagrange_polynomial_fft(0, domain_size).evaluate(zeta)
+            assert l0_poly_at_zeta == UniPolynomialWithFft.lagrange_polynomial(0, domain_size).evaluate(zeta)
             assert l0_poly_at_zeta == l0_poly.evaluate(zeta)
             print(f"P> check l0_poly_at_zeta passed")
 
             ln_1_poly_at_zeta = H_weights[-1] * vH_poly_at_zeta * (zeta - omega.inv()).inv()
-            assert ln_1_poly_at_zeta == UniPolynomial.lagrange_polynomial_fft(domain_size-1, domain_size).evaluate(zeta)
+            assert ln_1_poly_at_zeta == UniPolynomialWithFft.lagrange_polynomial(domain_size-1, domain_size).evaluate(zeta)
             print(f"P> check ln_1_poly_at_zeta passed")
         
         if self.debug > 1:
@@ -581,7 +582,7 @@ class PH23_PCS:
         # Construct vH(zeta), l_0(zeta), l_{n-1}(zeta)
         vH_poly_at_zeta = zeta**domain_size - Field.one()
 
-        H_weights = UniPolynomial.barycentric_weights_fft(domain_size) # TODO: to be precomputed
+        H_weights = UniPolynomialWithFft.compute_barycentric_weights(domain_size) # TODO: to be precomputed
         l0_poly_at_zeta = H_weights[0] * vH_poly_at_zeta * (zeta - Field.one()).inv()
         ln_1_poly_at_zeta = H_weights[-1] * vH_poly_at_zeta * (zeta - omega.inv()).inv()
 
