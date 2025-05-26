@@ -63,7 +63,7 @@ Below is the Proximity gaps theorem for RS code.
 
 **Theorem 1.2** [BCIKS20, Theorem 1.2] (Proximity gap for RS codes). The collection $C_{\text{Affine}}$ of affine spaces in $\mathbb{F}_q^n$ displays a $(\delta, \epsilon)$-proximity gap with respect to the RS code $V := \text{RS}[\mathbb{F}_q, \mathcal{D}, k]$ of blocklength $n$ and rate $\rho = \frac{k+1}{n}$, for any $\delta \in (0, 1 - \sqrt{\rho})$, and $\epsilon = \epsilon(q, n, \rho, \delta)$ defined as the following piecewise function:
 
-* Unique decoding bound: For $\delta \in [0,\frac{1 - \rho}{2})$, the error parameter $\epsilon$ is
+* Unique decoding bound: For $\delta \in (0,\frac{1 - \rho}{2}]$, the error parameter $\epsilon$ is
 
 $$
 \epsilon = \epsilon_\text{U} = \epsilon_\text{U}(q, n) := \frac{n}{q} \tag{1.1}
