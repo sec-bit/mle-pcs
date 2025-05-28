@@ -211,6 +211,17 @@ class MLEPolynomial(Generic[Field]):
         
         return f[0]
     
+    @classmethod
+    def evaluate_eq_polynomial(cls, zs: list[Field], us: list[Field]) -> Field:
+
+        k = len(zs)
+        assert k == len(us), f"len(zs) != len(us), len(zs) = {len(zs)}, len(us) = {len(us)}"
+        v = cls.F.one()
+        for i in range(k):
+            # v *= (cls.F.one() - us[i]) * (cls.F.one() - zs[i]) + us[i] * zs[i]
+            v *= cls.F.one() + 2 * (us[i] * zs[i]) - (us[i] + zs[i])
+        return v
+
     def evaluate(self, zs: list):
         """
         Evaluate the MLE polynomial at the given points.
