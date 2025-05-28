@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # WARNING: This implementation may contain bugs and has not undergone auditing. 
-# It is intended for educational and research purposes only. 
+# It is intended for educational and research purposes only.
 # DO NOT use it in a production environment.
 
 from utils import log_2, next_power_of_two
@@ -203,6 +203,7 @@ class BASEFOLD_RS_PCS:
             alpha = tr.squeeze(Field, b"alpha", 4)
             if self.debug > 0:
                 print(f"P> alpha[{i}] = {alpha}")
+                
             alpha_vec.append(alpha)
 
             # fold f
