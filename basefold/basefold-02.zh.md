@@ -78,7 +78,7 @@ $$
 上面即为折叠后的向量 $\pi_{i-1}$，假设 Prover 诚实的情况下，折叠后的向量应该是一个合法的 $C_{i-1}$ codeword。上面等式中的 $\mathsf{fold}_{\alpha_i}$ 函数定义如下：
 
 $$
-\mathsf{fold}_{\alpha}(c_j, c_{n_{i-1}+j}) = \frac{t_j\cdot c_{n_{i-1}+j} - t'_j\cdot c_{j} }{t_j + t'_j} + \alpha\cdot \frac{(c_{j} - c_{n_{i-1}+j})}{t_j - t'_j}
+\mathsf{fold}_{\alpha}(c_j, c_{n_{i-1}+j}) = \frac{t_j\cdot c_{n_{i-1}+j} - t'_j\cdot c_{j} }{t_j - t'_j} + \alpha\cdot \frac{(c_{j} - c_{n_{i-1}+j})}{t_j - t'_j}
 $$
 
 如何理解上面的 $\mathsf{fold}_{\alpha}(\cdot, \cdot)$ 函数？其实它是一个多项式插值的过程。我们把待折叠的两排向量看成是在两个 Domain 上的点集，而这两个 Domain 分别递归编码过程中所采用的 $\mathsf{diag}(T_i)=(t_0, t_1, \ldots, t_{n_{i-1}-1})$ 和 $\mathsf{diag}(T'_i)=(t'_0, t'_1, \ldots, t'_{n_{i-1}-1})$：

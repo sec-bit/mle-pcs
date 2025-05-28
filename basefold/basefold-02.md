@@ -82,7 +82,7 @@ $$
 The above is the folded vector $\pi_{i-1}$. Assuming the Prover is honest, the folded vector should be a legitimate $C_{i-1}$ codeword. The function $\mathsf{fold}_{\alpha_i}$ in the above equation is defined as follows:
 
 $$
-\mathsf{fold}_{\alpha}(c_j, c_{n_{i-1}+j}) = \frac{t_j\cdot c_{n_{i-1}+j} - t'_j\cdot c_{j} }{t_j + t'_j} + \alpha\cdot \frac{(c_{j} - c_{n_{i-1}+j})}{t_j - t'_j}
+\mathsf{fold}_{\alpha}(c_j, c_{n_{i-1}+j}) = \frac{t_j\cdot c_{n_{i-1}+j} - t'_j\cdot c_{j} }{t_j - t'_j} + \alpha\cdot \frac{(c_{j} - c_{n_{i-1}+j})}{t_j - t'_j}
 $$
 
 How should we understand the $\mathsf{fold}_{\alpha}(\cdot, \cdot)$ function? It is essentially a polynomial interpolation process. We treat the two rows to be folded as sets of points on two separate domains, specifically the $\mathsf{diag}(T_i)=(t_0, t_1, \ldots, t_{n_{i-1}-1})$ and $\mathsf{diag}(T'_i)=(t'_0, t'_1, \ldots, t'_{n_{i-1}-1})$ used in the recursive encoding process:
