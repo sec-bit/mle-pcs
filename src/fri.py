@@ -1,303 +1,382 @@
+from hashlib import sha256
+from unipoly2 import UniPolynomialWithFft
+from curve import Fr
 from merkle import MerkleTree, verify_decommitment
-from merlin.merlin_transcript import MerlinTranscript
-from utils import from_bytes, log_2, is_power_of_two
-from unipolynomial import UniPolynomial
+from transcript import MerlinTranscript
+from utils import log_2, bit_reverse
 
-class FRI:
-    security_level = 128
+class FRIBFCommitment:
+    def __init__(self, data, log_n, log_blowup, code, tree: MerkleTree, root: str):
+        self.data = data
+        self.log_n = log_n
+        self.log_blowup = log_blowup
+        self.code = code
+        self.tree = tree
+        self.root = root
 
-    @classmethod
-    def commit(cls, evals, rate, domain, debug=False):
-        if debug: print("evals:", evals)
-        N = len(evals)
-        assert is_power_of_two(N)
-        degree_bound = N
-        if debug: print("degree_bound:", degree_bound)
-        coeffs = UniPolynomial.compute_coeffs_from_evals_fast(evals, domain[:N])
-        if debug: print("coeffs:", coeffs)
-        code = cls.rs_encode_single(coeffs, domain, rate)
-        if debug: print("code:", code)
-        assert len(code) == N * rate, f"code: {code}, degree_bound: {degree_bound}, rate: {rate}"
-        
-        return MerkleTree(code), code
+    def __str__(self):
+        return f"FRIBFCommitment(data={self.data}, log_blowup={self.log_blowup}, code={self.code}, tree={self.tree}, root={self.root})"
 
-    @classmethod
-    def prove(cls, code, code_tree, val, point, domain, rate, degree_bound, gen, transcript, debug=False):
-        if debug: print("val:", val)
-        assert len(domain) == degree_bound * rate, f"domain: {domain}, degree_bound: {degree_bound}, rate: {rate}"
-        assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
-        
-        quotient = [(code[i] - val) / (domain[i] - point) for i in range(len(code))]
-        
-        quotient_tree = MerkleTree(quotient)
-        transcript.append_message(b"quotient", quotient_tree.root.encode('ascii'))
-        transcript.append_message(b"value at z", str(val).encode('ascii'))
 
-        z = from_bytes(transcript.challenge_bytes(b"z", 4)) % len(code)
-        code_at_z_proof = code_tree.get_authentication_path(z)
-        quotient_at_z_proof = quotient_tree.get_authentication_path(z)
+class FRIBFProof:
+    def __init__(self, intermediate_commitments: list[str], query_paths: list, merkle_paths: list, folded):
+        self.intermediate_commitments = intermediate_commitments
+        self.query_paths = query_paths
+        self.merkle_paths = merkle_paths
+        self.folded = folded
 
-        if debug:
-            print('z:', z)
-            print('code[z]:', code[z])
-            print('quotient[z]:', quotient[z])
-            print('domain[z]:', domain[z])
-            print('point:', point)
-            print('value:', val)
-            assert code[z] - val == quotient[z] * (domain[z] - point), \
-                "failed to generate quotient, code: {}, quotient: {}, val: {}, z: {}, point: {}"\
-                    .format(code, quotient, val, z, point)
 
-        num_verifier_queries = cls.security_level // log_2(rate)
-        if cls.security_level % log_2(rate) != 0:
-            num_verifier_queries += 1
-
-        low_degree_proof = cls.prove_low_degree(quotient, rate, degree_bound, gen, num_verifier_queries, transcript, debug)
-
-        return {
-            'low_degree_proof': low_degree_proof,
-            'code_commitment': code_tree.root,
-            'quotient_commitment': quotient_tree.root,
-            'code_at_z_proof': code_at_z_proof,
-            'quotient_at_z_proof': quotient_at_z_proof,
-            'code_at_z': code[z],
-            'quotient_at_z': quotient[z],
-            'degree_bound': degree_bound,
-        }
+class FRIBigField:
+    F = Fr
+    twiddles = None
+    twiddles_reversed = None
+    twiddles_reversed_inv = None
+    query_num = None
+    max_query_attempts = 100
 
     @classmethod
-    def verify(cls, degree_bound, rate, proof, point, value, domain, gen, transcript, debug=False):
+    def precompute_twiddles(cls, log_n):
+        cls.twiddles = [[cls.F.one()]]
+        cls.twiddles_reversed = [[cls.F.one()]]
+        cls.twiddles_reversed_inv = [[cls.F.one()]]
 
-        assert degree_bound >= proof['degree_bound']
-        degree_bound = proof['degree_bound']
+        for i in range(1, log_n + 1):
+            omega = cls.F.nth_root_of_unity(1 << i)
+            base = cls.F.one()
 
-        assert isinstance(transcript, MerlinTranscript), f"transcript: {transcript}"
+            level = []
+            for j in range(1 << i):
+                level.append(base)
+                base *= omega
 
-        code_commitment = proof['code_commitment']
-        quotient_commitment = proof['quotient_commitment']
+            cls.twiddles.append(level.copy())
+            
+            cls.twiddles_reversed.append(level)
+            bit_reverse_inplace(cls.twiddles_reversed[-1])
 
-        transcript.append_message(b"code", code_commitment.encode('ascii'))
-        transcript.append_message(b"quotient", quotient_commitment.encode('ascii'))
-        transcript.append_message(b"value at z", str(value).encode('ascii'))
+            cls.twiddles_reversed_inv.append(cls.twiddles_reversed[-1].copy())
+            batch_invert_inplace(cls.twiddles_reversed_inv[-1], cls.F)
 
-        z = from_bytes(transcript.challenge_bytes(b"z", 4)) % (degree_bound * rate)
-        code_at_z_proof = proof['code_at_z_proof']
-        quotient_at_z_proof = proof['quotient_at_z_proof']
+    @classmethod
+    def set_field_type(cls, field_type):
+        cls.F = field_type
 
-        if debug:
-            print('z: ', z)
-            print('code_at_z: ', proof['code_at_z'])
-            print('quotient_at_z: ', proof['quotient_at_z'])
-            print('point:', point)
-            print('value:', value)
+    @classmethod
+    def commit(cls, evals, log_blowup, debug=0):
+        assert log_blowup > 0, f"log_blowup should be greater than 0"
+        assert len(evals) > 1, f"Length of evals should be greater than 1"
+        log_n = log_2(len(evals))
+        coeffs = UniPolynomialWithFft.ifft(evals, log_n, cls.F.nth_root_of_unity(1 << log_n))
+        bit_reverse_inplace(coeffs)
 
-        assert verify_decommitment(z, proof['code_at_z'], code_at_z_proof, code_commitment), f"failed to check decommitment at code_at_z, z: {z}, code_at_z: {proof['code_at_z']}, code_commitment: {code_commitment}"
-        assert verify_decommitment(z, proof['quotient_at_z'], quotient_at_z_proof, quotient_commitment), f"failed to check decommitment at quotient_at_z, z: {z}, quotient_at_z: {proof['quotient_at_z']}, quotient_commitment: {quotient_commitment}"
+        code = eval_over_fft_field(coeffs, log_blowup, cls.twiddles, cls.F)
+        if debug > 0:
+            expected = UniPolynomialWithFft.ifft(code, log_n + log_blowup, cls.F.nth_root_of_unity(1 << (log_n + log_blowup)))
+            expected = expected[:1 << log_n]
+            bit_reverse_inplace(expected)
+            assert expected == coeffs, f"expected: {expected}, coeffs: {coeffs}"
+            for i in range(1 << log_n):
+                assert evals[i] == code[i * (1 << log_blowup)]
 
-        assert proof['code_at_z'] - value == proof['quotient_at_z'] * (domain[z] - point)
+        bit_reverse_inplace(code)
 
-        num_verifier_queries = cls.security_level // log_2(rate)
-        if cls.security_level % log_2(rate) != 0:
-            num_verifier_queries += 1
-        
-        cls.verify_low_degree(degree_bound, rate, proof['low_degree_proof'], gen, num_verifier_queries, transcript, debug)
+        tree = plant_tree(code)
+        return FRIBFCommitment(evals, log_n, log_blowup, code, tree, tree.root)
 
-    @staticmethod
-    def prove_low_degree(evals, rate, degree_bound, gen, num_verifier_queries, transcript, debug=False):
-        assert is_power_of_two(degree_bound)
+    @classmethod
+    def open(cls, commitment: FRIBFCommitment, point, value, transcript: MerlinTranscript, debug=0):
+        '''
+        NOTICE: PLEASE MAKE SURE THAT THE COMMITMENT WAS ABSORBED INTO THE TRANSCRIPT BEFORE OPENING.
+        '''
 
-        first_tree = MerkleTree(evals)
-        evals_copy = evals
-        transcript.append_message(b"first_oracle", first_tree.root.encode('ascii'))
+        assert isinstance(commitment, FRIBFCommitment), f"commitment should be an instance of FRIBFCommitment"
+        assert isinstance(point, cls.F), f"point should be an instance of {cls.F}"
+        assert isinstance(value, cls.F), f"value should be an instance of {cls.F}"
+        # assert isinstance(transcript, MerlinTranscript), f"transcript should be an instance of MerlinTranscript"
 
-        alpha = transcript.challenge_bytes(b"alpha", 4)
-        alpha = from_bytes(alpha)
+        assert commitment.data is not None, f"commitment should contain data"
+        assert commitment.code is not None, f"commitment should contain code"
+        assert commitment.tree is not None, f"commitment should contain tree"
+        assert commitment.root is not None, f"commitment should contain root"
+        assert commitment.log_n is not None, f"commitment should contain log_n"
+        assert commitment.log_blowup is not None, f"commitment should contain log_blowup"
 
-        trees = []
-        tree_evals = []
-        for _ in range(log_2(degree_bound)):
-            if debug: print("evals:", evals)
-            if debug: print("alpha:", alpha)
-            if debug: print("generator:", gen)
-            evals = FRI.fold(evals, alpha, gen)
-            tree = MerkleTree(evals)
-            trees.append(tree)
-            tree_evals.append(evals)
+        evals = commitment.data
+        log_blowup = commitment.log_blowup
+        rscode_reversed = commitment.code
+        log_n = commitment.log_n
 
-            transcript.append_message(b"oracle", tree.root.encode('ascii'))
-            alpha = transcript.challenge_bytes(b"alpha", 4)
-            alpha = from_bytes(alpha)
+        if debug > 0:
+            assert len(evals) == 1 << log_n
+            assert len(rscode_reversed) == 1 << (log_n + log_blowup)
 
-            gen *= gen
+        N = 1 << (log_n + log_blowup)
+        inv_2 = (cls.F.one() + cls.F.one()).inv()
 
-        if debug:
-            assert len(evals) == rate, f"evals: {evals}, rate: {rate}"
-            for i in range(len(evals)):
-                if i != 0:
-                    assert evals[i] == evals[0], f"evals: {evals}"
+        if debug > 0:
+            assert inv_2 * (cls.F.one() + cls.F.one()) == cls.F.one()
+
+        lambda_ = cls.F.from_bytes(transcript.challenge_bytes(b"lambda", 32))
+
+        # quotient
+        numerators = [rscode_reversed[i] - value for i in range(N)]
+        denominators = [cls.twiddles_reversed[log_n + log_blowup][i] - point for i in range(N)]
+        # denominators = [cls.F.nth_root_of_unity(1 << (log_n + log_blowup)) ** bit_reverse(i, log_n + log_blowup) - point for i in range(N)]
+        batch_invert_inplace(denominators, cls.F)
+        quotient = [(cls.F.one() + lambda_ * cls.twiddles_reversed[log_n + log_blowup][i]) * numerators[i] * denominators[i] for i in range(N)]
+
+        if debug > 0:
+            assert len(quotient) == N
+            q_copy = quotient.copy()
+            bit_reverse_inplace(q_copy)
+            q_coeffs = UniPolynomialWithFft.ifft(q_copy, log_n + log_blowup, cls.F.nth_root_of_unity(1 << (log_n + log_blowup)))
+            for i in range(1 << log_n, 1 << (log_n + log_blowup)):
+                assert q_coeffs[i] == cls.F.zero(), f"q_coeffs={q_coeffs}"
+
+        # commit phase
+        folded = quotient
+        intermediate_commitments: list[FRIBFCommitment] = []
+        for i in range(log_n):
+            hint = ("alpha-" + str(i)).encode()
+            alpha = cls.F.from_bytes(transcript.challenge_bytes(hint, 32))
+            level = cls.twiddles_reversed_inv[log_n + log_blowup - i]
+            if debug > 0: assert len(level) == 1 << (log_n + log_blowup - i)
+            new_folded = []
+            for j in range(0, 1 << (log_n + log_blowup - i), 2):
+                f_even = (folded[j] + folded[j + 1]) * inv_2
+                f_odd = (folded[j] - folded[j + 1]) * inv_2 * level[j]
+                new_folded.append(f_even + alpha * f_odd)
+                if debug > 0: assert level[j] == cls.F.nth_root_of_unity(1 << (log_n + log_blowup - i)).inv() ** bit_reverse(j, log_n + log_blowup - i)
+            folded = new_folded
+
+            if debug > 0:
+                assert len(folded) == 1 << (log_n + log_blowup - i - 1)
+                folded_cp = folded.copy()
+                bit_reverse_inplace(folded_cp)
+                f_coeffs = UniPolynomialWithFft.ifft(folded_cp, log_n + log_blowup - i - 1, cls.F.nth_root_of_unity(1 << (log_n + log_blowup - i - 1)))
+                for j in range(1 << (log_n - i - 1), 1 << (log_n + log_blowup - i - 1)):
+                    assert f_coeffs[j] == cls.F.zero(), f"i={i}, f_coeffs={f_coeffs}"
+
+            if i < log_n - 1:
+                intermediate_tree = plant_tree(folded)
+                intermediate_commitments.append(FRIBFCommitment(None, log_n, log_blowup, folded, intermediate_tree, intermediate_tree.root))
+                hint = ("oracle-" + str(i)).encode()
+                transcript.absorb(hint, intermediate_commitments[-1].root)
+            elif i == log_n - 1:
+                transcript.absorb(b"oracle-final", folded[0])
+            else:
+                raise Exception("Invalid i")
+
+        if debug > 0:
+            assert len(intermediate_commitments) == log_n - 1
+            assert len(folded) == 1 << log_blowup
+            for i in range(1, 1 << log_blowup):
+                assert folded[0] == folded[i], f"folded={folded}"
 
         # query phase
-        assert len(evals_copy) == degree_bound * rate, f"evals_copy: {evals_copy}, degree_bound: {degree_bound}, rate: {rate}"
-        query_paths, merkle_paths = FRI.query_phase(transcript, first_tree, evals_copy, trees, tree_evals, degree_bound * rate, num_verifier_queries, debug)
-
-        return {
-            'query_paths': query_paths,
-            'merkle_paths': merkle_paths,
-            'first_oracle': first_tree.root,
-            'intermediate_oracles': [tree.root for tree in trees],
-            'degree_bound': degree_bound,
-            'final_value': evals[0],
-        }
-
-    # f(x) = f0(x^2) + x * f1(x^2)
-    # and half degree interpolation is
-    # f'(x^2) = f0(x^2) + alpha * f1(x^2), and it can be achieved by just adding up two adjustent (adjustment?)
-    # coefficients in the monomial form
-    # if we would want to try to get the same result, one can observe that
-    # f0(x^2) = (f(x) + f(-x)) / 2
-    # f1(x^2) = (f(x) - f(-x)) / 2x
-    @staticmethod
-    def fold(evals, alpha, g, debug=False):
-        assert len(evals) % 2 == 0
-
-        half = len(evals) // 2
-        f0_evals = [(evals[i] + evals[half + i]) / 2 for i in range(half)]
-        f1_evals = [(evals[i] - evals[half + i]) / (2 * g ** i) for i in range(half)]
-
-        if debug:
-            x = g ** 5
-            f_x = UniPolynomial.uni_eval_from_evals(evals, x, [g ** i for i in range(len(evals))])
-            f0_x = UniPolynomial.uni_eval_from_evals(f0_evals, x ** 2, [(g ** 2) ** i for i in range(len(f0_evals))])
-            f1_x = UniPolynomial.uni_eval_from_evals(f1_evals, x ** 2, [(g ** 2) ** i for i in range(len(f1_evals))])
-            assert f_x == f0_x + x * f1_x, f"failed to fold, f_x: {f_x}, f0_x: {f0_x}, f1_x: {f1_x}, alpha: {alpha}"
-
-        return [x + alpha * y for x, y in zip(f0_evals, f1_evals)]
-
-
-    @staticmethod
-    def verify_low_degree(degree_bound, rate, proof, gen, num_verifier_queries, transcript, debug=False):
-        log_degree_bound = log_2(degree_bound)
-        log_evals = log_2(degree_bound * rate)
-        T = [[(gen**(2 ** j)) ** i for i in range(2 ** (log_evals - j - 1))] for j in range(0, log_evals)]
-        if debug: print("T:", T)
-        FRI.verify_queries(proof, log_degree_bound, degree_bound * rate, num_verifier_queries, T, transcript, debug)
-
-    @staticmethod
-    def query_phase(transcript: MerlinTranscript, first_tree: MerkleTree, first_oracle, trees: list, oracles: list, num_vars, num_verifier_queries, debug=False):
-        queries = [from_bytes(transcript.challenge_bytes(b"queries", 4)) % num_vars for _ in range(num_verifier_queries)]
-        if debug: print("queries:", queries)
-
-        query_paths = []
-        # query paths
-        for q in queries:
-            num_vars_copy = num_vars
-            cur_path = []
-            indices = []
-            x0 = int(q)
-            x1 = int(q - num_vars_copy / 2 if q >= num_vars_copy / 2 else q + num_vars_copy / 2)
-            if x1 < x0:
-                x0, x1 = x1, x0
-            
-            cur_path.append((first_oracle[x0], first_oracle[x1]))
-            if debug: print("x0:", x0, "x1:", x1, "num_vars:", num_vars_copy, "q:", q)
-            if debug: print("first_oracle:", first_oracle)
-            indices.append(x0)
-            q = x0
-            num_vars_copy >>= 1
-
-            for oracle in oracles:
-                x0 = int(q)
-                x1 = int(q - num_vars_copy / 2 if q >= num_vars_copy / 2 else q + num_vars_copy / 2)
-                if x1 < x0:
-                    x0, x1 = x1, x0
-                
-                cur_path.append((oracle[x0], oracle[x1]))
-                if debug: print("x0:", x0, "x1:", x1, "num_vars:", num_vars_copy, "q:", q)
-                if debug: print("oracle:", oracle)
-                indices.append(x0)
-                q = x0
-                num_vars_copy >>= 1
-            
-            query_paths.append((cur_path, indices))
-
-        # merkle paths
+        queries = []
+        for i in range(cls.max_query_attempts):
+            hint = ("query-" + str(i)).encode()
+            q = int.from_bytes(transcript.challenge_bytes(hint, 32)) % (N >> 1)
+            if q not in queries:
+                queries.append(q)
+            if len(queries) == cls.query_num:
+                break
+        if len(queries) < cls.query_num:
+            raise Exception("Failed to generate enough queries")
+        if debug > 1: print(f"prover: queries={queries}")
+        
+        if debug > 0:
+            assert len(queries) == cls.query_num
+            assert len(set(queries)) == cls.query_num
+        
         merkle_paths = []
-        for _, indices in query_paths:
-            cur_query_paths = []
-            for i, idx in enumerate(indices):
-                if i == 0:
-                    cur_query_paths.append(first_tree.get_authentication_path(idx))
-                    if debug: print("mp:", cur_query_paths[-1])
-                    if debug: print("commit:", first_tree.root)
-                    if debug: print("idx:", idx)
-                else:
-                    cur_tree = trees[i - 1]
-                    assert isinstance(cur_tree, MerkleTree)
-                    cur_query_paths.append(cur_tree.get_authentication_path(idx))
-                    if debug: print("mp:", cur_query_paths[-1])
-                    if debug: print("commit:", first_tree.root)
-                    if debug: print("idx:", idx)
-            merkle_paths.append(cur_query_paths)
+        query_paths = []
+        for q in queries:
+            q <<= 1
 
-        return query_paths, merkle_paths
-    
-    @staticmethod
-    def verify_queries(proof, k, num_vars, num_verifier_queries, T, transcript, debug=False):
-        transcript.append_message(b"first_oracle", bytes(proof['first_oracle'], 'ascii'))
-        alpha = transcript.challenge_bytes(b"alpha", 4)
-        alpha = from_bytes(alpha)
+            query_path = [rscode_reversed[q], rscode_reversed[q ^ 1]]
+            merkle_path = [commitment.tree.get_authentication_path(q >> 1)]
 
-        fold_challenges = [alpha]
-        for i in range(k):
-            transcript.append_message(bytes(f'oracle', 'ascii'), bytes(proof['intermediate_oracles'][i], 'ascii'))
-            fold_challenges.append(from_bytes(transcript.challenge_bytes(b"alpha", 4)))
+            if debug > 1: print(f"prover: q>>1={q>>1}, query_path={query_path}, merkle_path={merkle_path[0]}, root={commitment.root}")
+            if debug > 0: assert verify_merkle_path(q >> 1, query_path, merkle_path[0], commitment.root, debug=debug)
 
-        queries = [from_bytes(transcript.challenge_bytes(b"queries", 4)) % num_vars for _ in range(num_verifier_queries)]
-        # query loop
-        for q, (cur_path, _), mps in zip(queries, proof['query_paths'], proof['merkle_paths']):
-            if debug: print("cur_path:", cur_path)
-            num_vars_copy = num_vars
-            # fold loop
-            for i, mp in enumerate(mps):
-                x0 = int(q)
-                x1 = int(q - num_vars_copy / 2 if q >= num_vars_copy / 2 else q + num_vars_copy / 2)
-                if x1 < x0:
-                    x0, x1 = x1, x0
-                    
-                code_left, code_right = cur_path[i][0], cur_path[i][1]
+            for i in range(log_n - 1):
+                q >>= 1
+                q_sibling = q ^ 1
+                query_path.append(intermediate_commitments[i].code[q_sibling])
+                merkle_path.append(intermediate_commitments[i].tree.get_authentication_path(q >> 1))
+                if debug > 0:
+                    q_l = min(q, q_sibling)
+                    q_r = q + q_sibling - q_l
+                    if debug > 1: print(f"prover: q>>1={q>>1}, leaves={intermediate_commitments[i].code[q_l]}, {intermediate_commitments[i].code[q_r]}, merkle_path={merkle_path[-1]}, root={intermediate_commitments[i].root}")
+                    assert verify_merkle_path(q >> 1, [intermediate_commitments[i].code[q_l], intermediate_commitments[i].code[q_r]], merkle_path[-1], intermediate_commitments[i].root, debug=debug)
 
-                if debug: print("x0:", x0)
-                if debug: print("x1:", x1)
+            if debug > 0:
+                assert q < 1 << (log_blowup + 1), f"q={q}"
+                assert len(merkle_path) == log_n
+                assert len(query_path) == log_n + 1
+            
+            merkle_paths.append(merkle_path)
+            query_paths.append(query_path)
 
-                table = T[i]
-                if debug: print("table:", table)
-                if i != len(mps) - 1:
-                    f_code_folded = cur_path[i + 1][0 if x0 < num_vars_copy / 4 else 1]
-                    alpha = fold_challenges[i]
-                    if debug: assert x0 < len(table), f"x0: {x0}, table: {table}"
-                    if debug: print("f_code_folded:", f_code_folded)
-                    if debug: print("expected:", ((code_left + code_right)/2 + alpha * (code_left - code_right)/(2*table[x0])))
-                    if debug: print("code_left:", code_left)
-                    if debug: print("code_right:", code_right)
-                    if debug: print("alpha:", alpha)
-                    assert f_code_folded == (code_left + code_right)/2 + alpha * (code_left - code_right)/(2*table[x0]), f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, generator: {table}"
-                else:
-                    assert proof["final_value"] == (code_left + code_right)/2 + alpha * (code_left - code_right)/(2*table[x0]), f"failed to check fri, i: {i}, x0: {x0}, x1: {x1}, code_left: {code_left}, code_right: {code_right}, alpha: {alpha}, generator: {table}, final_value: {proof['final_value']}"
+        intermediate_commitments: list[str] = [comm.root for comm in intermediate_commitments]
+        return FRIBFProof(intermediate_commitments, query_paths, merkle_paths, folded[0])
 
-                if i == 0:
-                    assert verify_decommitment(x0, code_left, mp, proof['first_oracle']), "failed to check decommitment at first level"
-                else:
-                    assert verify_decommitment(x0, code_left, mp, proof['intermediate_oracles'][i - 1]), "failed to check decommitment at level " + str(i)
+    @classmethod
+    def verify(cls, commitment: FRIBFCommitment, point, value, proof: FRIBFProof, transcript: MerlinTranscript, debug=0):
+        '''
+        NOTICE: PLEASE MAKE SURE THAT THE COMMITMENT WAS ABSORBED INTO THE TRANSCRIPT BEFORE VERIFYING.
+        '''
 
-                num_vars_copy >>= 1
-                q = x0
+        assert isinstance(commitment, FRIBFCommitment), f"commitment should be an instance of FRIBFCommitment"
+        assert isinstance(point, cls.F), f"point should be an instance of {cls.F}"
+        assert isinstance(value, cls.F), f"value should be an instance of {cls.F}"
+        assert isinstance(proof, FRIBFProof), f"proof should be an instance of FRIBFProof"
+        # assert isinstance(transcript, MerlinTranscript), f"transcript should be an instance of MerlinTranscript"
 
-    @staticmethod
-    def rs_encode_single(m, alpha, c):
-        k0 = len(m)
-        code = [None] * (k0 * c)
-        for i in range(k0 * c):
-            # Compute f_m(alpha[i])
-            code[i] = sum(m[j] * (alpha[i] ** j) for j in range(k0))
-        return code
+        assert commitment.data is None, f"commitment should not contain data"
+        assert commitment.code is None, f"commitment should not contain code"
+        assert commitment.tree is None, f"commitment should not contain tree"
+        assert commitment.root is not None, f"commitment should contain root"
+        assert commitment.log_n is not None, f"commitment should contain log_n"
+        assert commitment.log_blowup is not None, f"commitment should contain log_blowup"
 
+        assert proof.intermediate_commitments is not None, f"proof should contain intermediate_commitments"
+        assert proof.query_paths is not None, f"proof should contain query_paths"
+        assert proof.merkle_paths is not None, f"proof should contain merkle_paths"
+        assert proof.folded is not None, f"proof should contain folded"
+
+        log_blowup = commitment.log_blowup
+        log_n = commitment.log_n
+        root = commitment.root
+
+        N = 1 << (log_n + log_blowup)
+        inv_2 = (cls.F.one() + cls.F.one()).inv()
+        intermediate_commitments = proof.intermediate_commitments
+        query_paths = proof.query_paths
+        merkle_paths = proof.merkle_paths
+        folded = proof.folded
+        if debug > 0:
+            assert len(merkle_paths) == cls.query_num
+            assert len(query_paths) == cls.query_num
+            assert len(intermediate_commitments) == log_n - 1
+
+        lambda_ = cls.F.from_bytes(transcript.challenge_bytes(b"lambda", 32))
+
+        # commit phase
+        challenges = []
+        for i in range(log_n):
+            hint = ("alpha-" + str(i)).encode()
+            alpha = cls.F.from_bytes(transcript.challenge_bytes(hint, 32))
+            challenges.append(alpha)
+
+            if i < log_n - 1:
+                hint = ("oracle-" + str(i)).encode()
+                transcript.absorb(hint, intermediate_commitments[i])
+            else:
+                hint = b"oracle-final"
+                transcript.absorb(hint, folded)
+
+        # query phase
+        queries = []
+        for i in range(cls.max_query_attempts):
+            hint = ("query-" + str(i)).encode()
+            q = int.from_bytes(transcript.challenge_bytes(hint, 32)) % (N >> 1)
+            if q not in queries:
+                queries.append(q)
+            if len(queries) == cls.query_num:
+                break
+        if len(queries) < cls.query_num:
+            raise Exception("Failed to generate enough queries")
+        if debug > 1: print(f"verifier: queries={queries}")
+        
+        for q, query_path, merkle_path in zip(queries, query_paths, merkle_paths):
+            q <<= 1
+
+            assert len(merkle_path) == log_n
+            assert len(query_path) == log_n + 1
+
+            if debug > 1: print(f"verifier: q>>1={q>>1}, query_path={query_path[:2]}, merkle_path={merkle_path[0]}, root={root}")
+            assert verify_merkle_path(q >> 1, query_path[:2], merkle_path[0], root, debug=debug)
+
+            leaves = query_path[:2]
+            leaves[0] = (cls.F.one() + lambda_ * cls.twiddles_reversed[log_n + log_blowup][q]) * (leaves[0] - value) / (cls.twiddles_reversed[log_n + log_blowup][q] - point)
+            leaves[1] = (cls.F.one() + lambda_ * cls.twiddles_reversed[log_n + log_blowup][q + 1]) * (leaves[1] - value) / (cls.twiddles_reversed[log_n + log_blowup][q + 1] - point)
+            query_value = (leaves[0] + leaves[1]) * inv_2 + challenges[0] * (leaves[0] - leaves[1]) * inv_2 * cls.twiddles_reversed_inv[log_n + log_blowup][q]
+
+            for i in range(1, log_n):
+                q >>= 1
+                leaves = [query_path[i + 1], query_path[i + 1]]
+                leaves[q & 1] = query_value
+                if debug > 1: print(f"verifier: q>>1={q>>1}, leaves={leaves}, merkle_path={merkle_path[i]}, root={intermediate_commitments[i - 1]}")
+                assert verify_merkle_path(q >> 1, leaves, merkle_path[i], intermediate_commitments[i - 1], debug=debug)
+
+                level = cls.twiddles_reversed_inv[log_n + log_blowup - i]
+                query_value = (leaves[0] + leaves[1]) * inv_2 + challenges[i] * (leaves[0] - leaves[1]) * inv_2 * level[min(q, q ^ 1)]
+            
+            if debug > 0: assert q < 1 << (log_blowup + 1), f"q={q}"
+            assert query_value == folded
+
+
+def eval_over_fft_field(coeffs, log_blowup, twiddles, field_type, debug=0):
+    n = len(coeffs)
+    log_n = log_2(n)
+    N = 1 << (log_n + log_blowup)
+    rscode = [field_type.zero()] * N
+
+    for i in range(n):
+        for j in range(1 << log_blowup):
+            rscode[i * (1 << log_blowup) + j] = coeffs[i]
+
+    chunk_size = 1 << log_blowup
+    for i in range(log_n):
+        chunk_size <<= 1
+        half_chunk = chunk_size >> 1
+        level = twiddles[i + log_blowup + 1]
+        if debug > 0:
+            assert len(level) == chunk_size or log_blowup == 0, f"len(level) = {len(level)}, chunk_size = {chunk_size}, log_blowup = {log_blowup}"
+        for start in range(0, N, chunk_size):
+            for j in range(half_chunk):
+                rhs = rscode[start + j + half_chunk] * level[j]
+                rscode[start + j + half_chunk] = rscode[start + j] - rhs
+                rscode[start + j] += rhs
+
+    return rscode
+
+def batch_invert_inplace(vec, field_type):
+    acc = field_type.one()
+    tmp = []
+    for v in vec:
+        tmp.append(acc)
+        acc *= v
+    acc = acc.inv()
+    for i in range(len(vec) - 1, -1, -1):
+        t = tmp[i] * acc
+        acc *= vec[i]
+        vec[i] = t
+
+
+def bit_reverse_inplace(vec):
+    n = len(vec)
+    log_n = log_2(n)
+    for i in range(n):
+        j = bit_reverse(i, log_n)
+        if i < j:
+            vec[i], vec[j] = vec[j], vec[i]
+
+def plant_tree(data):
+    n = len(data)
+
+    data = [sha256(str(d).encode()).hexdigest() for d in data]
+    leaves = []
+    for i in range(n >> 1):
+        leaves.append(sha256((data[i * 2] + data[i * 2 + 1]).encode()).hexdigest())
+
+    return MerkleTree(leaves)
+
+def verify_merkle_path(leaf_id, leaves: list, decommitment, root, debug=0):
+    if debug > 0: assert len(leaves) == 2
+    leaves = (sha256(str(leaves[0]).encode()).hexdigest(), sha256(str(leaves[1]).encode()).hexdigest())
+    node = sha256((leaves[0] + leaves[1]).encode()).hexdigest()
+    return verify_decommitment(leaf_id, node, decommitment, root)
