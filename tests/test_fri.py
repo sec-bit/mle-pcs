@@ -4,7 +4,7 @@ import sys
 sys.path.append('../src')
 sys.path.append('src')
 
-from fri import FRI
+from fri_babybear import FRI
 from utils import is_power_of_two
 from unipolynomial import UniPolynomial
 class TestFRI(TestCase):

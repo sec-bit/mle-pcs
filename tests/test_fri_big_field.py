@@ -4,7 +4,7 @@ from sys import path
 path.append('../src')
 path.append('src')
 
-from fri_big_field import FRIBigField, FRIBFCommitment, FRIBFProof, bit_reverse_inplace, eval_over_fft_field, batch_invert_inplace
+from fri import FRIBigField, FRIBFCommitment, FRIBFProof, bit_reverse_inplace, eval_over_fft_field, batch_invert_inplace
 from curve import Fr
 from unipoly2 import UniPolynomialWithFft
 from merlin.merlin_transcript import MerlinTranscript

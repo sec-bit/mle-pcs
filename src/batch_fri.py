@@ -4,7 +4,6 @@ from utils import from_bytes, log_2, is_power_of_two
 from unipolynomial import UniPolynomial
 from mmcs import MMCS
 from hashlib import sha256
-from fri import FRI
 
 class BatchFRI:
     security_level = 128
