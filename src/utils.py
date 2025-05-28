@@ -132,6 +132,21 @@ def test_log_2():
     x = 1
     print(log_2(x))
 
+def delta_uni_decoding(rho):
+    return (1 - rho) / 2
+
+def delta_johnson_bound(rho):
+    from math import sqrt
+    return 1 - sqrt(rho)
+
+def delta_list_decoding(rho):
+    return 1 - rho
+
+def query_num(blowup_factor, security_bits, delta_func):
+    from math import log2
+    delta = delta_func(1 / blowup_factor)
+    return int(security_bits / (-log2(1 - delta))) + 1
+
 if __name__ == "__main__":
     import random
     k = random.randint(0, 15)
