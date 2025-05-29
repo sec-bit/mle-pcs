@@ -1,76 +1,167 @@
 from unittest import TestCase, main
-import sys
+from sys import path
 
-sys.path.append('../src')
-sys.path.append('src')
+path.append('../src')
+path.append('src')
 
-from fri_babybear import FRI
-from utils import is_power_of_two
-from unipolynomial import UniPolynomial
-class TestFRI(TestCase):
+from fri import FRIBigField, FRIBFCommitment, FRIBFProof, bit_reverse_inplace, eval_over_fft_field, batch_invert_inplace
+from curve import Fr
+from unipoly2 import UniPolynomialWithFft
+from merlin.merlin_transcript import MerlinTranscript
+
+class TestFRIBigField(TestCase):
     def setUp(self):
-        # Set up a scalar field for testing (e.g., integers modulo a prime)
-        prime = 193  # A small prime for testing
-        UniPolynomial.set_scalar(int, lambda x: x % prime)
+        self.log_n = 10
+        self.log_blowup = 3
+        FRIBigField.set_field_type(Fr)
+        FRIBigField.precompute_twiddles(self.log_n + self.log_blowup)
+        FRIBigField.query_num = 67
 
-    def test_fold(self):
-        from sage.all import GF
-        from field import magic
+    def test_setup(self):
+        for i in range(1, self.log_n + self.log_blowup):
+            twiddles_cp = FRIBigField.twiddles[i].copy()
+            bit_reverse_inplace(twiddles_cp)
+            assert twiddles_cp == FRIBigField.twiddles_reversed[i]
+            batch_invert_inplace(twiddles_cp, Fr)
+            assert twiddles_cp == FRIBigField.twiddles_reversed_inv[i]
+            for j in range(1 << i):
+                assert FRIBigField.twiddles_reversed[i][j] * FRIBigField.twiddles_reversed_inv[i][j] == Fr.one()
 
-        Fp = magic(GF(193))
-    
-        evals = FRI.rs_encode_single([2, 3, 4, 5], [Fp.primitive_element() ** (i * 192 // 16) for i in range(16)], 4)
-        coset = Fp.primitive_element() ** (192 // len(evals))
-        alpha = Fp(7)
+    def test_eval_from_fft_field(self):
+        evals = [Fr.random() for _ in range(1 << self.log_n)]
+        coeffs = UniPolynomialWithFft.ifft(evals, self.log_n, Fr.nth_root_of_unity(1 << self.log_n))
+        assert len(coeffs) == 1 << self.log_n
+        coeffs_padded = coeffs + [Fr.zero()] * ((1 << (self.log_n + self.log_blowup)) - (1 << self.log_n))
+        assert len(coeffs_padded) == 1 << (self.log_n + self.log_blowup)
+        expected_code = UniPolynomialWithFft.fft(coeffs_padded, self.log_n + self.log_blowup, Fr.nth_root_of_unity(1 << (self.log_n + self.log_blowup)))
 
-        evals = FRI.fold(evals, alpha, coset, debug=False)
-        coset = coset ** 2
-        evals = FRI.fold(evals, alpha, coset, debug=False)
+        bit_reverse_inplace(coeffs)
+        code = eval_over_fft_field(coeffs, self.log_blowup, FRIBigField.twiddles, Fr, debug=1)
+        assert code == expected_code
 
-        assert evals[0] == evals[1] == evals[2] == evals[3]
-
-    def test_low_degree(self):
-        from sage.all import GF
-        from field import magic
-        from random import randint
-        from merlin.merlin_transcript import MerlinTranscript
-
-        Fp = magic(GF(193))
-
-        assert Fp.primitive_element() ** 192 == 1
-
-        degree_bound = 8
-        blow_up_factor = 2
-        num_verifier_queries = 8
-        assert is_power_of_two(degree_bound)
-
-        evals = FRI.rs_encode_single([randint(0, 193) for _ in range(degree_bound)], [Fp.primitive_element() ** (i * 192 // (degree_bound * 2 ** blow_up_factor)) for i in range(degree_bound * 2 ** blow_up_factor)], 2 ** blow_up_factor)
-        proof = FRI.prove_low_degree(evals, 2 ** blow_up_factor, degree_bound, Fp.primitive_element() ** (192 // len(evals)), num_verifier_queries, MerlinTranscript(b'test'), debug=False)
-        FRI.verify_low_degree(degree_bound, 2 ** blow_up_factor, proof, Fp.primitive_element() ** (192 // len(evals)), num_verifier_queries, MerlinTranscript(b'test'), debug=False)
-
-    def test_prove(self):
-        from sage.all import GF
-        from field import magic
-        from random import randint
-        from merlin.merlin_transcript import MerlinTranscript
-
-        Fp = magic(GF(193))
-
-        assert Fp.primitive_element() ** 192 == 1
+    def test_commit(self):
+        evals = [Fr.random() for _ in range(1 << self.log_n)]
+        commitment: FRIBFCommitment = FRIBigField.commit(evals, self.log_blowup, debug=1)
         
-        rate = 4
-        evals_size = 4
-        coset = Fp.primitive_element() ** (192 // (evals_size * rate))
-        point = Fp.primitive_element()
-        evals = [i for i in range(evals_size)]
-        value = UniPolynomial.uni_eval_from_evals(evals, point, [coset ** i for i in range(len(evals))])
-        domain = [coset ** i for i in range(evals_size * rate)]
-        code_tree, code = FRI.commit(evals, rate, domain, debug=False)
-        transcript = MerlinTranscript(b'test')
-        transcript.append_message(b"code", code_tree.root.encode('ascii'))
-        proof = FRI.prove(code, code_tree, value, point, domain, rate, evals_size, coset, transcript, debug=False)
-        FRI.verify(evals_size, rate, proof, point, value, domain, coset, MerlinTranscript(b'test'), debug=False)
+        assert commitment.data == evals
+        assert commitment.log_n == self.log_n
+        assert commitment.log_blowup == self.log_blowup
+
+        coeffs = UniPolynomialWithFft.ifft(evals, self.log_n, Fr.nth_root_of_unity(1 << self.log_n))
+        assert len(coeffs) == 1 << self.log_n
+        coeffs_padded = coeffs + [Fr.zero()] * ((1 << (self.log_n + self.log_blowup)) - (1 << self.log_n))
+        assert len(coeffs_padded) == 1 << (self.log_n + self.log_blowup)
+        expected_code = UniPolynomialWithFft.fft(coeffs_padded, self.log_n + self.log_blowup, Fr.nth_root_of_unity(1 << (self.log_n + self.log_blowup)))
+        bit_reverse_inplace(expected_code)
+        assert commitment.code == expected_code
+
+        assert commitment.tree.root == commitment.root
+
+    def test_open(self):
+        evals = [Fr.random() for _ in range(1 << self.log_n)]
+        point = Fr.random()
+        value = UniPolynomialWithFft.evaluate_from_evals(evals, point, FRIBigField.twiddles[self.log_n])
+        coeffs = UniPolynomialWithFft.ifft(evals, self.log_n, Fr.nth_root_of_unity(1 << self.log_n))
+        assert UniPolynomialWithFft.evaluate_at_point(coeffs, point) == value
+        commitment: FRIBFCommitment = FRIBigField.commit(evals, self.log_blowup, debug=1)
+        transcript = MerlinTranscript(b"test")
+        transcript.append_message(b"commitment", commitment.root.encode())
+        FRIBigField.open(commitment, point, value, transcript.fork(b"prove"), debug=1)
+
+    def test_verify(self):
+        evals = [Fr.random() for _ in range(1 << self.log_n)]
+        point = Fr.random()
+        value = UniPolynomialWithFft.evaluate_from_evals(evals, point, FRIBigField.twiddles[self.log_n])
+        coeffs = UniPolynomialWithFft.ifft(evals, self.log_n, Fr.nth_root_of_unity(1 << self.log_n))
+        assert UniPolynomialWithFft.evaluate_at_point(coeffs, point) == value
+        commitment: FRIBFCommitment = FRIBigField.commit(evals, self.log_blowup, debug=1)
+
+        transcript = MerlinTranscript(b"test")
+        transcript.append_message(b"commitment", commitment.root.encode())
+
+        proof: FRIBFProof = FRIBigField.open(commitment, point, value, transcript.fork(b"prove"), debug=2)
+
+        commitment = FRIBFCommitment(None, commitment.log_n, commitment.log_blowup, None, None, commitment.root)
+        FRIBigField.verify(commitment, point, value, proof, transcript.fork(b"prove"), debug=2)
+
+    def test_zero_evals(self):
+        evals = [Fr.zero() for _ in range(1 << self.log_n)]
+        point = Fr.random()
+        value = UniPolynomialWithFft.evaluate_from_evals(evals, point, FRIBigField.twiddles[self.log_n])
+        coeffs = UniPolynomialWithFft.ifft(evals, self.log_n, Fr.nth_root_of_unity(1 << self.log_n))
+        assert UniPolynomialWithFft.evaluate_at_point(coeffs, point) == value
+        commitment: FRIBFCommitment = FRIBigField.commit(evals, self.log_blowup, debug=1)
+
+        transcript = MerlinTranscript(b"test")
+        transcript.append_message(b"commitment", commitment.root.encode())
+
+        proof: FRIBFProof = FRIBigField.open(commitment, point, value, transcript.fork(b"prove"), debug=1)
+
+        commitment = FRIBFCommitment(None, commitment.log_n, commitment.log_blowup, None, None, commitment.root)
+        FRIBigField.verify(commitment, point, value, proof, transcript.fork(b"prove"), debug=1)
+
+    def test_zero_length(self):
+        try:
+            FRIBigField.commit([], self.log_blowup, debug=1)
+            assert False, "Should raise an error"
+        except Exception as e:
+            assert str(e) == "Length of evals should be greater than 1", f"e={e}"
+
+    def test_zero_log_blowup(self):
+        try:
+            FRIBigField.commit([Fr.random() for _ in range(1 << self.log_n)], 0, debug=1)
+            assert False, "Should raise an error"
+        except Exception as e:
+            assert str(e) == "log_blowup should be greater than 0", f"e={e}"
+
+    def test_zero_point(self):
+        evals = [Fr.random() for _ in range(1 << self.log_n)]
+        point = Fr.zero()
+        value = UniPolynomialWithFft.evaluate_from_evals(evals, point, FRIBigField.twiddles[self.log_n])
+        coeffs = UniPolynomialWithFft.ifft(evals, self.log_n, Fr.nth_root_of_unity(1 << self.log_n))
+        assert UniPolynomialWithFft.evaluate_at_point(coeffs, point) == value
+        commitment: FRIBFCommitment = FRIBigField.commit(evals, self.log_blowup, debug=1)
+        transcript = MerlinTranscript(b"test")
+        transcript.append_message(b"commitment", commitment.root.encode())
+        FRIBigField.open(commitment, point, value, transcript.fork(b"prove"), debug=1)
+
+    def test_kaput_commitment(self):
+        evals = [Fr.random() for _ in range(1 << self.log_n)]
+        point = Fr.random()
+        value = UniPolynomialWithFft.evaluate_from_evals(evals, point, FRIBigField.twiddles[self.log_n])
+        coeffs = UniPolynomialWithFft.ifft(evals, self.log_n, Fr.nth_root_of_unity(1 << self.log_n))
+        assert UniPolynomialWithFft.evaluate_at_point(coeffs, point) == value
+        commitment: FRIBFCommitment = FRIBigField.commit(evals, self.log_blowup, debug=1)
+        commitment = FRIBFCommitment(None, commitment.log_n, commitment.log_blowup, None, None, commitment.root)
+        transcript = MerlinTranscript(b"test")
+        transcript.append_message(b"commitment", commitment.root.encode())
+        try:
+            FRIBigField.open(commitment, point, value, transcript.fork(b"prove"), debug=1)
+            assert False, "Should raise an error"
+        except Exception as e:
+            assert str(e) == "commitment should contain data", f"e={e}"
+
+    def test_kaput_proof(self):
+        evals = [Fr.random() for _ in range(1 << self.log_n)]
+        point = Fr.random()
+        value = UniPolynomialWithFft.evaluate_from_evals(evals, point, FRIBigField.twiddles[self.log_n])
+        coeffs = UniPolynomialWithFft.ifft(evals, self.log_n, Fr.nth_root_of_unity(1 << self.log_n))
+        assert UniPolynomialWithFft.evaluate_at_point(coeffs, point) == value
+        commitment: FRIBFCommitment = FRIBigField.commit(evals, self.log_blowup, debug=1)
+
+        transcript = MerlinTranscript(b"test")
+        transcript.append_message(b"commitment", commitment.root.encode())
+
+        proof: FRIBFProof = FRIBigField.open(commitment, point, value, transcript.fork(b"prove"), debug=2)
+
+        commitment = FRIBFCommitment(None, commitment.log_n, commitment.log_blowup, None, None, commitment.root)
+        proof = FRIBFProof(None, None, None, None)
+        try:
+            FRIBigField.verify(commitment, point, value, proof, transcript.fork(b"prove"), debug=2)
+            assert False, "Should raise an error"
+        except Exception as e:
+            assert str(e) == "proof should contain intermediate_commitments", f"e={e}"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

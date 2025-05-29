@@ -32,7 +32,6 @@ class FRIBigField:
     twiddles_reversed = None
     twiddles_reversed_inv = None
     query_num = None
-    max_query_attempts = 100
 
     @classmethod
     def precompute_twiddles(cls, log_n):
@@ -175,20 +174,15 @@ class FRIBigField:
 
         # query phase
         queries = []
-        for i in range(cls.max_query_attempts):
+        for i in range(cls.query_num):
             hint = ("query-" + str(i)).encode()
             q = int.from_bytes(transcript.challenge_bytes(hint, 32)) % (N >> 1)
-            if q not in queries:
-                queries.append(q)
-            if len(queries) == cls.query_num:
-                break
-        if len(queries) < cls.query_num:
-            raise Exception("Failed to generate enough queries")
+            queries.append(q)
+
         if debug > 1: print(f"prover: queries={queries}")
         
         if debug > 0:
             assert len(queries) == cls.query_num
-            assert len(set(queries)) == cls.query_num
         
         merkle_paths = []
         query_paths = []
@@ -280,15 +274,11 @@ class FRIBigField:
 
         # query phase
         queries = []
-        for i in range(cls.max_query_attempts):
+        for i in range(cls.query_num):
             hint = ("query-" + str(i)).encode()
             q = int.from_bytes(transcript.challenge_bytes(hint, 32)) % (N >> 1)
-            if q not in queries:
-                queries.append(q)
-            if len(queries) == cls.query_num:
-                break
-        if len(queries) < cls.query_num:
-            raise Exception("Failed to generate enough queries")
+            queries.append(q)
+
         if debug > 1: print(f"verifier: queries={queries}")
         
         for q, query_path, merkle_path in zip(queries, query_paths, merkle_paths):
