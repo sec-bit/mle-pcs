@@ -127,6 +127,22 @@ def bit_reverse_inplace(f, k):
             f[i] = f[i_rev]
             f[i_rev] = tmp
 
+def reverse_bits(n: int, bit_length: int) -> int:
+    """
+    Reverse the bits of an integer.
+
+    Args:
+        n (int): The input integer.
+        bit_length (int): The number of bits to consider.
+
+    Returns:
+        int: The integer with its bits reversed.
+    """
+    result = 0
+    for i in range(bit_length):
+        result = (result << 1) | (n & 1)
+        n >>= 1
+    return result
 
 def test_log_2():
     x = 1
