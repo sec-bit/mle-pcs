@@ -424,7 +424,7 @@ $$
 
 ## Zeromorph 对接 FRI 优化协议
 
-在上述的协议中，会对 $n$ 个一元多项式 $\hat{q}_k(X)$ 进行承诺以及用 FRI 协议分别进行 low degree test 的证明，实际上，由于要证明的 $\hat{q}_{k}(X)$ 与 $\hat{q}_{k - 1}(X)$ 之间的 degree bound 刚好相差 $2$ 倍，因此可以用 rolling batch 的技巧对这 $n$ 个多项式只进行一次 low degree test。另外注意到，$\hat{f}(X)$ 与 $\hat{q}_{n-1}(X)$ 之间的 degree bound 也刚好相差 $2$ 倍，因此还可以用 rolling batch 的技巧对 $\hat{f}(X), \hat{q}_{n-1}(X), \ldots, \hat{q}_{0}(X)$ 这 $n + 1$ 个多项式只进行一次 low degree test。 
+在上述的协议中，会对 $n$ 个一元多项式 $\hat{q}_k(X)$ 进行承诺以及用 FRI 协议分别进行 low degree test 的证明，实际上，由于要证明的 $\hat{q}_{k}(X)$ 与 $\hat{q}_{k - 1}(X)$ 之间的 degree bound 刚好相差 $2$ 倍，因此可以用 rolling batch 的技巧对这 $n$ 个多项式只进行一次 low degree test。另外注意到，$\hat{f}(X)$ 与 $\hat{q}_{n-1}(X)$ 之间的 degree bound 也刚好相差 $2$ 倍，因此还可以用 rolling batch [ZLGSCLD24] 的技巧对 $\hat{f}(X), \hat{q}_{n-1}(X), \ldots, \hat{q}_{0}(X)$ 这 $n + 1$ 个多项式只进行一次 low degree test。 
 
 当对 $n$ 个一元多项式 $\hat{q}_k(X)$ 进行承诺时，由于 $D^{(k)}$ 与 $D^{(k - 1)}$ 之间的大小也正好相差 $2$ 倍，因此也可以借用 plonky3 中的 [mmcs](https://github.com/Plonky3/Plonky3/blob/main/merkle-tree/src/mmcs.rs) 结构对这 $n$ 个多项式放在一起只进行一次承诺。
 
@@ -788,3 +788,4 @@ $$
 - [KT23] Kohrita, Tohru, and Patrick Towa. "Zeromorph: Zero-knowledge multilinear-evaluation proofs from homomorphic univariate commitments." Cryptology ePrint Archive (2023). https://eprint.iacr.org/2023/917 
 - [H22] Haböck, Ulrich. "A summary on the FRI low degree test." _Cryptology ePrint Archive_ (2022).
 - Plonky3. https://github.com/Plonky3/Plonky3
+- [ZLGSCLD24] Zhang, Zongyang, Weihan Li, Yanpei Guo, Kexin Shi, Sherman SM Chow, Ximeng Liu, and Jin Dong. "Fast {RS-IOP} Multivariate Polynomial Commitments and Verifiable Secret Sharing." In _33rd USENIX Security Symposium (USENIX Security 24)_, pp. 3187-3204. 2024.
