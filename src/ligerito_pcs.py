@@ -4,8 +4,10 @@
 # It is intended for educational and research purposes only.
 # DO NOT use it in a production environment.
 
-from utils import log_2, next_power_of_two
+from utils import log_2, next_power_of_two, Scalar, is_power_of_two
 from utils import inner_product, reverse_bits
+from functools import reduce
+from operator import mul
 
 
 # Implementation of Ligerito PCS (RS encoding) [NA25]
@@ -30,6 +32,8 @@ UniPolynomial.set_field_type(Fp)
 UniPolynomialWithFft.set_field_type(Fp)
 
 def rs_encode(f: list[Fp], coset: Fp, blowup_factor: int) -> list[Fp]:
+    assert is_power_of_two(blowup_factor), "blowup_factor must be a power of 2"
+
     n = next_power_of_two(len(f))
     N = n * blowup_factor
 
@@ -37,6 +41,41 @@ def rs_encode(f: list[Fp], coset: Fp, blowup_factor: int) -> list[Fp]:
     k = log_2(N)
     vec = f + [Fp.zero()] * (N - len(f))
     return UniPolynomialWithFft.fft_coset_rbo(vec, coset, k, omega=omega_Nth)
+
+def tensor_vector_with_monomial_basis(vec: list[Fp]) -> list[Fp]:
+    if len(vec) == 0:
+        return [Fp(1)]
+    v = vec[-1]
+    vec_expanded = tensor_vector_with_monomial_basis(vec[:-1])
+    vec_right = [vec_expanded[i] * v for i in range(len(vec_expanded))]
+    return vec_expanded + vec_right
+
+def tensor_vector_with_multilinear_basis(vec: list[Fp]) -> list[Fp]:
+    if len(vec) == 0:
+        return [Fp(1)]
+    v = vec[-1]
+    vec_expanded = tensor_vector_with_multilinear_basis(vec[:-1])
+    vec_left = [vec_expanded[i] * (Fp(1)-v) for i in range(len(vec_expanded))]
+    vec_right = [vec_expanded[i] * v for i in range(len(vec_expanded))]
+    return vec_left + vec_right
+
+def tensor_vector(index: int, k1: int, blowup_factor: int):
+    N = 2**k1 * blowup_factor
+    omega_Nth = Fp.nth_root_of_unity(N)
+    index_rev = reverse_bits(index, log_2(N))
+    omega = omega_Nth**index_rev
+    return [omega**(2**i) for i in range(k1)]
+
+def tensor_inner_product(r_vec, index: int, f_len:int, blowup_factor):
+    n = next_power_of_two(f_len)
+    N = n * blowup_factor
+    omega_Nth = Fp.nth_root_of_unity(N)
+    index_rev = reverse_bits(index, log_2(N))
+    omega = omega_Nth**index_rev
+    l = len(r_vec)
+    ip = [inner_product([Fp(1)-r_vec[i], r_vec[i]], [1, omega**(2**i)], Fp(0)) for i in range(l)]
+    product = reduce(mul, ip, Fp(1))
+    return product
 
 def rs_generator_matrix_at_row(index:int, f_len: int, coset:Fp, blowup_factor:int) -> list[Fp]:
     n = next_power_of_two(f_len)
@@ -82,7 +121,7 @@ class LIGERITO_RS_PCS:
     num_queries = 3   # WARNING: this is not secure
     # coset_gen = Fp.multiplicative_generator()
     coset_gen = Fp(1)
-    max_queries_try = 1000  # NOTE: change it to a practical number
+    folding_step_size = 1
 
     def __init__(self, oracle, debug: int = 0):
         """
@@ -357,7 +396,7 @@ class LIGERITO_RS_PCS:
         ks = []
         k1 = k
         while k1 > 0:
-            k1_prime = 1
+            k1_prime = self.folding_step_size
             k2 = k1 - k1_prime
             if k2 > 0: 
                 ks.append((k1_prime, k2))
@@ -503,7 +542,7 @@ class LIGERITO_RS_PCS:
                     print(f"P> beta[{i}] = {beta}, q={q}")
                 sum_checked += beta * v
                 rs_w = rs_generator_matrix_at_row(q, len(f), self.coset_gen, self.blowup_factor)
-                eq = [eq[i] + beta * rs_w[i] for i in range(len(eq))]
+                eq = [eq[j] + beta * rs_w[j] for j in range(len(eq))]
 
             if self.debug > 1:
                 print(f"P> check query_replies")
@@ -551,7 +590,7 @@ class LIGERITO_RS_PCS:
         ks = []
         k1 = k
         while k1 > 0:
-            k1_prime = 1
+            k1_prime = self.folding_step_size
             k2 = k1 - k1_prime
             if k2 > 0: 
                 ks.append((k1_prime, k2))
@@ -560,12 +599,18 @@ class LIGERITO_RS_PCS:
                 ks.append((k1, 0))
                 break
 
+        print(f"V> ks = {ks}")  
+
         # Update transcript with the context
         transcript.absorb(b"f_code_merkle_root", f_mle_commitment.root)
         transcript.absorb(b"point", point)
         transcript.absorb(b"value", evaluation)
 
-        eq = MLEPolynomial.eqs_over_hypercube(point)
+        ## NOTE: the following eq polynomial computation (in O(n)) is replaced by 
+        #   the accumulated (sunccinct) computation in the end (in O(log n)) as in
+        #   Section 6.6 of the paper.
+        
+        ## eq = MLEPolynomial.eqs_over_hypercube(point)
 
         # Sumcheck and fold eq
         f_folded_cm_vec = argument['f_folded_cm_vec']
@@ -574,7 +619,9 @@ class LIGERITO_RS_PCS:
         merkle_paths_vec = argument['merkle_paths_vec']
         v_vec_vec = argument['v_vec_vec']
         sum_checked = evaluation 
-
+        r_vec_vec = []
+        beta_vec_vec = []
+        queries_vec = []
         for iteration in range(len(ks)-1):
             k1_prime = ks[iteration][0]
             k1 = ks[iteration][1]
@@ -588,13 +635,12 @@ class LIGERITO_RS_PCS:
 
             r_vec = []
             for i in range(k1_prime):
-                half = len(eq) // 2
-                eq_low = eq[:half]
-                eq_high = eq[half:]
+                ## half = len(eq) // 2
+                ## eq_low = eq[:half]
+                ## eq_high = eq[half:]
                 h = sumcheck_h_vec[i]
                 h_eval_at_0 = h[0]
                 h_eval_at_1 = h[1]
-                h_eval_at_2 = h[2]
 
                 transcript.absorb(b"h(X)", h)
 
@@ -609,8 +655,8 @@ class LIGERITO_RS_PCS:
                     print(f"V> r[{i}] = {r}")
                 r_vec.append(r)
 
-                # fold eq
-                eq = [(Fp(1) - r) * eq_low[i] + r * eq_high[i] for i in range(half)]
+                ## fold eq
+                ## eq = [(Fp(1) - r) * eq_low[i] + r * eq_high[i] for i in range(half)]
 
                 sum_checked = UniPolynomial.evaluate_from_evals(h, r, [Fp(0), Fp(1), Fp(2)])
 
@@ -626,7 +672,8 @@ class LIGERITO_RS_PCS:
             merkle_paths = merkle_paths_vec[iteration]
             v_vec = v_vec_vec[iteration]
             f_code_cm = f_folded_cm_vec[iteration]
-            eq_r = MLEPolynomial.eqs_over_hypercube(r_vec[::-1])
+            # eq_r = MLEPolynomial.eqs_over_hypercube(r_vec[::-1])
+            beta_vec = []
             for i, (q, reply, path) in enumerate(zip(queries, query_replies, merkle_paths)):
                 transcript.absorb(b"query_reply", reply)
                 transcript.absorb(b"merkle_path", path)
@@ -637,29 +684,65 @@ class LIGERITO_RS_PCS:
                 beta = transcript.squeeze(Fp, b"beta", 4)
                 if self.debug > 0:
                     print(f"V> beta[{i}] = {beta}, q={q}")
-                sum_checked += beta * v_vec[i]
-                rs_w = rs_generator_matrix_at_row(q, len(eq), self.coset_gen, self.blowup_factor)
-                eq = [eq[i] + beta * rs_w[i] for i in range(len(eq))]
+                beta_vec.append(beta)
 
+                sum_checked += beta * v_vec[i]
+                ## rs_w = rs_generator_matrix_at_row(q, len(eq), self.coset_gen, self.blowup_factor)
+                ## eq = [eq[j] + beta * rs_w[j] for j in range(len(eq))]
                 root = MerkleTree(reply).root
                 assert verify_decommitment(q, root, path, f_code_cm.root), \
                     f"verify_decommitment failed at index {i}, q={q}, reply={reply}, path={path}, root={f_code_cm.root}"
-                print(f"V> verify_decommitment passed,q={q}, root_i={root}, path={path}, root={f_code_cm.root}")
+                # print(f"V> verify_decommitment passed,q={q}, root_i={root}, path={path}, root={f_code_cm.root}")
 
                 # assert inner_product(eq_r, reply, Fp(0)) == f_folded_code[q], \
                 #     f"inner_product(eq_r, reply, Fp(0)) = {inner_product(eq_r, reply, Fp(0))} != f_folded_code[q] = {f_folded_code[q]}"
-        
+            
+            queries_vec.append(queries)
+            r_vec_vec.append(r_vec)
+            beta_vec_vec.append(beta_vec)
         # End of iteration
+
+        ## print(f"V> final eq0= {eq}")
+
+        k_last = ks[-1][0]
+        r_vec_all = [x for rs in r_vec_vec for x in rs][::-1]
+        print(f"V> r_vec_all = {r_vec_all}")
+        assert len(r_vec_all) == k - k_last, f"len(r_vec_all) = {len(r_vec_all)} != k - k_last = {k - k_last}"
+        
+        # Compute the folded eq polynomial
+        scalar = MLEPolynomial.evaluate_eq_polynomial(point[k_last:], r_vec_all)
+        eq_acc = MLEPolynomial.eqs_over_hypercube(point[:k_last])
+        eq_acc = [eq_acc[j] * scalar for j in range(2**k_last)]
+
+        # Accumulate the eq polynomial
+        for iteration in range(len(ks)-1):
+            k1_prime = ks[iteration][0]
+            k1 = ks[iteration][1]
+            n1 = 2**k1
+            # query_replies = query_replies_vec[iteration]
+            beta_vec = beta_vec_vec[iteration]
+            queries = queries_vec[iteration]
+            r_vec = r_vec_all[:k1-k_last]
+            print(f"V> r_vec = {r_vec}")
+            for i, q in enumerate(queries):
+                w_rev = tensor_vector(q, k1, self.blowup_factor)
+                scalar = reduce(mul, [inner_product([Fp(1)-r_vec[j], r_vec[j]], [1, w_rev[k_last:][j]], Fp(0)) for j in range(len(r_vec))], Fp(1))
+                new_vec = tensor_vector_with_monomial_basis(w_rev[:k_last])
+                new_vec = [new_vec[j] * scalar for j in range(2**k_last)]
+                eq_acc = [eq_acc[j] + beta_vec[i] * new_vec[j] for j in range(2**k_last)]
+
+            print(f"V> iteration={iteration}, eq_acc = {eq_acc}")   
 
         f_folded = argument['f_folded']
         transcript.absorb(b"f_folded", f_folded)
         if self.debug > 0:
             print(f"V> f_folded={f_folded}")
-        
-        # f_folded_code = rs_encode(f_folded, self.coset_gen, self.blowup_factor)
 
-        assert sum_checked == inner_product(f_folded, eq, Fp(0)), \
-            f"sum_checked = {sum_checked} != inner_product(f_folded, eq, Fp(0)) = {inner_product(f_folded, eq, Fp(0))}"
+        # NOTE: Uncomment this line to check the accumulated eq polynomial
+        # assert eq == eq_acc, f"eq != eq_acc, {eq} != {eq_acc}"
+
+        assert sum_checked == inner_product(f_folded, eq_acc, Fp(0)), \
+            f"sum_checked = {sum_checked} != inner_product(f_folded, eq, Fp(0)) = {inner_product(f_folded, eq_acc, Fp(0))}"
         
         return True
 
@@ -697,16 +780,21 @@ def test_multiple_iterations_pcs():
 
     tr = MerlinTranscript(b"ligerito-rs-pcs")
 
-    # A simple instance f(x) = y
+    # # A simple instance f(x) = y
     evals = [Fp(2), Fp(3), Fp(4), Fp(5), Fp(6), Fp(7), Fp(8), Fp(9), \
              Fp(10), Fp(11), Fp(12), Fp(13), Fp(14), Fp(15), Fp(16), Fp(17)]
     us = [Fp(4), Fp(2), Fp(3), Fp(0)]
+
+    # # A simple instance f(x) = y
+    # evals = [Fp(2), Fp(3), Fp(4), Fp(5), Fp(6), Fp(7), Fp(8), Fp(9)]
+    # us = [Fp(3), Fp(2), Fp(2)]
+
     eqs = MLEPolynomial.eqs_over_hypercube(us)
     
     y = inner_product(evals, eqs, Fp.zero())
-    f_mle = MLEPolynomial(evals, 4)
+    f_mle = MLEPolynomial(evals, log_2(len(evals)))
     assert f_mle.evaluate(us) == y
-    print(f"f(x[]) = {y}")
+    print(f"f({us}) = {y}")
     f_cm = pcs.commit(f_mle)
 
     print("🕐 Generating proof ....")

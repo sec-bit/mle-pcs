@@ -12,6 +12,7 @@ class Scalar:
         return f"Scalar({self.value})"
     
 def inner_product(a, b, z):
+    assert len(a) == len(b), "a and b must have the same length"
     return sum([a[i] * b[i] for i in range(len(a))], z)
 
 ## NOTE: Copy from py_ecc.utils
