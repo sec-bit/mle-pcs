@@ -6,7 +6,7 @@
 
 from utils import is_power_of_two, log_2
 from random import randint
-from mle2 import MLEPolynomial      
+from mle2 import MLEPolynomial
 from unipoly2 import UniPolynomial, UniPolynomialWithFft    
 from merkle import MerkleTree, verify_decommitment
 from merlin.merlin_transcript import MerlinTranscript
@@ -36,13 +36,20 @@ class FoldableCoder:
     def setup_tables(k0, c, depth):
         """
         Setup the parameters for the basefold encoding.
+
+        Args:
+            k0 (int): The size of each chunk in the message.
+            c (int): Blowup factor.
+            depth (int): The depth of the randomized table.
+
+        Returns:
+            list: The randomized table.
         """
-        t = []
-        l = k0 * c
-        for d in range(depth):
-            t.append([Fp.random_element() for _ in range(l)])
-            l = l * 2
-        return t
+        tables = [[Fp.random()]]
+        tables += [[Fp.random() for _ in range(1 << (i - 1))] for i in range(1, depth + log_2(k0 * c) + 1)]
+        for i in range(1, depth + log_2(k0 * c) + 1):
+            tables[i] += [-e for e in tables[i]]
+        return tables
     
     @staticmethod
     def rep_encode(m, k0, c):
@@ -61,7 +68,7 @@ class FoldableCoder:
             AssertionError: If k0 or c is not positive, or if the length of m is not a multiple of k0.
         """
         assert k0 > 0 and c > 0, f"k0 <= 0 or c <= 0, k0: {k0}, c: {c}"
-        assert len(m) % k0 == 0, "len(m): %d is not a multiple of k0: %d" % (len(m), k0)
+        assert len(m) == k0, "len(m): %d is not equal to k0: %d" % (len(m), k0)
         code = []
         for i in range(0, c*len(m), k0):
             for j in range(0, c):
@@ -104,6 +111,7 @@ class FoldableCoder:
         n0 = k0 * blowup_factor
         kd = len(m)
         depth = log_2(kd // k0)
+        assert self.depth == depth, f"self.depth: {self.depth} != depth: {depth}"
 
         if debug: print(f">>> basefold_encode: m={m}, k0={k0}, d={depth}, blowup_factor={blowup_factor}")
 
@@ -131,8 +139,8 @@ class FoldableCoder:
         if debug: print(">>> basefold_encode: chunk_num=", chunk_num)
 
         for i in range(0, depth):
-            table = T[i]
-            assert len(table) == chunk_size, f"table[{i}] != chunk_size, len(table)={len(table)}, chunk_size={chunk_size}"
+            table = T[log_2(chunk_size) + 1]
+            assert len(table) == chunk_size * 2, f"table[{i}] != chunk_size * 2, len(table)={len(table)}, chunk_size={chunk_size}"
             if debug: print(f">>> basefold_encode: table={table}")
             for c in range(0, chunk_num, 2):
                 left  = code[    c*chunk_size : (c+1)*chunk_size]
@@ -157,7 +165,7 @@ class FoldableRSCoder(FoldableCoder):
         self.depth = depth
         self.blowup_factor = c
         self.tables = self.setup_rs_tables(k0, c, depth)
-        self.generator_func = self.rs_encode_k0_1
+        self.generator_func = self.rs_encode
 
     @staticmethod
     def rs_encode(m: list[Fp], k0: int, c: int) -> list[Fp]:
@@ -186,15 +194,16 @@ class FoldableRSCoder(FoldableCoder):
         """
             T = 
         """
-        nd = k0 * (2**depth) * c
-        print(f"k0={k0}, depth={depth}, c={c}, nd={nd}")
-        T = []
-        omega = Fp.nth_root_of_unity(nd)
-        for i in range(depth):
-            domain_size = k0 * c * 2**(i+1)
-            omega = Fp.nth_root_of_unity(domain_size)
-            T.append([omega**j for j in range(domain_size//2)])
-        return T 
+        T = [[Fp.one()]]
+        for i in range(1, depth + log_2(k0 * c) + 1):
+            base = Fp.one()
+            omega = Fp.nth_root_of_unity(1 << i)
+            level = []
+            for j in range(1 << i):
+                level.append(base)
+                base *= omega
+            T.append(level)
+        return T
 
 class BASEFOLD_PCS:
 
@@ -216,11 +225,8 @@ class BASEFOLD_PCS:
         n = len(vs)
         assert is_power_of_two(n), "len(vs) is not a power of two"
         enc = self.encoder
-        k0 = enc.k0
-        c = enc.blowup_factor
-        d = log_2(n // (c * k0))
-        table = enc.tables[d-1]
-        assert len(table) == len(vs)/2, f"len(table) is not double len(vs), len(table) = {len(table)}, len(vs) = {len(vs)}"
+        table = enc.tables[log_2(n)]
+        assert len(table) == len(vs), f"len(table) is not double len(vs), len(table) = {len(table)}, len(vs) = {len(vs)}"
         half = n // 2
         left = vs[:half]
         right = vs[half:]
@@ -231,12 +237,9 @@ class BASEFOLD_PCS:
         n = len(vs)
         assert is_power_of_two(n), "len(vs) is not a power of two"
 
-        k0 = self.encoder.k0
-        c = self.encoder.blowup_factor
-        d = log_2(n // (c * k0))
-        table = self.encoder.tables[d-1]
+        table = self.encoder.tables[log_2(n)]
 
-        assert len(table) == len(vs)/2, f"len(table) is not double len(vs), len(table) = {len(table)}, len(vs) = {len(vs)}"
+        assert len(table) == len(vs), f"len(table) is not double len(vs), len(table) = {len(table)}, len(vs) = {len(vs)}"
         half = n // 2
         left = vs[:half]
         right = vs[half:]
@@ -249,6 +252,8 @@ class BASEFOLD_PCS:
         """
         evals = f_mle.evals
         d = f_mle.num_var
+        assert d > 0, "d must be greater than 0"
+        assert len(evals) % self.encoder.k0 == 0, "len(evals) is not a multiple of k0"
         kd = len(evals)
 
         f_code = self.encoder.encode(evals)
@@ -630,7 +635,6 @@ class BASEFOLD_PCS:
                 print(f"V> check merkle_path-{i} passed")
 
         # Verify the foldings
-        tables = self.encoder.tables[::-1]
         for i, (indices, cur_query) in enumerate(zip(query_indices, query_paths)):
             half = f0_code_len//2
             for j, idx in enumerate(indices):
@@ -641,7 +645,7 @@ class BASEFOLD_PCS:
                 
                 # print(f"table={tables[j]}, x0={x0}, c0={c0}, c1={c1}, r={r}")
 
-                folded_value = (Fp(1)-r) * (c0 + c1) / Fp(2) + r * (c0 - c1) / (Fp(2) * tables[j][x0]) 
+                folded_value = (Fp(1)-r) * (c0 + c1) / Fp(2) + r * (c0 - c1) / (Fp(2) * self.encoder.tables[log_2(half) + 1][x0]) 
                 next_pair= cur_query[j+1] if j<len(indices)-1 else (final_constant, final_constant)
                 half >>= 1
                 if next_index < half:
@@ -689,7 +693,7 @@ def test_prove_verify_random():
     blowup_factor_log2 = randint(1, 3)
     log_n = 10
 
-    encoder = FoldableRSCoder(k0=1, depth=log_n, c=2 ** blowup_factor_log2)
+    encoder = FoldableCoder(k0=1, depth=log_n, c=2 ** blowup_factor_log2)
 
     # print(f"encoder.tables={encoder.tables}")
     pcs = BASEFOLD_PCS(encoder, debug=2)
@@ -719,4 +723,4 @@ def test_prove_verify_random():
 
 if __name__ == '__main__':
 
-    test_prove_verify_random()
+    test_prove_verify()
