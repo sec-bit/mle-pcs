@@ -11,7 +11,7 @@ $$
 \tilde{f}(X_0, X_1, \ldots, X_{d-1}) = f_0 + f_1X_0 + f_2X_1 + f_3X_0X_1 + \cdots + f_{2^d-1}X_{d-1} 
 $$
 
-由于 $\tilde{f}(X)$ 是一个多元多项式（Multivariate Polynomial），总共有 $d-1$ 个未知数，那么它的系数向量长度为 $2^d$ 。记住这里我们选择 Lexicographic Order 作为多项式的排序方式。
+由于 $\tilde{f}(X)$ 是一个多元多项式（Multivariate Polynomial），总共有 $d$ 个未知数，那么它的系数向量长度为 $2^d$ 。记住这里我们选择 Lexicographic Order 作为多项式的排序方式。
 
 我们对 $\tilde{f}(\mathbf{X})$ 的系数向量 $\mathbf{f}$ 进行编码， 得到 codeword $c_\mathbf{f}=\mathsf{Enc}(\mathbf{f})$ ，长度为 $n_d$。然后使用 Hash-based Merkle Tree 产生承诺：
 

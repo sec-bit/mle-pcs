@@ -13,7 +13,7 @@ $$
 \tilde{f}(X_0, X_1, \ldots, X_{d-1}) = f_0 + f_1X_0 + f_2X_1 + f_3X_0X_1 + \cdots + f_{2^d-1}X_{d-1} 
 $$
 
-Since $\tilde{f}(X)$ is a multivariate polynomial, there are $d-1$ unknowns, making the length of its coefficient vector $2^d$. Note that we choose the Lexicographic Order as the sorting method for the polynomial.
+Since $\tilde{f}(X)$ is a multivariate polynomial, there are $d$ unknowns, making the length of its coefficient vector $2^d$. Note that we choose the Lexicographic Order as the sorting method for the polynomial.
 
 We encode the coefficient vector $\mathbf{f}$ of $\tilde{f}(\mathbf{X})$ to obtain the codeword $c_\mathbf{f} = \mathsf{Enc}(\mathbf{f})$, which has a length of $n_d$. Then, we use a Hash-based Merkle Tree to generate the commitment:
 

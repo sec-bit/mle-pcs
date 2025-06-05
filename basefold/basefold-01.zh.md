@@ -162,7 +162,7 @@ $$
 事实上如后文所示，这个 Foldable Code 编码过程正是 RS-Code 的一个泛化扩展（Generalization）。
 
 而我们可以继续递归地构造 $G_2, G_3, \ldots, G_d$，最终得到线性编码 
- $C_d: \mathbb{F}_p^{k_0}\to\mathbb{F}_p^{n}$ ，其中消息长度 $k=k_0\cdot 2^d$，编码长度 $n=c\cdot k_0\cdot 2^{d}$。码率为 $\rho=\frac{1}{R}$， 这里 $k_0$ 为基础编码的消息长度，$n_0$ 为基础编码长度，而基础编码的选择则非常灵活。
+ $C_d: \mathbb{F}_p^{k}\to\mathbb{F}_p^{n}$ ，其中消息长度 $k=k_0\cdot 2^d$，编码长度 $n=c\cdot k_0\cdot 2^{d}$。码率为 $\rho=\frac{1}{R}$， 这里 $k_0$ 为基础编码的消息长度，$n_0$ 为基础编码长度，而基础编码的选择则非常灵活。
 
 我们沿用符号 $G_d$ 表示 $C_d$ 的编码矩阵（或称为生成矩阵） $G_d\in\mathbb{F}_p^{k\times n}$，那么对于 $i\in\{1,2,\ldots,d\}$ ，我们有下面的递归关系：
 

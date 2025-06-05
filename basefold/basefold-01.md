@@ -164,7 +164,7 @@ $$
 In fact, as illustrated later, the encoding process of Foldable Codes is a generalized extension of RS-Code.
 
 We can further recursively construct $G_2, G_3, \ldots, G_d$, eventually obtaining a linear code 
-$C_d: \mathbb{F}_p^{k_0}\to\mathbb{F}_p^{n}$, where the message length is $k=k_0\cdot 2^d$, and the encoding length is $n=c\cdot k_0\cdot 2^{d}$. The code rate is $\rho=\frac{1}{R}$, where $k_0$ is the message length of the base encoding, $n_0$ is the base encoding length, and the choice of the base encoding is highly flexible.
+$C_d: \mathbb{F}_p^{k}\to\mathbb{F}_p^{n}$, where the message length is $k=k_0\cdot 2^d$, and the encoding length is $n=c\cdot k_0\cdot 2^{d}$. The code rate is $\rho=\frac{1}{R}$, where $k_0$ is the message length of the base encoding, $n_0$ is the base encoding length, and the choice of the base encoding is highly flexible.
 
 We use the symbol $G_d$ to denote the encoding matrix (or generator matrix) of $C_d$, $G_d\in\mathbb{F}_p^{k\times n}$. For $i\in\{1,2,\ldots,d\}$, we have the following recursive relation:
 
