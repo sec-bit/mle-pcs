@@ -4,7 +4,7 @@
 # It is intended for educational and research purposes only.
 # DO NOT use it in a production environment.
 
-from utils import log_2, next_power_of_two
+from utils import log_2, next_power_of_two, query_num, delta_johnson_bound
 from utils import inner_product, Scalar
 
 # WARNING: 
@@ -80,10 +80,14 @@ def rs_encode(f: list[Field], coset: Field, blowup_factor: int) -> list[Field]:
 
 class BASEFOLD_RS_PCS:
 
-    blowup_factor = 2 # WARNING: this is not secure
-    num_queries = 6   # WARNING: this is not secure
+    blowup_factor = 8
     coset_gen = Field.multiplicative_generator()
     max_queries_try = 1000  # NOTE: change it to a practical number
+    security_bits = 128
+
+    @property
+    def num_queries(self):
+        return query_num(self.blowup_factor, self.security_bits, delta_johnson_bound)
 
     def __init__(self, oracle, debug: int = 0):
         """
@@ -481,13 +485,14 @@ def test_pcs():
     tr = MerlinTranscript(b"basefold-rs-pcs")
 
     # A simple instance f(x) = y
-    evals = [Field(2), Field(3), Field(4), Field(5), Field(6), Field(7), Field(8), Field(9), \
-             Field(10), Field(11), Field(12), Field(13), Field(14), Field(15), Field(16), Field(17)]
-    us = [Field(4), Field(2), Field(3), Field(0)]
+    log_n = 10
+    evals = [Field.random() for _ in range(1 << log_n)]
+    us = [Field.random() for _ in range(log_n)]
+    MLEPolynomial.set_field_type(Field)
     eqs = MLEPolynomial.eqs_over_hypercube(us)
     
     y = inner_product(evals, eqs, Field.zero())
-    f_mle = MLEPolynomial(evals, 4)
+    f_mle = MLEPolynomial(evals, log_n)
     assert f_mle.evaluate(us) == y
     print(f"f(x[]) = {y}")
     f_cm = pcs.commit(f_mle)

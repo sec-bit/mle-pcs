@@ -248,6 +248,7 @@ def prove_basefold_evaluation_arg_multilinear_basis(f_code, f_evals, us, v, k, k
     assert len(T) == k, "wrong table size, k={}, len(T)={}".format(k, len(T))
     f_code_copy = f_code[:]
     f = f_evals[:]
+    MLEPolynomial.set_field_type(Fp)
     eq = MLEPolynomial.eqs_over_hypercube(us)
 
     challenge_vec = []

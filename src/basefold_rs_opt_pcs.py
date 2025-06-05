@@ -4,8 +4,7 @@
 # It is intended for educational and research purposes only. 
 # DO NOT use it in a production environment.
 
-from utils import log_2, next_power_of_two
-from utils import inner_product, Scalar
+from utils import log_2, next_power_of_two, query_num, delta_johnson_bound
 
 # Implementation of Basefold (RS encoding) with simplified sumcheck, which is 
 #   inspired by DeepFold [GLH+25].
@@ -128,7 +127,7 @@ class BASEFOLD_RS_PCS:
 
     @property
     def num_queries(self):
-        return self.security_bits // log_2(self.blowup_factor) + 1
+        return query_num(self.blowup_factor, self.security_bits, delta_johnson_bound)
 
     def __init__(self, oracle, debug: int = 0):
         """

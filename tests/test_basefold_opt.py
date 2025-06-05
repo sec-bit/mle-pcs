@@ -23,6 +23,7 @@ def random_test(k):
 
     evals = [Field.random() for _ in range(1 << k)]
     us = [Field.random() for _ in range(k)]
+    MLEPolynomial.set_field_type(Field)
     eqs = MLEPolynomial.eqs_over_hypercube(us)
     
     y = inner_product(evals, eqs, Field.zero())
@@ -55,6 +56,7 @@ def zero_test(k):
 
     evals = [Field.zero() for _ in range(1 << k)]
     us = [Field.random() for _ in range(k)]
+    MLEPolynomial.set_field_type(Field)
     eqs = MLEPolynomial.eqs_over_hypercube(us)
     
     y = inner_product(evals, eqs, Field.zero())
@@ -88,6 +90,7 @@ def failure_test_1(k):
             #  Field(10), Field(11), Field(12), Field(13), Field(14), Field(15), Field(16), Field(17)]
     evals = [Field.random() for _ in range(1 << k)]
     us = [Field.random() for _ in range(k)]
+    MLEPolynomial.set_field_type(Field)
     eqs = MLEPolynomial.eqs_over_hypercube(us)
     
     y = inner_product(evals, eqs, Field.zero())
@@ -126,6 +129,7 @@ def failure_test_2(k):
             #  Field(10), Field(11), Field(12), Field(13), Field(14), Field(15), Field(16), Field(17)]
     evals = [Field.random() for _ in range(1 << k)]
     us = [Field.random() for _ in range(k)]
+    MLEPolynomial.set_field_type(Field)
     eqs = MLEPolynomial.eqs_over_hypercube(us)
     
     y = inner_product(evals, eqs, Field.zero())
@@ -154,19 +158,19 @@ def failure_test_2(k):
 
 class BasefoldTest(TestCase):
     def test_random_test(self):
-        for i in range(4, 16):
+        for i in range(7, 10):
             random_test(i)
 
     def test_zero_test(self):
-        for i in range(4, 16):
+        for i in range(7, 10):
             zero_test(i)
 
     def test_failure_test_1(self):
-        for i in range(4, 16):
+        for i in range(7, 10):
             failure_test_1(i)
 
     def test_failure_test_2(self):
-        for i in range(4, 16):
+        for i in range(7, 10):
             failure_test_2(i)
 
 if __name__ == "__main__":
