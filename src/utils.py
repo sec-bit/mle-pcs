@@ -161,6 +161,7 @@ def delta_list_decoding(rho):
 
 def query_num(blowup_factor, security_bits, delta_func):
     from math import log2
+    assert blowup_factor > 1, "blowup_factor must be greater than 1"
     delta = delta_func(1 / blowup_factor)
     return int(security_bits / (-log2(1 - delta))) + 1
 

@@ -143,30 +143,62 @@ class BasefoldPCSTest(TestCase):
 
     def test_fold_with_multilinear_basis(self):
         k0 = 4
-        c = 1
+        c = 2
         n = 16
         m = [Fp.random() for _ in range(n)]
         pcs = BASEFOLD_PCS(FoldableCoder(k0, c, log_2(n // k0)))
         r = Fp.random()
         folded = pcs.fold_with_multilinear_basis(m, r)
         self.assertEqual(len(folded), n // 2)
+        two = Fp(2)
         for i in range(n // 2):
-            fe = (m[i] + m[i + n // 2]) / 2
-            fo = (m[i] - m[i + n // 2]) / (2 * pcs.encoder.tables[-1][i])
+            fe = (m[i] + m[i + n // 2]) / two
+            fo = (m[i] - m[i + n // 2]) / (two * pcs.encoder.tables[log_2(n)][i])
+            self.assertEqual(folded[i], (1 - r) * fe + r * fo)
+
+    def test_fold_with_multilinear_basis_rs(self):
+        k0 = 4
+        c = 2
+        n = 16
+        m = [Fp.random() for _ in range(n)]
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, log_2(n // k0)))
+        r = Fp.random()
+        folded = pcs.fold_with_multilinear_basis(m, r)
+        self.assertEqual(len(folded), n // 2)
+        two = Fp(2)
+        for i in range(n // 2):
+            fe = (m[i] + m[i + n // 2]) / two
+            fo = (m[i] - m[i + n // 2]) / (two * pcs.encoder.tables[log_2(n)][i])
             self.assertEqual(folded[i], (1 - r) * fe + r * fo)
 
     def test_fold_with_monomial_basis(self):
         k0 = 4
-        c = 1
+        c = 2
         n = 16
         m = [Fp.random() for _ in range(n)]
         pcs = BASEFOLD_PCS(FoldableCoder(k0, c, log_2(n // k0)))
         r = Fp.random()
         folded = pcs.fold_with_monomial_basis(m, r)
         self.assertEqual(len(folded), n // 2)
+        two = Fp(2)
         for i in range(n // 2):
-            fe = (m[i] + m[i + n // 2]) / 2
-            fo = (m[i] - m[i + n // 2]) / (2 * pcs.encoder.tables[-1][i])
+            fe = (m[i] + m[i + n // 2]) / two
+            fo = (m[i] - m[i + n // 2]) / (two * pcs.encoder.tables[log_2(n)][i])
+            self.assertEqual(folded[i], fe + r * fo)
+
+    def test_fold_with_monomial_basis_rs(self):
+        k0 = 4
+        c = 2
+        n = 16
+        m = [Fp.random() for _ in range(n)]
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, log_2(n // k0)))
+        r = Fp.random()
+        folded = pcs.fold_with_monomial_basis(m, r)
+        self.assertEqual(len(folded), n // 2)
+        two = Fp(2)
+        for i in range(n // 2):
+            fe = (m[i] + m[i + n // 2]) / two
+            fo = (m[i] - m[i + n // 2]) / (two * pcs.encoder.tables[log_2(n)][i])
             self.assertEqual(folded[i], fe + r * fo)
 
     def test_commit(self):
@@ -179,6 +211,16 @@ class BasefoldPCSTest(TestCase):
         f_mle = MLEPolynomial(m, log_2(n))
         pcs.commit(f_mle)
 
+    def test_commit_rs(self):
+        k0 = 4
+        c = 2
+        n = 16
+        depth = log_2(n // k0)
+        m = [Fp.random() for _ in range(n)]
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, depth))
+        f_mle = MLEPolynomial(m, log_2(n))
+        pcs.commit(f_mle)
+
     def test_commit_fail_1(self):
         k0 = 4
         c = 2
@@ -186,6 +228,17 @@ class BasefoldPCSTest(TestCase):
         depth = log_2(n // k0)
         m = [Fp.random() for _ in range(n * 2)]
         pcs = BASEFOLD_PCS(FoldableCoder(k0, c, depth))
+        f_mle = MLEPolynomial(m, log_2(n) + 1)
+        with self.assertRaises(AssertionError):
+            pcs.commit(f_mle)
+
+    def test_commit_fail_1_rs(self):
+        k0 = 4
+        c = 2
+        n = 16
+        depth = log_2(n // k0)
+        m = [Fp.random() for _ in range(n * 2)]
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, depth))
         f_mle = MLEPolynomial(m, log_2(n) + 1)
         with self.assertRaises(AssertionError):
             pcs.commit(f_mle)
@@ -201,6 +254,17 @@ class BasefoldPCSTest(TestCase):
         with self.assertRaises(AssertionError):
             pcs.commit(f_mle)
 
+    def test_commit_fail_2_rs(self):
+        k0 = 4
+        c = 2
+        n = 16
+        depth = log_2(n // k0)
+        m = [Fp.random()]
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, depth))
+        f_mle = MLEPolynomial(m, 0)
+        with self.assertRaises(AssertionError):
+            pcs.commit(f_mle)
+
     def test_commit_fail_3(self):
         k0 = 1
         c = 2
@@ -211,6 +275,16 @@ class BasefoldPCSTest(TestCase):
         with self.assertRaises(AssertionError):
             pcs.commit(MLEPolynomial(m, log_2(n)))
 
+    def test_commit_fail_3_rs(self):
+        k0 = 1
+        c = 2
+        n = 1
+        depth = log_2(n // k0)
+        m = [Fp.random() for _ in range(n)]
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, depth))
+        with self.assertRaises(AssertionError):
+            pcs.commit(MLEPolynomial(m, log_2(n)))
+
     def test_commit_fail_4(self):
         k0 = 4
         c = 2
@@ -218,6 +292,16 @@ class BasefoldPCSTest(TestCase):
         depth = 1
         m = [Fp.random() for _ in range(n)]
         pcs = BASEFOLD_PCS(FoldableCoder(k0, c, depth))
+        with self.assertRaises(AssertionError):
+            pcs.commit(MLEPolynomial(m, log_2(n)))
+
+    def test_commit_fail_4_rs(self):
+        k0 = 4
+        c = 2
+        n = 1
+        depth = 1
+        m = [Fp.random() for _ in range(n)]
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, depth))
         with self.assertRaises(AssertionError):
             pcs.commit(MLEPolynomial(m, log_2(n)))
 
@@ -235,9 +319,41 @@ class BasefoldPCSTest(TestCase):
         v, arg = pcs.prove_eval(comm, f_mle, us, tr.fork(b"fork"))
         self.assertEqual(v, f_mle.evaluate(us), f"v != f_mle.evaluate(us), {v} != {f_mle.evaluate(us)}")
 
+    def test_prove_eval_rs(self):
+        k0 = 1
+        c = 2
+        n = 16
+        depth = log_2(n // k0)
+        m = [Fp.random() for _ in range(n)]
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, depth))
+        comm = pcs.commit(MLEPolynomial(m, log_2(n)))
+        tr = MerlinTranscript(b"test_basefold_pcs")
+        us = [Fp.random() for _ in range(log_2(n))]
+        f_mle = MLEPolynomial(m, log_2(n))
+        v, arg = pcs.prove_eval(comm, f_mle, us, tr.fork(b"fork"))
+        self.assertEqual(v, f_mle.evaluate(us), f"v != f_mle.evaluate(us), {v} != {f_mle.evaluate(us)}")
+
     def test_prove_eval_no_blowup(self):
         k0 = 1
         c = 1
+        n = 16
+        depth = log_2(n // k0)
+        m = [Fp.random() for _ in range(n)]
+        with self.assertRaises(AssertionError): # blowup_factor must be greater than 1
+            BASEFOLD_PCS(FoldableCoder(k0, c, depth))
+
+    def test_prove_eval_no_blowup_rs(self):
+        k0 = 1
+        c = 1
+        n = 16
+        depth = log_2(n // k0)
+        m = [Fp.random() for _ in range(n)]
+        with self.assertRaises(AssertionError): # blowup_factor must be greater than 1
+            BASEFOLD_PCS(FoldableRSCoder(k0, c, depth))
+
+    def test_prove_eval_k0_1(self):
+        k0 = 1
+        c = 2
         n = 16
         depth = log_2(n // k0)
         m = [Fp.random() for _ in range(n)]
@@ -249,13 +365,13 @@ class BasefoldPCSTest(TestCase):
         v, arg = pcs.prove_eval(comm, f_mle, us, tr.fork(b"fork"))
         self.assertEqual(v, f_mle.evaluate(us), f"v != f_mle.evaluate(us), {v} != {f_mle.evaluate(us)}")
 
-    def test_prove_eval_k0_1(self):
+    def test_prove_eval_k0_1_rs(self):
         k0 = 1
         c = 2
         n = 16
         depth = log_2(n // k0)
         m = [Fp.random() for _ in range(n)]
-        pcs = BASEFOLD_PCS(FoldableCoder(k0, c, depth))
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, depth))
         comm = pcs.commit(MLEPolynomial(m, log_2(n)))
         tr = MerlinTranscript(b"test_basefold_pcs")
         us = [Fp.random() for _ in range(log_2(n))]
@@ -278,6 +394,21 @@ class BasefoldPCSTest(TestCase):
         self.assertEqual(v, f_mle.evaluate(us), f"v != f_mle.evaluate(us), {v} != {f_mle.evaluate(us)}")
         self.assertTrue(pcs.verify_eval(comm, us, v, arg, tr.fork(b"fork")))
 
+    def test_verify_eval_rs(self):
+        k0 = 1
+        c = 2
+        n = 16
+        depth = log_2(n // k0)
+        m = [Fp.random() for _ in range(n)]
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, depth))
+        comm = pcs.commit(MLEPolynomial(m, log_2(n)))
+        tr = MerlinTranscript(b"test_basefold_pcs")
+        us = [Fp.random() for _ in range(log_2(n))]
+        f_mle = MLEPolynomial(m, log_2(n))
+        v, arg = pcs.prove_eval(comm, f_mle, us, tr.fork(b"fork"))
+        self.assertEqual(v, f_mle.evaluate(us), f"v != f_mle.evaluate(us), {v} != {f_mle.evaluate(us)}")
+        self.assertTrue(pcs.verify_eval(comm, us, v, arg, tr.fork(b"fork")))
+
     def test_verify_eval_fail_1(self):
         k0 = 1
         c = 2
@@ -285,6 +416,23 @@ class BasefoldPCSTest(TestCase):
         depth = log_2(n // k0)
         m = [Fp.random() for _ in range(n)]
         pcs = BASEFOLD_PCS(FoldableCoder(k0, c, depth))
+        comm = pcs.commit(MLEPolynomial(m, log_2(n)))
+        tr = MerlinTranscript(b"test_basefold_pcs")
+        us = [Fp.random() for _ in range(log_2(n))]
+        f_mle = MLEPolynomial(m, log_2(n))
+        v, arg = pcs.prove_eval(comm, f_mle, us, tr.fork(b"fork"))
+        v = Fp.random()
+        self.assertNotEqual(v, f_mle.evaluate(us), f"v != f_mle.evaluate(us), {v} != {f_mle.evaluate(us)}")
+        with self.assertRaises(AssertionError):
+            pcs.verify_eval(comm, us, v, arg, tr.fork(b"fork"))
+
+    def test_verify_eval_fail_1_rs(self):
+        k0 = 1
+        c = 2
+        n = 16
+        depth = log_2(n // k0)
+        m = [Fp.random() for _ in range(n)]
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, depth))
         comm = pcs.commit(MLEPolynomial(m, log_2(n)))
         tr = MerlinTranscript(b"test_basefold_pcs")
         us = [Fp.random() for _ in range(log_2(n))]
@@ -312,6 +460,23 @@ class BasefoldPCSTest(TestCase):
         with self.assertRaises(AssertionError):
             pcs.verify_eval(comm, us, v, arg, tr.fork(b"fork"))
 
+    def test_verify_eval_fail_2_rs(self):
+        k0 = 1
+        c = 2
+        n = 16
+        depth = log_2(n // k0)
+        m = [Fp.random() for _ in range(n)]
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, depth))
+        comm = pcs.commit(MLEPolynomial(m, log_2(n)))
+        comm.root = 0
+        tr = MerlinTranscript(b"test_basefold_pcs")
+        us = [Fp.random() for _ in range(log_2(n))]
+        f_mle = MLEPolynomial(m, log_2(n))
+        v, arg = pcs.prove_eval(comm, f_mle, us, tr.fork(b"fork"))
+        self.assertEqual(v, f_mle.evaluate(us), f"v != f_mle.evaluate(us), {v} != {f_mle.evaluate(us)}")
+        with self.assertRaises(AssertionError):
+            pcs.verify_eval(comm, us, v, arg, tr.fork(b"fork"))
+
     def test_verify_eval_fail_3(self):
         k0 = 1
         c = 2
@@ -329,6 +494,23 @@ class BasefoldPCSTest(TestCase):
         with self.assertRaises(AssertionError):
             pcs.verify_eval(comm, us, v, arg, tr.fork(b"fork"))
 
+    def test_verify_eval_fail_3_rs(self):
+        k0 = 1
+        c = 2
+        n = 16
+        depth = log_2(n // k0)
+        m = [Fp.random() for _ in range(n)]
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, depth))
+        comm = pcs.commit(MLEPolynomial(m, log_2(n)))
+        tr = MerlinTranscript(b"test_basefold_pcs")
+        us = [Fp.random() for _ in range(log_2(n))]
+        f_mle = MLEPolynomial(m, log_2(n))
+        v, arg = pcs.prove_eval(comm, f_mle, us, tr.fork(b"fork"))
+        arg['final_constant'] = Fp.random()
+        self.assertEqual(v, f_mle.evaluate(us), f"v != f_mle.evaluate(us), {v} != {f_mle.evaluate(us)}")
+        with self.assertRaises(AssertionError):
+            pcs.verify_eval(comm, us, v, arg, tr.fork(b"fork"))
+
     def test_verify_eval_fail_4(self):
         k0 = 1
         c = 2
@@ -336,6 +518,23 @@ class BasefoldPCSTest(TestCase):
         depth = log_2(n // k0)
         m = [Fp.random() for _ in range(n)]
         pcs = BASEFOLD_PCS(FoldableCoder(k0, c, depth))
+        comm = pcs.commit(MLEPolynomial(m, log_2(n)))
+        tr = MerlinTranscript(b"test_basefold_pcs")
+        us = [Fp.random() for _ in range(log_2(n))]
+        f_mle = MLEPolynomial(m, log_2(n))
+        v, arg = pcs.prove_eval(comm, f_mle, us, tr.fork(b"fork"))
+        self.assertEqual(v, f_mle.evaluate(us), f"v != f_mle.evaluate(us), {v} != {f_mle.evaluate(us)}")
+        us = us[:-1]
+        with self.assertRaises(AssertionError):
+            pcs.verify_eval(comm, us, v, arg, tr.fork(b"fork"))
+
+    def test_verify_eval_fail_4_rs(self):
+        k0 = 1
+        c = 2
+        n = 16
+        depth = log_2(n // k0)
+        m = [Fp.random() for _ in range(n)]
+        pcs = BASEFOLD_PCS(FoldableRSCoder(k0, c, depth))
         comm = pcs.commit(MLEPolynomial(m, log_2(n)))
         tr = MerlinTranscript(b"test_basefold_pcs")
         us = [Fp.random() for _ in range(log_2(n))]

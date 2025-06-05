@@ -4,7 +4,7 @@
 # It is intended for educational and research purposes only.
 # DO NOT use it in a production environment.
 
-from utils import is_power_of_two, log_2
+from utils import is_power_of_two, log_2, query_num, delta_uni_decoding, delta_johnson_bound
 from random import randint
 from mle2 import MLEPolynomial
 from unipoly2 import UniPolynomial, UniPolynomialWithFft    
@@ -111,7 +111,7 @@ class FoldableCoder:
         n0 = k0 * blowup_factor
         kd = len(m)
         depth = log_2(kd // k0)
-        assert self.depth == depth, f"self.depth: {self.depth} != depth: {depth}"
+        assert self.depth >= depth, f"self.depth: {self.depth} >= depth: {depth}"
 
         if debug: print(f">>> basefold_encode: m={m}, k0={k0}, d={depth}, blowup_factor={blowup_factor}")
 
@@ -209,6 +209,7 @@ class BASEFOLD_PCS:
 
     # TODO: make this configurable
     num_queries = 3
+    security_bits = 100
 
     def __init__(self, encoder: FoldableCoder, debug: int = 0):
         """
@@ -217,6 +218,9 @@ class BASEFOLD_PCS:
         """
         self.debug = debug
         self.encoder = encoder
+        use_rscode = isinstance(encoder, FoldableRSCoder)
+        delta_func = delta_johnson_bound if use_rscode else delta_uni_decoding
+        self.num_queries = query_num(encoder.blowup_factor, self.security_bits, delta_func)
 
     # def encode(self, m: list[Fp], k0: int, depth: int, c: int, T: list[list[Fp]], G0=rep_encode, debug=False):
     #     pass
