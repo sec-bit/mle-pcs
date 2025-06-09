@@ -52,14 +52,14 @@ The Proof of Proximity protocol consists of two phases: the Commit-phase and the
 
 ## Commit-phase
 
-First, we explain the Commit-phase. The Prover performs multiple foldings of the encoded $\pi_d$ (with length $n_d$), obtaining codewords of lengths $n_{d-1}, \ldots, n_0$, denoted as $(\pi_{d-1}, \pi_{d-2}, \ldots, \pi_0)$, and then sends them to the Verifier.
+First, we explain the Commit-phase. The Prover performs multiple foldings of the encoded $\pi_d$ (with length $n_d$), obtaining codewords of lengths $n_{d-1}, \ldots, n_0$, denoted as $(\pi_{d-1}, \pi_{d-2}, \ldots, \pi_0)$, and then sends them to the Verifier. We should note that length of the all the codewords $n_{d-1}, \ldots, n_0$ has to be a power of 2.
 
 Remember that this is an interactive protocol with a total of $d$ rounds of interaction. In each round (assume the $i$-th round, $0 \leq i < d$), the Prover folds $\pi_{i+1}$ based on the random scalar $\alpha_{i}$ sent by the Verifier to obtain a new codeword, denoted as $\pi_{i}$. After $d$ rounds, the Prover obtains a codeword of length $n_0$, denoted as $\pi_0$. The Prover then commits to each $(\pi_d, \ldots, \pi_0)$ and sends $\mathsf{cm}(\pi_d), \ldots, \mathsf{cm}(\pi_0)$ as the output of $\mathsf{IOPP.Commit}$.
 
 Next, we analyze the technical details of a single folding $\pi_{i}$. Suppose $\pi_{i}\in C_i$ is a legitimate codeword (i.e., satisfying $\pi_{i} = \mathbf{m}G_i$), with length $n_i$:
 
 $$
-\pi_i = (c_0, c_1, c_2, \ldots, c_{n_{i}-1})
+\pi_i = (c_0, c_1, c_2, \ldots, c_{n_{i}-1}) \qquad                       0 \leq i \leq d   
 $$
 
 We split this vector into two parts and stack them:
@@ -76,7 +76,7 @@ $$
 At this point, the Verifier needs to provide a random scalar $\alpha^{(i)}$. We perform a random linear combination of the two rows, or in other words, fold them:
 
 $$
-\pi_{i-1} = \big(\mathsf{fold}_{\alpha_i}(c_0, c_{n_{i-1}}), \mathsf{fold}_{\alpha_i}(c_1, c_{n_{i-1}+1}), \ldots, \mathsf{fold}_{\alpha_i}(c_{n_{i-1}}, c_{n_{i}-1})\big)
+\pi_{i-1} = \big(\mathsf{fold}_{\alpha_i}(c_0, c_{n_{i-1}}), \mathsf{fold}_{\alpha_i}(c_1, c_{n_{i-1}+1}), \ldots, \mathsf{fold}_{\alpha_i}(c_{n_{i-1}-1}, c_{n_{i}-1})\big)
 $$
 
 The above is the folded vector $\pi_{i-1}$. Assuming the Prover is honest, the folded vector should be a legitimate $C_{i-1}$ codeword. The function $\mathsf{fold}_{\alpha_i}$ in the above equation is defined as follows:
@@ -177,10 +177,10 @@ Below, we walk through a simple example to illustrate how the Commit-phase of th
 
 **Second Round:** Prover computes $\pi_2 = \mathsf{fold}_\alpha(\pi_3)$ and sends it to the Verifier
 
-The process of computing $\pi_2$ is as follows:
+The process of computing $\pi_2$ is as follows ( we have assumed the length of coefficient vector and encoded vector to be equal for simplifying the explanation):
 
 $$
-\pi_2[j] = \mathsf{fold}_\alpha(\pi_3[j], \pi_3[j+4]), \quad j\in\{0, 1, 2, 3\}
+\pi_2[j] = \mathsf{fold}_\alpha(\pi_3[j], \pi_3[j+4]), \quad j\in\{0, 1, 2, 3\} 
 $$
 
 The computed $\pi_2 = \mathsf{Enc}_2(f^{(2)})$, meaning $\pi_2$ is the codeword of $f^{(2)}$, where $f^{(2)}$ is the folding of $f$ with respect to $\alpha_2$:
