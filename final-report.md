@@ -196,24 +196,12 @@ To improve efficiency, many implementations use polynomial rings to implement Aj
 
 Based on different implementation methods, MLE-PCS can be categorized as follows:
 
-- Quotienting
-- Split-and-fold
-- Inner-product
-- Sumcheck
-
 | Principle         | Schemes                        |
 |-------------------|--------------------------------|
 | Quotienting       | PST13(Libra-PCS), Zeromorph, Zeromorph-FRI    |    
 | Sumcheck          | Basefold, Deepfold, WHIR, Ligerito, FRI-Binius |  
 | Split-and-fold    | Gemini, HyperKZG, Gemini-fri, Hyperwolf |
 | Inner-product     | Ligero, Hyrax, Σ-Check, PH23-kzg, Virgo-PCS, Mercury, Samaritan,  GreyHound | 
-
-
-<!-- |                 | Quotienting          | Split-and-fold   | Inner-product                | Sumcheck                             |
-| --------------- | -------------------- | ---------------- | ---------------------------- | ------------------------------------ |
-| KZG10           | Libra-PCS, zeromorph | Gemini, hyperKZG | PH23-kzg, mercury, samaritan |                                      |
-| FRI             | zeromorph-fri        | gemini-fri       | Virgo, PH23-fri              | Basefold, Deepfold, WHIR, FRI-Binius |
-| Pedersen Commitment |                      |                  | Hyrax, Σ-Check               |     -->
 
 #### Quotienting
 
@@ -427,25 +415,6 @@ f(X) = \sum_{i=0}^{2^n-1} f_i \cdot X^i
 $$
 
 So the split-and-fold technique can be applied directly to $f(X)$, with a process identical to the FRI protocol, except that the folding coefficient is not a random number but $u_i$. This eventually transforms into a constant polynomial, and the result should equal the value of $\tilde{f}$ at point $(u_0, \ldots, u_{n - 1})$, i.e., equal to $v$. In this process, the verifier needs to verify the correctness of each fold, which can be done by randomly challenging some points. This can be implemented through univariate-PCS, which can interface with KZG10 or FRI.
-
-
-These protocols transform MLE-PCS into univariate-PCS through the above methods, and can be further classified into three categories based on the univariate-PCS they use:
-
-- KZG10
-- FRI 
-- Bulletproofs-Inner Product Argument
-
-Combining the two classification methods above, the protocols involved in this project are as follows:
-
-<!-- |                 | Quotienting          | Split-and-fold   | Inner-product                | Sumcheck                             |
-| --------------- | -------------------- | ---------------- | ---------------------------- | ------------------------------------ |
-| KZG10           | Libra-PCS, zeromorph | gemini, hyperKZG | PH23-kzg, mercury, samaritan |                                      |
-| FRI             | zeromorph-fri        | gemini-fri       | Virgo, PH23-fri              | Basefold, Deepfold, WHIR, FRI-Binius |
-| Bulletproof-IPA |                      |                  | Hyrax, Σ-Check               |                                      | -->
-
-For KZG10-based protocols, we compared the specific operational efficiency of PH23-PCS, zeromorph, and gemini protocols through detailed calculation of finite field multiplication operations, inversion operations, msm operations on elliptic curves, proof size, etc. This part will be explained in detail below.
-
-For FRI-based protocols, we have detailed statistics on hash calculations, Merkle tree-related operations, finite field operations, etc., in the basefold protocol and zeromorph-fri protocol. The conclusion is that the basefold protocol is superior to the zeromorph-fri protocol in terms of Prover complexity, Verifier complexity, and Proof Size. Additionally, from the perspective of Verifier query complexity, we compared the Basefold, Deepfold, and WHIR protocols. This will be elaborated in detail below.
 
 ### Classification by MLE Representation Form
 
@@ -992,7 +961,7 @@ Referring to the theoretical analysis in the mercury paper [EG25], and combining
 
 | Protocol          | Prover's cost                                    | Verifier's cost                                  | Proof size                                      |
 | ----------------- | ------------------------------------------------ | ------------------------------------------------ | ----------------------------------------------- |
-| Libra-PCS         | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(1) ~ \mathbb{G}$      | $O(\log N)~ \mathbb{F}, O(1) ~ \mathbb{G}$      |
+| Libra-PCS         | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{G}, O(\log N) ~ \mathbb{P}$ | $O(\log N)~ \mathbb{F}, O(1) ~ \mathbb{G}$      |
 | PH23-KZG          | $O(N\log N) ~ \mathbb{F}, O(N) \mathbb{G}$       | $O(\log N) ~ \mathbb{F}, O(1) ~ \mathbb{G}$      | $O(\log N)~ \mathbb{F}, O(1) ~ \mathbb{G}$      |
 | gemini            | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(n) ~ \mathbb{G}$      | $O(\log N)~ \mathbb{F}, O(\log N) ~ \mathbb{G}$ |
 | hyperKZG          | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(n) ~ \mathbb{G}$      | $O(\log N)~ \mathbb{F}, O(\log N) ~ \mathbb{G}$ |
