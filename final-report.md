@@ -1125,16 +1125,6 @@ $$
 
 ### 对比 Basefold， Deepfold 与 WHIR
 
-
-| Scheme        | Prover's cost                            | Verify                          | Proof Size        |
-| ------------- | ------------------------------ | ------------------------------- | ----------------- |
-| Basefold      | $O(N\log N) ~\mathbb{F} + O(\log N) ~H$  | $O(s_J  \log^2 N) ~ \mathbb{H}$ | $O(s_J \log^2 N)$ |
-| Deepfold      | $O(N \log N) ~\mathbb{F} + O(\log N) ~H$ | $O(s_L  \log^2 N) ~ \mathbb{H}$ | $O(s_L \log^2 N)$ |
-| WHIR          |                                          |                                 |                   |
-| zeromorph-fri | $O(N \log N) ~\mathbb{F} + O(\log N) ~H$ | $O(s_J \log^2 N) ~ \mathbb{H}$  | $O(s_J \log^2 N)$ |
-| gemini-fri    |       |                                 |                   |
-| PH23-fri      |     |                                 |                   |
-
 关于 Basefold、Deepfold 与 WHIR 协议之间的对比在博客文章 [BaseFold vs DeepFold vs WHIR]([mle-pcs/basefold-deepfold-whir/basefold-deepfold-whir.md at main · sec-bit/mle-pcs · GitHub](https://github.com/sec-bit/mle-pcs/blob/main/analysis/basefold-deepfold-whir.md)) 中有详细的描述，这里主要叙述这三个协议的效率对比结果。
 
 Basefold、Deepfold 与 WHIR 协议在协议框架上非常相似，这三个协议的框架都是 BaseFold 协议的框架，用相同的随机数同步进行 sumcheck 协议和 FRI/DEEP-FRI/STIR 协议，它们之间的不同主要也是来自 FRI 协议、DEEP-FRI 协议和 STIR 协议之间的不同。
