@@ -368,7 +368,213 @@ $$
 
 > In this step, the verifier is performing FRI folding queries, randomly checking if the folding is correct, repeating the query $s$ times.
 
-**Step 5**: If all the above checks pass, the verifier outputs $1$, indicating acceptance; otherwise, outputs $0$, indicating rejection.
+**Step 5**: If all the above checks pass, the verifier outputs $1$, indicating acceptance; otherwise, the verifier outputs $0$, indicating rejection.
+
+## Connection Between DeepFold and Sumcheck
+
+Due to the introduction of DEEP-FRI, the DeepFold protocol requires proving the correctness of values of the multilinear polynomial $\tilde{f}$ at specific points in each round. Using $n = 3$ as an example, as shown in the figure below, the Prover needs to prove the values represented by the green parts in the diagram.
+
+![](./img/deepfold-deep.svg)
+
+These value proofs implicitly invoke the sumcheck protocol, continuing until the final step of sumcheck, which requires obtaining the value of $\tilde{f}(r_1, r_2, r_3)$ to conclude the sumcheck protocol. This value is provided by the final step of the FRI protocol.
+
+Below, we illustrate the sumcheck-like proof process in the DeepFold protocol using the example of proving $\tilde{f}(z_1, z_2, z_3) = y$. This process differs from the sumcheck protocol used in Basefold, as shown in the following diagram.
+
+![](./img/deepfold-sumcheck.svg)
+
+We can observe that the two protocols differ in how they construct univariate polynomials and in the equations that the Verifier checks.
+
+### Sumcheck in Basefold
+
+The sumcheck protocol in the Basefold protocol is more intuitive because its summation form is more evident. First, $\tilde{f}(z_1, z_2, z_3)$ is converted into a sum over the boolean hypercube $\{0,1\}^3$:
+
+$$
+\tilde{f}(z_1, z_2, z_3) = \sum_{b_3 = \{0,1\}}\sum_{b_2= \{0,1\}} \sum_{b_1= \{0,1\}} \tilde{f}(b_1, b_2, b_3) \cdot \tilde{eq}((b_1,b_2,b_3), (z_1, z_2, z_3))
+$$
+
+Proving $\tilde{f}(z_1, z_2, z_3) = y$ is transformed into proving:
+
+$$
+\sum_{b_3 = \{0,1\}}\sum_{b_2= \{0,1\}} \sum_{b_1= \{0,1\}} \tilde{f}(b_1, b_2, b_3) \cdot \tilde{eq}((b_1,b_2,b_3), (z_1, z_2, z_3)) = y \tag{6}
+$$
+
+The above equation is a sum of 8 terms. We first convert this 8-term sum problem into two 4-term sum problems, breaking it down into two smaller problems. Then, using a random number $r_1$, we transform these two 4-term sum problems into one 4-term sum problem. This process is as follows:
+
+1. Split: Decompose the sum
+
+$$
+\begin{align}
+ & \sum_{b_3 = \{0,1\}}\sum_{b_2= \{0,1\}} \sum_{b_1= \{0,1\}} \tilde{f}(b_1, b_2, b_3) \cdot \tilde{eq}((b_1,b_2,b_3), (z_1, z_2, z_3))  \\
+  =  & \sum_{b_3 = \{0,1\}}\sum_{b_2= \{0,1\}}  \tilde{f}(0, b_2, b_3) \cdot \tilde{eq}((0,b_2,b_3), (z_1, z_2, z_3)) \\
+ & + \sum_{b_3 = \{0,1\}}\sum_{b_2= \{0,1\}}  \tilde{f}(1, b_2, b_3) \cdot \tilde{eq}((1,b_2,b_3), (z_1, z_2, z_3)) \\  \\
+ := & g_1(0) + g_1(1)
+\end{align}
+$$
+
+Therefore, proving
+
+$$
+\sum_{b_3 = \{0,1\}}\sum_{b_2= \{0,1\}} \sum_{b_1= \{0,1\}} \tilde{f}(b_1, b_2, b_3) \cdot \tilde{eq}((b_1,b_2,b_3), (z_1, z_2, z_3)) = y
+$$
+
+can be transformed into proving
+
+$$
+\begin{align}
+\sum_{b_3 = \{0,1\}}\sum_{b_2= \{0,1\}}  \tilde{f}(0, b_2, b_3) \cdot \tilde{eq}((0,b_2,b_3), (z_1, z_2, z_3)) = g_1(0) \\
+\sum_{b_3 = \{0,1\}}\sum_{b_2= \{0,1\}}  \tilde{f}(1, b_2, b_3) \cdot \tilde{eq}((1,b_2,b_3), (z_1, z_2, z_3)) = g_1(1)
+\end{align}
+$$
+
+and proving that the split is correct, i.e., proving
+
+$$
+g_1(0) + g_1(1) = y
+$$
+
+To summarize, after splitting the original summation problem, we need to prove three statements:
+
+(1) The split is correct: $g_1(0) + g_1(1) = y$
+
+(2) The first part of the sum is correct: $\sum_{b_3 = \{0,1\}}\sum_{b_2= \{0,1\}}  \tilde{f}(0, b_2, b_3) \cdot \tilde{eq}((0,b_2,b_3), (z_1, z_2, z_3)) = g_1(0)$
+
+(3) The second part of the sum is correct: $\sum_{b_3 = \{0,1\}}\sum_{b_2= \{0,1\}}  \tilde{f}(1, b_2, b_3) \cdot \tilde{eq}((1,b_2,b_3), (z_1, z_2, z_3)) = g_1(1)$
+
+We can see that after decomposition, proving (2) and (3) each involves half the scale compared to proving the original problem (6), and they both have the same form. Proving (2) and (3) separately would not be more efficient than directly proving equation (6). However, if we could merge (2) and (3) and prove a half-sized summation problem, it would be more efficient than directly proving equation (6). How can we accomplish this? We can ask the Verifier for a random number $r_1$ and use it to fold (2) and (3) into a single half-sized problem.
+
+2. Fold: Use a random number to transform proving (2) and (3) into proving
+
+$$
+\sum_{b_3 = \{0,1\}}\sum_{b_2= \{0,1\}}  \tilde{f}(r_1, b_2, b_3) \cdot \tilde{eq}((r_1,b_2,b_3), (z_1, z_2, z_3)) = g_1(r_1) \tag{7}
+$$
+
+Compared to proving equation (6), the scale of the problem has been halved. Originally, we needed to prove that the sum of 8 terms equals a certain value, but now we only need to prove that the sum of 4 terms equals a certain value, and equations (6) and (7) have the same summation form.
+
+To summarize, proving equation (6) is transformed into proving:
+
+1. The split is correct: $g_1(0) + g_1(1) = y$
+2. The half-sized subproblem:
+
+$$
+\sum_{b_3 = \{0,1\}}\sum_{b_2= \{0,1\}}  \tilde{f}(r_1, b_2, b_3) \cdot \tilde{eq}((r_1,b_2,b_3), (z_1, z_2, z_3)) = g_1(r_1) 
+$$
+
+We can continue to apply the split and fold process to the equation above, continuously reducing the problem size to one that is easier for the Verifier to check. Therefore, the entire sumcheck protocol can be viewed from this split-and-fold perspective, as illustrated in the diagram below.
+
+![](./img/deepfold-sumcheck-split-fold.svg)
+
+### Sumcheck in DeepFold
+
+The sumcheck protocol in DeepFold also uses this split-and-fold approach to prove $\tilde{f}(z_1, z_2, z_3) = y$, but its decomposition method differs from the sumcheck protocol in Basefold. Let
+
+$$
+\tilde{f}(X_1, X_2, X_3) = a_0 + a_1 X_1 + a_2 X_2 + a_3 X_1 X_2 + a_4 X_3 + a_5 X_1X_3 + a_6 X_2 X_3 + a_7 X_1 X_2 X_3
+$$
+
+Then the summation can be rewritten as
+
+$$
+\begin{align}
+\tilde{f}(X_1, X_2, X_3)  & = a_0 + a_1 X_1 + a_2 X_2 + a_3 X_1 X_2 + a_4 X_3 + a_5 X_1X_3 + a_6 X_2 X_3 + a_7 X_1 X_2 X_3 \\
+ & = (a_0 + a_2 X_2 + a_4 X_3 + a_6 X_2X_3) + X_1 \cdot (a_1X_1 + a_3 X_2 + a_5  X_3 + a_7 X_2 X_3) \\
+& : = \tilde{f}_{even}(X_2, X_3) + X_1 \cdot \tilde{f}_{odd}(X_2, X_3)
+\end{align} \tag{8}
+$$
+
+Since
+
+$$
+\tilde{f}(z_1, z_2, z_3) = a_0 + a_1 z_1 + a_2 z_2 + a_3 z_1 z_2 + a_4 z_3 + a_5 z_1z_3 + a_6 z_2 z_3 + a_7 z_1 z_2 z_3
+$$
+
+proving $\tilde{f}(z_1, z_2, z_3) = y$ means proving
+
+$$
+a_0 + a_1 z_1 + a_2 z_2 + a_3 z_1 z_2 + a_4 z_3 + a_5 z_1z_3 + a_6 z_2 z_3 + a_7 z_1 z_2 z_3 = y \tag{9}
+$$
+
+1. Split: Decompose the summation according to equation (8)
+
+$$
+\begin{align}
+ & a_0 + a_1 z_1 + a_2 z_2 + a_3 z_1 z_2 + a_4 z_3 + a_5 z_1z_3 + a_6 z_2 z_3 + a_7 z_1 z_2 z_3  \\
+ = & (a_0 + a_2 z_2 + a_4 z_3 + a_6 z_2z_3) + z_1 \cdot (a_1  + a_3 z_2 + a_5 z_3 + a_7 z_2 z_3)  \\
+=  & \tilde{f}_{even}(z_2, z_3) + z_1 \cdot \tilde{f}_{odd}(z_2, z_3)
+\end{align}
+$$
+
+After this decomposition, proving $\tilde{f}(z_1, z_2, z_3) = y$ is transformed into proving:
+
+(1) The split is correct: $\tilde{f}_{even}(z_2, z_3) + z_1 \cdot \tilde{f}_{odd}(z_2, z_3) = y$
+
+(2) The first part is correct: $a_0 + a_2 z_2 + a_4 z_3 + a_6 z_2z_3 = \tilde{f}_{even}(z_2, z_3)$
+
+(3) The second part is correct: $a_1  + a_3 z_2 + a_5 z_3 + a_7 z_2 z_3 = \tilde{f}_{odd}(z_2, z_3)$
+
+2. Fold: Use a random number $r_1$ to transform proving (2) and (3) into proving
+
+$$
+(a_0 + r_1 a_1) + (a_2 + r_1 a_3) z_2 + (a_4 + r_1 a_5) z_3 + (a_6 + r_1 a_7) z_2z_3 = \tilde{f}_{even}(z_2, z_3) + r_1 \cdot \tilde{f}_{odd}(z_2, z_3)
+$$
+
+If we define $y' = \tilde{f}_{even}(z_2, z_3) + r_1 \cdot \tilde{f}_{odd}(z_2, z_3)$ and
+
+$$
+\begin{align}
+a_0' = a_0 + r_1 a_1 \quad a_1' = a_2 + r_1 a_3 \quad a_2' = a_4 + r_1 a_5 \quad a_3' = a_6 + r_1 a_7
+\end{align}
+$$
+
+we can see that the scale of the proof problem is halved to proving
+
+$$
+a_0' + a_1' z_2 + a_2' z_3 + a_3' z_2z_3 = y'
+$$
+
+and this summation form has the same structure as equation (9).
+
+To summarize, proving equation (9) is transformed into proving:
+
+1. The split is correct: $\tilde{f}_{even}(z_2, z_3) + z_1 \cdot \tilde{f}_{odd}(z_2, z_3) = y$
+2. The half-sized subproblem:
+
+$$
+(a_0 + r_1 a_1) + (a_2 + r_1 a_3) z_2 + (a_4 + r_1 a_5) z_3 + (a_6 + r_1 a_7) z_2z_3 = \tilde{f}_{even}(z_2, z_3) + r_1 \cdot \tilde{f}_{odd}(z_2, z_3)
+$$
+
+Using the representation of $\tilde{f}(X_1, X_2, X_3)$, we can simplify the above equation.
+
+$$
+\begin{align}
+ & \tilde{f}_{even}(z_2, z_3) + r_1 \cdot \tilde{f}_{odd}(z_2, z_3)  \\
+ = & (a_0 + a_2 z_2 + a_4 z_3 + a_6 z_2z_3) + r_1 \cdot (a_1  + a_3 z_2 + a_5 z_3 + a_7 z_2 z_3)  \\
+=  & a_0 + a_1 r_1 + a_2 z_2 + a_3 r_1 z_2 + a_4 z_3 + a_5 r_1z_3 + a_6 z_2 z_3 + a_7 r_1 z_2 z_3 \\
+=  & \tilde{f}(r_1, z_2, z_3)
+\end{align}
+$$
+
+Let $g_1(X) = \tilde{f}(X, z_2, z_3)$, then $\tilde{f}_{even}(z_2, z_3) + r_1 \cdot \tilde{f}_{odd}(z_2, z_3) = g_1(r_1)$, and we can derive:
+
+$$
+\begin{align} 
+ & \tilde{f}_{even}(z_2, z_3) = g_1(0) \\
+ & \tilde{f}_{odd}(z_2, z_3) = g_1(1) - g_1(0) \\
+ & \tilde{f}_{even}(z_2, z_3) + z_1 \cdot \tilde{f}_{odd}(z_2, z_3) = g_1(0) + z_1(g_1(1) - g_1(0)) = g_1(z_1)
+\end{align}
+$$
+
+So this proof can be written as:
+
+1. Split proof: $g_1(0) + z_1(g_1(1) - g_1(0)) = y$
+2. Half-sized subproblem:
+
+$$
+(a_0 + r_1 a_1) + (a_2 + r_1 a_3) z_2 + (a_4 + r_1 a_5) z_3 + (a_6 + r_1 a_7) z_2z_3 = g_1(r_1)
+$$
+
+We continue to apply the split-and-fold approach to the equation above. The sumcheck flow in the DeepFold protocol is illustrated in the diagram below.
+
+![](./img/deepfold-split-fold-deepfold.svg)
 
 ## References
 
