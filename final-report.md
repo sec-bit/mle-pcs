@@ -142,10 +142,10 @@ $$
 
 次数小于 $N$ ，其中 $\lambda \leftarrow \mathbb{F}_q$ 为 Verifier 发送的随机数。Prover 先对 $f^{(0)}(X)$ 在 $H$ 上进行 Reed-Solomon 编码，对编码后的向量用 Merkle Tree 的方式进行承诺，随后 Prover 和 Verifier 进行 FRI 的协议过程。在协议的 Query 阶段，若要打开 Merkle Tree 上的一些叶子节点，则 Prover 要发送相应的 Merkle Path 作为证明。
 
-基于 Linear Code 构造的 PCS 协议通常采用 Merkle Tree 作为承诺方案，这类协议具有以下特点：
+采用 Merkle Tree 作为承诺方案的协议具有以下特点：
 - 不需要可信设置（Trusted Setup）
 - 承诺计算主要依赖哈希运算，相比 KZG10 需要在椭圆曲线上进行运算，计算开销更小
-- 证明大小比 KZG10 更大
+- 由于证明过程中需要发送 Merkle Path 等，证明大小往往比 KZG10 更大
 
 #### Pedersen Commitment
 
