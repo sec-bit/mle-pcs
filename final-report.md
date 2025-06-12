@@ -151,6 +151,13 @@ $$
 
 #### Ajtai Commitment
 
+Ajtai commitment 是一种基于格 lattice 的承诺方法，具有抗量子攻击的特性。假设需要承诺的向量为 $\vec{f}$ （在多项式承诺中，可以将多项式 $f(X)$ 的系数视为向量 $\vec{f}$，这与 Pedersen commitment 类似）， Ajtai commitment 首先选择一个 $n \times m$-size 矩阵 $G$ （类似于 Pedersen commitment 中的 group element），通过计算 $G \vec{f} = \vec{t}$ 得到承诺结果 $\vec{t}$。与 Pedersen Commitment 类似，Ajtai commitment 同样不需要 trusted setup。其最重要的区别在于：
+
+- Ajtai commitment 承诺要求被承诺的内容 $\vec{f}$ 必须“足够小”，即存在一个上界 $B$，使得对所有 $f_i$ 都有 $|f_i| < B$。这是由于 SIS/LWE 困难问题的要求，只有满足该条件，Ajtai commitment 的 binding/hiding 性质才能归约到 SIS/LWE 问题。为了承诺任意系数的多项式，常用的方法是将每个系数拆分为更小但更长的数组（如二进制表示），然后对拆分后的结果进行承诺。这样即可满足 $< B$ 的要求。同理，在 opening 时，还需额外一步，将二进制向量与 $(1, 2, 2^2, \cdots)$ 做内积，恢复原始系数。
+- 由于 Ajtai commitment 的结果本身也是一个向量，这使得实现“ “commitment-of-commitment”，变得非常容易。即在拆分后，可以对多个承诺再次进行 Ajtai commitment。这一技术在 lattice 设计中被广泛应用，以进一步减小证明体积。
+
+为了提升效率，许多实现中采用多项式环来实现 Ajtai commitment（注意，这里的多项式环与多项式承诺中的多项式无关），即向量/矩阵的元素为多项式环中的元素。这种更通用的情形可以使 Ajtai commitment 承诺的安全性归约到 M-SIS/M-LWE 问题。
+
 ### 按 Evaluation 证明原理分类
 
 根据协议实现方法的不同，可以将 MLE-PCS 分为以下几类：
@@ -581,7 +588,7 @@ $$
 
 ### ∑-Check 协议
 
-The compressed Σ-protocol theory [AC20](https://eprint.iacr.org/2020/152), [ACF21](https://eprint.iacr.org/2020/753) offers a general approach for efficiently proving polynomial relations. In the context of PCS, it can be either (1) used directly to prove PCS evaluations by expressing them as a relation $\{(\vec{f}; F, \vec{z}, v): \mathsf{Com}(\vec{f}) = F, f(\vec{z}) = v\}$, where $\vec{f}$​ represents the coefficients of the polynomial $f$; or (2) applied as a drop-in replacement for IPA in Bulletproofs-based PCS systems like [Hyrax](https://eprint.iacr.org/2017/1132.pdf). The work [AC20](https://eprint.iacr.org/2020/152) and [ACF21](https://eprint.iacr.org/2020/753) demonstrates that this can be achieved through linearization based on arithmetic circuits, followed by the application of [Bulletproofs compression](https://eprint.iacr.org/2017/1066), resulting in a Bulletproofs-based PCS with a transparent setup.
+The compressed Σ-protocol theory [AC20](https://eprint.iacr.org/2020/152), [ACF21](https://eprint.iacr.org/2020/753) offers a general approach for efficiently proving polynomial relations. In the context of PCS, it can be either (1) used directly to prove PCS evaluations by expressing them as a relation $\{(\vec{f}; F, \vec{z}, v): \mathsf{Com}(\vec{f}) = F, f(\vec{z}) = v\}$, where $\vec{f}$​ represents the coefficients of the polynomial $f$; or (2) applied as a drop-in replacement for IPA in Bulletproofs-based PCS systems like [Hyrax](https://eprint.iacr.org/2017/1132.pdf). [AC20](https://eprint.iacr.org/2020/152) and [ACF21](https://eprint.iacr.org/2020/753) demonstrate that this can be achieved through linearization based on arithmetic circuits, followed by the application of [Bulletproofs compression](https://eprint.iacr.org/2017/1066), resulting in a Bulletproofs-based PCS with a transparent setup.
 
 Our recent contribution, [Σ-Check](https://eprint.iacr.org/2024/1654), advances this research field by introducing an efficient sumcheck-based method for proving $k$ distinct polynomial evaluations, each with $n$ variables, at a cost of $O(n+\log k)$-size proofs. This approach eliminates the need for circuit-based linearization and proves to be more efficient when handling $k$ polynomials, which previously required $O(n+k)$ cost in [AC20](https://eprint.iacr.org/2020/152) and [ACF21](https://eprint.iacr.org/2020/753). A prototype implementation is available at [GitHub](https://github.com/QMorning/Compressed-Sigma-Protocol-from-Sumcheck).
 
@@ -597,7 +604,7 @@ Our recent contribution, [Σ-Check](https://eprint.iacr.org/2024/1654), advances
 
 ### 优化 Zeromorph 协议
 
-在 zeromorph 协议中，需要证明 $n$ 个商多项式 $q_i(X) = [[\tilde{q}_i]]_i  (0 \le i < n)$ 的次数小于 $2^i$ ，zeromorph 论文 [KT23] Section 6 中将多个 Degree Bound 证明聚合在一起进行证明，关于这部分协议的详细描述可见 [Optimized Protocol](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph.md#optimized-protocol) ，不过在这个协议中 Verifier 需要在椭圆曲线 $\mathbb{G}_2$ 上进行两次运算，这对于 verifier 来说是很昂贵的操作。
+在 zeromorph 协议中，需要证明 $n$ 个商多项式 $q_i(X) = [[\tilde{q}_i]]_i  (0 \le i < n)$ 的次数小于 $2^i$，zeromorph 论文 [KT23] Section 6 中将多个 Degree Bound 证明聚合在一起进行证明，关于这部分协议的详细描述可见 [Optimized Protocol](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph.md#optimized-protocol)，不过在这个协议中 Verifier 需要在椭圆曲线 $\mathbb{G}_2$ 上进行两次运算，这对于 verifier 来说是很昂贵的操作。
 
 我们使用了另一种证明 Degree Bound 的方法，避免了 Verifier 在椭圆曲线 $\mathbb{G}_2$ 上的操作，带来的代价是增加了一点 Verifier 在椭圆曲线 $\mathbb{G}_1$ 上的计算量以及在证明中增加了一个椭圆曲线 $\mathbb{G}_1$ 上的点和一个有限域上的值，在对 Verifier Cost 要求高的场景下，这是可以接受的。该协议的详细描述见 [Zeromorph-PCS (Part II)](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph-02.md)。
 
@@ -1162,9 +1169,34 @@ Basefold、Deepfold 与 WHIR 协议在协议框架上非常相似，这三个协
 
 ### 基于 Bulletproofs 的 MLE-PCS 
 
-基于 Bulletproofs 的 MLE-PCS 有 hyrax 与 [Σ-Check](https://eprint.iacr.org/2024/1654) 。
+基于 Bulletproofs 的 MLE-PCS 有 [Hyrax](https://eprint.iacr.org/2017/1132.pdf). 与 [Σ-Check](https://eprint.iacr.org/2024/1654) 。
 
 #### Hyrax
+
+Multilinear polynomial evaluations can be viewed as inner-product relations and thus can be proven directly using inner-product arguments (IPAs), such as Bulletproofs. However, a major drawback of Bulletproofs is their linear verification time: for an $n$-variate multilinear polynomial, verification requires $O(2^n)$ time.
+
+To address this inefficiency, the [Hyrax](https://eprint.iacr.org/2017/1132.pdf) PCS observes that polynomial evaluation can be reformulated as a matrix product. For example, consider $f(z_0, z_1, z_2, z_3) = v$. We can write:
+$$
+\tilde{f}(z_0, z_1, z_2, z_3) = 
+\begin{bmatrix}
+1 & z_2 & z_3 & z_2z_3 \\
+\end{bmatrix}
+\begin{bmatrix}
+f_0 & f_1 & f_2 & f_3 \\
+f_4 & f_5 & f_6 & f_7 \\
+f_8 & f_9 & f_{10} & f_{11} \\
+f_{12} & f_{13} & f_{14} & f_{15}
+\end{bmatrix}
+\begin{bmatrix}
+1 \\
+z_0 \\
+z_1 \\
+z_0z_1 \\
+\end{bmatrix}.
+$$
+Let $F$ denote the inner matrix, $\vec{z}_1 := (1, z_2, z_3, z_2z_3)$, and $\vec{z}_0 := (1, z_0, z_1, z_0z_1)$. In the Hyrax protocol, the prover first sends $\vec{w} = \vec{z}_1 \cdot F$, enabling the verifier to check that $\vec{w} \cdot \vec{z}_0^\top = v$. To ensure that $\vec{w}$ is computed correctly, the verifier issues a random challenge vector $\vec{r}$, and the prover responds with $\vec{t}^\top := F \cdot \vec{r}^\top$. This leads to the relation $\vec{z}_1 \cdot \vec{t}^\top = \vec{z}_1 \cdot F \cdot \vec{r}^\top = \vec{w} \cdot \vec{r}^\top$, which holds if and only if $\vec{w}$ is correctly computed. 
+
+As a result, the verifier only needs to compute two inner products of length $\sqrt{N}$ ($N = 2^n$), achieving sublinear verification cost. Furthermore, the prover can use an IPA to prove these inner-product relations, reducing the proof size to $O(\log n)$.
 
 #### Σ-Check
 
