@@ -6,13 +6,13 @@ Last update: 2025-06-12
 Polynomial Commitment Schemes (PCS) are important components in many zkSNARK (zero-knowledge Succinct Non-interactive ARguments of Knowledge) systems. A Prover can commit to a polynomial and later prove to a Verifier that the value of this polynomial at a publicly disclosed opening point is correct.
 
 ![zkSNARK](img/zksnark.png)
-Initially, schemes like [KZG10] only supported univariate polynomials. Assuming a univariate polynomial with N coefficients, the Prover's computational complexity was O(N log N). Recently, many SNARK proof systems have begun using Multilinear Polynomial Commitment Schemes (MLE-PCS), such as Hyperplonk[CBBZ22]. For a multilinear polynomial with N coefficients, the Prover's computational complexity can achieve linearity, i.e., O(N). MLE-PCS can not only construct more efficient proof systems, but the representation of multilinear polynomials also brings other benefits, such as efficient split-and-fold on Hypercubes, better support for high-degree constraints, and more flexible decomposition.
+Initially, schemes like [KZG10] only supported univariate polynomials. Assuming a univariate polynomial with $N$ coefficients, the Prover's computational complexity was $O(N \log N)$. Recently, many SNARK proof systems have begun using Multilinear Polynomial Commitment Schemes (MLE-PCS), such as Hyperplonk[CBBZ22]. For a multilinear polynomial with $N$ coefficients, the Prover's computational complexity can achieve linearity, i.e., $O(N)$. MLE-PCS can not only construct more efficient proof systems, but the representation of multilinear polynomials also brings other benefits, such as efficient split-and-fold on Hypercubes, better support for high-degree constraints, and more flexible decomposition.
 
 This project **MLE-PCS** focuses on researching and comparing different multilinear polynomial commitment schemes, including their design, security assumptions, and efficiency.
 
 ## MLE-PCS Overview
 
-For an n-variate linear polynomial $\tilde{f}(X_0, X_1, \ldots, X_{n - 1})$, there are two forms of representation:
+For an $n$-variate linear polynomial $\tilde{f}(X_0, X_1, \ldots, X_{n - 1})$, there are two forms of representation:
 
 1. Coefficients form
 
@@ -53,8 +53,8 @@ This project describes the basic principles of many MLE-PCS, and for some protoc
 | gemini-fri    | ⭐          | [Gemini: Interfacing with FRI](https://github.com/sec-bit/mle-pcs/blob/main/gemini/gemini-fri.md)                                                                                                                                                                                                                                                                                |
 | hyperKZG      | N/A        | [Notes on HyperKZG](https://github.com/sec-bit/mle-pcs/blob/main/gemini/hyperkzg-pcs-01.md)                                                                                                                                                                                                                                                                                      |
 | PH23-KZG      | [PH23]     | [The Missing Protocol PH23-PCS (Part 1)](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-01.md), [Missing Protocol PH23-PCS (Part 2)](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-02.md)                                                                                                                                                               |
-| PH23-fri      | ⭐          | [The Missing Protocol PH23-PCS (Part 4)](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-fri-01.md),[缺失的协议 PH23-PCS（四）](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-fri-02.md)                                                                                                                                                                                              |
-| Mercury       | [EG25]     | [Mercury Notes: Implementing Constant Proof Size](https://github.com/sec-bit/mle-pcs/blob/main/mercury/mercury-01.md), [Mercury Notes: Integration with KZG](https://github.com/sec-bit/mle-pcs/blob/main/mercury/mercury-02.md)                                                                                                                                                                                               |
+| PH23-fri      | ⭐          | [The Missing Protocol PH23-PCS (Part 4)](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-fri-01.md),[The Missing Protocol PH23-PCS (Part 5)](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-fri-02.md)                                                                                                                                                    |
+| Mercury       | [EG25]     | [Mercury Notes: Implementing Constant Proof Size](https://github.com/sec-bit/mle-pcs/blob/main/mercury/mercury-01.md), [Mercury Notes: Integration with KZG](https://github.com/sec-bit/mle-pcs/blob/main/mercury/mercury-02.md)                                                                                                                                                 |
 | Samaritan     | [GPS25]    |                                                                                                                                                                                                                                                                                                                                                                                  |
 | Virgo         | [ZXZS19]   | [Notes on Virgo-PCS](https://github.com/sec-bit/mle-pcs/blob/main/virgo-pcs/virgo-pcs-01.md)                                                                                                                                                                                                                                                                                     |
 | Hyrax         | [WTSTW18]  | [Notes on Hyrax-PCS](https://github.com/sec-bit/mle-pcs/blob/main/hyrax-pcs/hyrax-01.md)                                                                                                                                                                                                                                                                                         |
@@ -454,25 +454,25 @@ MLE-PCS protocols sit above Multilinear PIOP protocols. These common PIOPs are u
 Although some MLE-PCS papers only describe one form, such as the Coefficients Form, the protocol itself can also support the Evaluations Form. In engineering practice, one can choose the appropriate protocol variant based on more detailed performance analysis. Below we list the support for the two representation forms of Multilinear Polynomials by the MLE-PCS covered in this project:
 
 
-| Scheme        | Coefficients                |  Evaluations                          |
-| ------------- | ---------------------- | ------------------------------------ |
-| PST13         | [PST13] ✅| ✅  [XZZPS19]       |
-| Zeromorph     |  ❓      | ✅ [KT23]   |        |
-| Gemini        | [BCH+22]  |      |  
-| hyperKZG      |           | ✅ HyperKZG |
-| PH23-KZG      |           | ✅ [PH23]   | 
-| Mercury       |   ✔️      | ✅ [EG25]   | 
-| Samaritan     |   ✔️           | ✅ [GPS25]  |   
-| Virgo         | ✅ [ZXZS19]  | ❓ | 
-| Hyrax         |     ✅     | ✅ [WTSTW16]   |
-| Basefold      | ✅ [ZCF23]    | ✅ [H24]  |
-| Deepfold      | ✅ [GLHQTZ24] | ❓  |
-| Ligerito      | ✅ | ✅ [NA25]  |
-| WHIR          | ✅ [ACFY24b]  |  ❓ |
-| FRI-Binius    | ✔️           | ✅ [DP24]   | 
-| Σ-Check       | ✅ [GQZGX24] |  ✅ |       
-| Greyhound     | ✅ [NS24]|  ✅  |
-| Hyperwolf     | ✅ [ZGX25]| ✅  |
+| Scheme     | Coefficients | Evaluations  |
+| ---------- | ------------ | ------------ |
+| PST13      | [PST13] ✅    | ✅  [XZZPS19] |
+| Zeromorph  | ❓            | ✅ [KT23]     |
+| Gemini     | [BCH+22]     |              |
+| hyperKZG   |              | ✅ HyperKZG   |
+| PH23-KZG   |              | ✅ [PH23]     |
+| Mercury    | ✔️           | ✅ [EG25]     |
+| Samaritan  | ✔️           | ✅ [GPS25]    |
+| Virgo      | ✅ [ZXZS19]   | ❓            |
+| Hyrax      | ✅            | ✅ [WTSTW16]  |
+| Basefold   | ✅ [ZCF23]    | ✅ [H24]      |
+| Deepfold   | ✅ [GLHQTZ24] | ❓            |
+| Ligerito   | ✅            | ✅ [NA25]     |
+| WHIR       | ✅ [ACFY24b]  | ❓            |
+| FRI-Binius | ✔️           | ✅ [DP24]     |
+| Σ-Check    | ✅ [GQZGX24]  | ✅            |
+| Greyhound  | ✅ [NS24]     | ✅            |
+| Hyperwolf  | ✅ [ZGX25]    | ✅            |
 
 - ✅: Supported
 - ✔️: Supported, but needs further analysis
@@ -992,10 +992,10 @@ Referring to the theoretical analysis in the mercury paper [EG25], and combining
 
 | Protocol          | Prover's cost                                    | Verifier's cost                                  | Proof size                                      |
 | ----------------- | ------------------------------------------------ | ------------------------------------------------ | ----------------------------------------------- |
-| Libra-PCS         |                                                  |                                                  |                                                 |
+| Libra-PCS         | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(1) ~ \mathbb{G}$      | $O(\log N)~ \mathbb{F}, O(1) ~ \mathbb{G}$      |
 | PH23-KZG          | $O(N\log N) ~ \mathbb{F}, O(N) \mathbb{G}$       | $O(\log N) ~ \mathbb{F}, O(1) ~ \mathbb{G}$      | $O(\log N)~ \mathbb{F}, O(1) ~ \mathbb{G}$      |
 | gemini            | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(n) ~ \mathbb{G}$      | $O(\log N)~ \mathbb{F}, O(\log N) ~ \mathbb{G}$ |
-| hyperKZG          |                                                  |                                                  |                                                 |
+| hyperKZG          | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(n) ~ \mathbb{G}$      | $O(\log N)~ \mathbb{F}, O(\log N) ~ \mathbb{G}$ |
 | zeromorph-v0      | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(\log N) ~ \mathbb{G}$ | $(2\log N + 1) ~ \mathbb{G}$                    |
 | zeromorph-v1      | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(\log N) ~ \mathbb{G}$ | $(\log N + 2) ~ \mathbb{G}$                     |
 | zeromorph-v2      | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(\log N) ~ \mathbb{G}$ | $\mathbb{F}, (\log N + 3) ~ \mathbb{G}$         |
@@ -1007,8 +1007,6 @@ Through comparison, we find:
 2. In terms of Verifier computational complexity, all protocols require $O(\log N)$ finite field operations. PH23, mercury, and samaritan protocols only need constant-level calculations on elliptic curves, while other protocols require $O(\log N)$ level calculations on elliptic curves.
 3. In terms of Proof size, mercury and samaritan protocols can achieve constant-level proof sizes. We found that the PH23 protocol, when using schemes similar to Plonk, can also achieve constant-size proofs, which we plan to describe in detail in future work.
 Currently, it appears that mercury and SamaritanPCS are the most efficient protocols, achieving constant proof sizes without sacrificing the Prover's linear $O(N)$ finite field operations, rather than logarithmic level $O(\log N)$.
-
-- [ ] Add Libra comparison?
 
 ## Comparison of FRI-based MLE-PCS
 
@@ -1324,8 +1322,6 @@ In the above interaction process, the proof size sent in each round is $O(b) = O
 ## Future work
 
 This project has not yet deeply compared PCS using Small Fields, which would significantly enhance Prover performance. This will be our next area of focus. Additionally, besides RS Code, linear codes with better encoding performance, such as Spelman Code, are often used to construct PCS, like brakedown and orion. Furthermore, there are some new Binary Field-based PCS protocols, and some of the protocols analyzed above can also be used for Binary Fields, like FRI and Ligerito.
-
-## References
 
 ## References
 
