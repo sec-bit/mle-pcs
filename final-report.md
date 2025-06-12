@@ -70,14 +70,86 @@ NOTE: 上表中在 Remark 一栏中添加“⭐️”的表示是在本项目中
 
 ### 按承诺协议的分类
 
-| Commitments    | Algebra            | Schemes                                                                          |
-| ------------- | ------------------ | -------------------------------------------------------------------------------- |
-| KZG10          | Paring Friendly ECC based          | PST13(mKZG or Liba-PCS), Zeromorph, Gemini, HyperKZG, PH23-KZG, Mercury, Samaritan      |
-| Merkle Tree | Linear code based | Ligero, Virgo, Basefold, Deepfold, WHIR, PH23-fri, Zeromorph-fri, Gemini-fri, Ligerito, FRI-Binius |
-| Pedersen Commitment | ECC based | Hyrax, Σ-Check |
-| Ajtai Commitment | Lattice based | Greyhound, Hyperwolf |
+| Commitments         | Algebra                   | Schemes                                                                                            |
+| ------------------- | ------------------------- | -------------------------------------------------------------------------------------------------- |
+| KZG10               | Paring Friendly ECC based | PST13(mKZG or Liba-PCS), Zeromorph, Gemini, HyperKZG, PH23-KZG, Mercury, Samaritan                 |
+| Merkle Tree         | Linear code based         | Ligero, Virgo, Basefold, Deepfold, WHIR, PH23-fri, Zeromorph-fri, Gemini-fri, Ligerito, FRI-Binius |
+| Pedersen Commitment | ECC based                 | Hyrax, Σ-Check                                                                                     |
+| Ajtai Commitment    | Lattice based             | Greyhound, Hyperwolf                                                                               |
 
 所有的 MLE-PCS 协议都是从 Univariate PCS 扩展而来，或者直接在其基础上构建的协议。
+
+对于一个单变量多项式 $f(X)$ ，
+
+$$
+f(X) = a_0 + a_1 X + a_2 X^2 + \ldots + a_{N-1}X^{N-1}
+$$
+
+用不同的方式来对 $f(X)$ 进行承诺，对应着不同的 Univariate PCS。
+
+#### KZG10
+
+KZG10 多项式承诺需要 Trusted Setup 来产生一组具有内部代数结构的向量，
+
+$$
+(G_0, G_1, \ldots, G_{N-1}, H_0, H_1) = (G, \gamma G, \gamma^2 G, \ldots, \gamma^{N- 1} G, H, \gamma H)
+$$
+
+这里 $\gamma$ 是一个通过 Trusted Setup 产生的随机数，产生后不能泄漏。$G, H$ 分别为椭圆曲线 $\mathbb{G}_1, \mathbb{G}_2$ 上的生成元，并且它们之间存在一个双线性映射：$e : \mathbb{G}_ 1\times \mathbb{G}_2 \rightarrow \mathbb{G}_T$ 。
+
+对多项式 $f(X)$ 的承诺为：
+
+$$
+\begin{align}
+C_{f(X)}  & = a_0 G_0 + a_1 G_1 + \ldots + a_{N - 1}G_{N - 1} \\
+ & = a_0 G + a_1 \gamma G + \ldots + a_{N-1} \gamma^{N - 1} G \\
+ & = f(\gamma) G
+\end{align}
+$$
+
+承诺 $C_{f(X)}$ 恰好为 $f(\gamma)G$ 。若要用 KZG10 来构造 PCS，例如构造一个 $f(\zeta) = y$ 的打开证明，即要证明存在商多项式 $q(X)$ 满足
+
+$$
+f(X) = q(X) \cdot (X - \zeta) + y
+$$
+
+那么 Prover 可以提供关于 $q(X)$ 的承诺 $C_{q(X)}$ 来作为 $f(\zeta) = y$ 的打开证明。根据承诺的加法同态映射关系以及双线性映射，Verifier 可以在 $\mathbb{G}_T$ 上来验证整除关系：
+
+$$
+e(C_{f(X)} - y \cdot G, H) \overset{?}{=} e(C_{q(X)} , \gamma H - \zeta H)
+$$
+
+从上述描述可以看出，KZG10 承诺方案具有以下特点：
+- 需要可信设置(Trusted Setup)来生成具有特定代数结构的公共参数
+- 利用椭圆曲线上的双线性映射(bilinear pairing)来验证打开证明
+- 打开证明的验证只需要一个群元素，这使得证明大小往往是常数
+
+#### Merkle Tree
+
+基于 Merkle Tree 的承诺不需要 Trusted Setup，其底层是基于 Linear Code 的性质。以 FRI 协议为例，若要对 $f(X)$ 进行承诺，则 Prover 将 $f(X)$ 的 Reed-Solomon Code 通过 Merkle Tree 的形式发送给 Verifier。详细来说，设 $H \subset \mathbb{F}_q$ 为一个阶为 $2^k (k \in \mathbb{N})$ 的乘法群，Reed-Solomon Code 的码率为 $\rho$ ，则 $f(X)$ 的 Reed-Solomon Code 即为 $f(X)$ 在 $H$ 上的取值，组成一个向量
+
+$$
+[f(x)|_{x \in H}]
+$$
+
+将该向量中的元素或其哈希值作为 Merkle Tree 的叶子节点，该 Merkle Tree 的根节点即为 $f(X)$ 的承诺。
+
+若要证明 $f(\zeta) =y (\zeta \notin H)$ ，以 FRI 协议来构造 PCS 为例[H22]，即证明
+
+$$
+f^{(0)}(X) =\frac{f(X) - y}{X - \zeta} + \lambda \cdot X \cdot \frac{f(X) - y}{X - \zeta}
+$$
+
+次数小于 $N$ ，其中 $\lambda \leftarrow \mathbb{F}_q$ 为 Verifier 发送的随机数。Prover 先对 $f^{(0)}(X)$ 在 $H$ 上进行 Reed-Solomon 编码，对编码后的向量用 Merkle Tree 的方式进行承诺，随后 Prover 和 Verifier 进行 FRI 的协议过程。在协议的 Query 阶段，若要打开 Merkle Tree 上的一些叶子节点，则 Prover 要发送相应的 Merkle Path 作为证明。
+
+基于 Linear Code 构造的 PCS 协议通常采用 Merkle Tree 作为承诺方案，这类协议具有以下特点：
+- 不需要可信设置（Trusted Setup）
+- 承诺计算主要依赖哈希运算，相比 KZG10 需要在椭圆曲线上进行运算，计算开销更小
+- 证明大小比 KZG10 更大
+
+#### Pedersen Commitment
+
+#### Ajtai Commitment
 
 ### 按 Evaluation 证明原理分类
 
@@ -1242,6 +1314,7 @@ $$
 - [GQZGX24] Shang Gao, Chen Qian, Tianyu Zheng, Yu Guo, and Bin Xiao. "$\Sigma$-Check: Compressed $\Sigma$-protocol Theory from Sum-check." (2024). https://eprint.iacr.org/2024/1654
 - [Gru24] Angus Gruen. "Some Improvements for the PIOP for ZeroCheck". (2024). https://eprint.iacr.org/2024/108.
 - [GWC19] Ariel Gabizon, Zachary J. Williamson, and Oana Ciobotaru. "Plonk: Permutations over lagrange-bases for oecumenical noninteractive arguments of knowledge." *Cryptology ePrint Archive* (2019).
+- [H22] Ulrich Haböck. "A summary on the FRI low degree test." _Cryptology ePrint Archive_ (2022).
 - [H24] Ulrich Haböck. "Basefold in the List Decoding Regime." _Cryptology ePrint Archive_(2024).
 - [HPS23] Lipmaa, Helger, Roberto Parisella, and Janno Siim. "Algebraic group model with oblivious sampling." *Theory of Cryptography Conference*. Cham: Springer Nature Switzerland, 2023.
 - [KT23] Kohrita, Tohru, and Patrick Towa. "Zeromorph: Zero-knowledge multilinear-evaluation proofs from homomorphic univariate commitments." Cryptology ePrint Archive (2023). https://eprint.iacr.org/2023/917 
