@@ -495,6 +495,10 @@ Basefold 协议、Deepfold 协议和 WHIR 协议有着类似的思路，我们�
 
 ### ∑-Check 协议
 
+The compressed Σ-protocol theory [AC20](https://eprint.iacr.org/2020/152), [ACF21](https://eprint.iacr.org/2020/753) offers a general approach for efficiently proving polynomial relations. In the context of PCS, it can be either (1) used directly to prove PCS evaluations by expressing them as a relation $\{(\vec{f}; F, \vec{z}, v): \mathsf{Com}(\vec{f}) = F, f(\vec{z}) = v\}$, where $\vec{f}$​ represents the coefficients of the polynomial $f$; or (2) applied as a drop-in replacement for IPA in Bulletproofs-based PCS systems like [Hyrax](https://eprint.iacr.org/2017/1132.pdf). The work [AC20](https://eprint.iacr.org/2020/152) and [ACF21](https://eprint.iacr.org/2020/753) demonstrates that this can be achieved through linearization based on arithmetic circuits, followed by the application of [Bulletproofs compression](https://eprint.iacr.org/2017/1066), resulting in a Bulletproofs-based PCS with a transparent setup.
+
+Our recent contribution, [Σ-Check](https://eprint.iacr.org/2024/1654), advances this research field by introducing an efficient sumcheck-based method for proving $k$ distinct polynomial evaluations, each with $n$ variables, at a cost of $O(n+\log k)$-size proofs. This approach eliminates the need for circuit-based linearization and proves to be more efficient when handling $k$ polynomials, which previously required $O(n+k)$ cost in [AC20](https://eprint.iacr.org/2020/152) and [ACF21](https://eprint.iacr.org/2020/753). A prototype implementation is available at [GitHub](https://github.com/QMorning/Compressed-Sigma-Protocol-from-Sumcheck).
+
 ### Hyperwolf 协议
 
 ### 优化 Zeromorph 协议
@@ -1059,23 +1063,34 @@ Basefold、Deepfold 与 WHIR 协议在协议框架上非常相似，这三个协
 
 基于 Bulletproofs 的 MLE-PCS 有 hyrax 与 [Σ-Check](https://eprint.iacr.org/2024/1654) 。
 
-The compressed Σ-protocol theory [AC20](https://eprint.iacr.org/2020/152), [ACF21](https://eprint.iacr.org/2020/753) offers a general approach for efficiently proving polynomial relations. In the context of PCS, it can be either (1) used directly to prove PCS evaluations by expressing them as a relation $\{(\vec{f}; F, \vec{z}, v): \mathsf{Com}(\vec{f}) = F, f(\vec{z}) = v\}$, where $\vec{f}$​ represents the coefficients of the polynomial $f$; or (2) applied as a drop-in replacement for IPA in Bulletproofs-based PCS systems like [Hyrax](https://eprint.iacr.org/2017/1132.pdf). The work [AC20](https://eprint.iacr.org/2020/152) and [ACF21](https://eprint.iacr.org/2020/753) demonstrates that this can be achieved through linearization based on arithmetic circuits, followed by the application of [Bulletproofs compression](https://eprint.iacr.org/2017/1066), resulting in a Bulletproofs-based PCS with a transparent setup.
+#### Hyrax
 
-Our recent contribution, [Σ-Check](https://eprint.iacr.org/2024/1654), advances this research field by introducing an efficient method for proving $k$ distinct polynomial evaluations, each with $n$ variables, at a cost of $O(n+\log k)$-size proofs. This approach eliminates the need for circuit-based linearization and proves to be more efficient when handling $k$ polynomials, which previously required $O(n+k)$ cost in [AC20](https://eprint.iacr.org/2020/152) and [ACF21](https://eprint.iacr.org/2020/753). A prototype implementation is available at [GitHub](https://github.com/QMorning/Compressed-Sigma-Protocol-from-Sumcheck).
+#### Σ-Check
 
-Let $N := 2^n$. Below, we provide a brief comparison with Hyrax when proving $k$ different PCS evaluations (different polynomials at different opening points) in the following table. $\Sigma$-Check (as IPA) refers to the cost when we apply $\Sigma$-Check to prove two $\sqrt{N}$-size IPAs for each evaluation in Hyrax-PCS.
+To prove a single evaluation relation $f(\vec{z}) = v$, Σ-Check employs an improved sumcheck protocol. In each round, the prover sends a linear polynomial $f_i(X) := f(r_1, \cdots, r_{i-1}, X, z_{i+1}, \cdots, z_n)$, while the verifier checks the following condition: 
+$$
+f_i(0) \cdot \mathsf{eq}(0, z_i) + f_i(1) \cdot \mathsf{eq}(1, z_i) \overset{?}{=} f_{i-1}(r_{i-1}).
+$$ 
+This approach reduces the proof size by $n$ compared to directly applying sumcheck, as in BaseFold.
+
+When proving $k$ evaluation relations $(f_i(\vec{z}_i) = v_i)_{i = 1}^k$,  Σ-Check interpolates all $f_i(\vec{X})$ as a single function $f(\vec{y}, \vec{X})$ over a hypercube $\vec{y} \in \{0, 1\}^{\log k}$. Similarly, $\vec{z}(\vec{y})$ and $v(\vec{y})$ are defined. Given a challenge $\vec{\alpha} \in \mathbb{F}^{\log k}$, the prover can then use the improved sumcheck protocol to prove the following relation:
+$$
+\sum_{\vec{y} \in \{0, 1\}^{\log k}} \mathsf{eq}(\vec{\alpha}, \vec{y}) \cdot \big( f(\vec{y}, \vec{z}(\vec{y})) - v(\vec{y}) \big).
+$$
+After the sumcheck, this reduces to the relation $f(\vec{r}, \vec{z}(\vec{r})) - v(\vec{r}) = s$.
+
+Since $\vec{z}(\vec{Y})$ and $v(\vec{Y})$ are public, the verifier can compute them directly. Let $f_r(\vec{X}) := f(\vec{r}, \vec{X})$, $\vec{z}_r := \vec{z}(\vec{r})$, and $v_r := v(\vec{r})$. The output relation then becomes $f_r(\vec{z}_r) = s + v_r$, which is itself an evaluation proof and can be handled by another sumcheck protocol.
+
+It is worth noting that Σ-Check can also serve as an inner product argument (IPA), as described in Section 4.1 of [GZQ+24](https://eprint.iacr.org/2024/1654)). This enables sublinear verification when combined with the Hyrax IOP. We summarize the performance as follows.
 
 | Scheme                  | Prover Time                                              | Verifier Time                                              | Proof Size                        |
 | ----------------------- | -------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------- |
-| Hyrax                   | $O(kN)$                                                  | $O(k\sqrt{N})$                                             |                                   |
-| Hyrax-IPA               | $O(k\sqrt{N})$                                           | $O(k\sqrt{N})$                                             | $2k \log N$ $\mathbb{G}$          |
 | $\Sigma$-Check (as PCS) | $O(k+N)$ $\mathbb{F}$, $O(N)$ $\mathbb{G}$               | $O(k+N)$ $\mathbb{F}$, $O(k+N)$ $\mathbb{G}$               | $2(\log k + \log N)$ $\mathbb{G}$ |
 | $\Sigma$-Check (as IPA) | $O(k+\sqrt{N})$ $\mathbb{F}$, $O(\sqrt{N})$ $\mathbb{G}$ | $O(k+\sqrt{N})$ $\mathbb{F}$, $O(k+\sqrt{N})$ $\mathbb{G}$ | $2(\log k + \log N)$ $\mathbb{G}$ |
 
-
 ### 基于 Lattice 的 PCS
 
-#### 1. Greyhound
+#### Greyhound
 
 Greyhound是一种基于lattice的PCS，其底层协议依赖于 Labrador——一个用于证明 inner product relation 的lattice-based interactive proof。
 
@@ -1107,7 +1122,7 @@ $$
 
 Greyhound 的安全性基于格上的困难问题 MSIS (Modular Short Integer Solution)。通过对系数矩阵的每一列以 $\delta$ 为基进行decompose，可以得到 $n$ 个长度为 $nl$ 的短向量，其中 $l = \log_\delta q$。随后，对每个短向量进行 Ajtai Commit，即可生成相应的 commitment 值。
 
-#### 2. Hyperwolf
+#### Hyperwolf
 
 受 Greyhound 的启发，我们最新的研究成果 Hyperwolf 进一步优化了结构，将其推广到 $k$ 维，整体效率达到了 $O(kN^{1/k})$。通过令 $k = \log N$，该方案成功实现了 log 级别的 proof size 和 verification time，显著提升了性能。
 
