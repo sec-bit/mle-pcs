@@ -684,7 +684,7 @@ $$
 \begin{aligned}
 h^{(0)}(X) &= \sum_{b_1,b_2\in\{0,1\}^{2}} \tilde{f}(X, b_1, b_2) \cdot \tilde{eq}((u_0, u_1, u_2), (X, b_1, b_2)) \\
 &= \sum_{b_1,b_2\in\{0,1\}^{2}} \tilde{f}(X, b_1, b_2) \cdot eq(u_0, X) \cdot eq((u_1, u_2), (b_1, b_2)) \\
-&= eq(u_0, X) \cdot \sum_{(b_1,b_2)\in\{0,1\}^2`}  \Big( \tilde{f}(X, b_1, b_2) \cdot eq((u_1,u_2), (b_1, b_2)) \Big) \\
+&= eq(u_0, X) \cdot \sum_{(b_1,b_2)\in\{0,1\}^2}  \Big( \tilde{f}(X, b_1, b_2) \cdot eq((u_1,u_2), (b_1, b_2)) \Big) \\
 \end{aligned}
 $$
 
