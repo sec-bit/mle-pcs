@@ -312,7 +312,7 @@ Verifier 计算量：
 
 我们可以对上面的协议稍做变化，即可让 Prover 只发送 Degree 为 1 的线性多项式，那么 Prover 仅需要发两个点的运算值即可，而且 Verifier 也只需要做线性插值即可计算出下一个求和值。
 
-Habock 在 [Hab24] 中给出了一个 Basefold 协议的优化版本，可以把 $h(X)$ 变成 Degree 为 1 的线性多项式。这个优化技术最早出现在 [Gruen24] 中。下面我们简述下这个优化技术。
+Habock 在 [Hab24] 中给出了一个 Basefold 协议的优化版本，可以把 $h(X)$ 变成 Degree 为 1 的线性多项式。这个优化技术最早出现在 [Gru24] 中。下面我们简述下这个优化技术。
 
 
 根据 $\tilde{eq}(\vec{X}, \vec{Y})$ 的定义，它可以被分解为：
@@ -717,3 +717,4 @@ $$
 - [ACFY24] Gal Arnon, Alessandro Chiesa, Giacomo Fenzi, and Eylon Yogev. "WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification." _Cryptology ePrint Archive_ (2024).
 - [ZCF23] Hadas Zeilberger, Binyi Chen, and Ben Fisch. "BaseFold: efficient field-agnostic polynomial commitment schemes from foldable codes." Annual International Cryptology Conference. Cham: Springer Nature Switzerland, 2024.
 - [Hab24] Ulrich Haböck. "Basefold in the List Decoding Regime." _Cryptology ePrint Archive_(2024).
+- [Gru24] Angus Gruen. "Some Improvements for the PIOP for ZeroCheck". (2024). https://eprint.iacr.org/2024/108.

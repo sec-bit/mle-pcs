@@ -57,37 +57,27 @@ $$
 有的 MLE-PCS 协议是按照 Evaluations Form 描述的，而有的协议是按照 Coefficients Form 描述的。这中间自然就会产生一个形式转换的问题，例如一个多元线性多项式是按照系数形式给定的，那么就需要用类似 FFT 的算法将其转换为 Evaluation 形式以适配用 Evaluation 描述的协议。不过，许多作者已经注意到不需要经过这个 FFT 转换，也能适配该协议。以 Basefold [ZCF23] 协议举例，在原论文 [ZCF23] 中，协议是按照系数进行描述的，但是 Ulrich Haböck 在论文 [H24] 中以 Evaluation 的形式重新描述了 Basefold 协议，在原 Basefold 协议的基础上，只需要更改 FRI 协议中的折叠形式即可，关于这部分的转换可见笔记 [An Alternative Folding Method](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-03.md#an-alternative-folding-method) 。
 
 本项目的工作描述了许多 MLE-PCS 的基本原理，同时对于有的协议，我们还补充了多元线性多项式在另一种表示形式下的协议描述。在下表中给出本项目所涉及的 MLE-PCS。
-
-> TODO: 更新表中文章链接 去除 Remark 一栏
-
-| Scheme        | Paper      | Form         | Blog                                                         | Remark |
-| ------------- | ---------- | ------------ | ------------------------------------------------------------ | ------ |
-| PST13         | [XZZPS19]  | Eoefficients | [Notes on Libra-PCS](https://github.com/sec-bit/mle-pcs/blob/main/libra-pcs/libra-pcs.md) |        |
-| zeromorph     | [KT23]     | Evaluations  | [Notes on Zeromorph](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph.md) |        |
-| zeromorph-fri |            | evaluation   | [Zeromorph-PCS : 对接 FRI]                                   | ⭐      |
-| gemini        | [BCH+22]   | coefficient  | [Gemini-PCS (Part I)](https://github.com/sec-bit/mle-pcs/blob/main/gemini/Gemini-PCS-1.md),[Gemini-PCS (Part II)](https://github.com/sec-bit/mle-pcs/blob/main/gemini/Gemini-PCS-2.md) |        |
-| gemini-fri    |            | coefficient  | [Gemini ：对接 FRI]                                          | ⭐      |
-| hyperKZG      | N/A        | evaluation   | [Notes on HyperKZG](https://github.com/sec-bit/mle-pcs/blob/main/gemini/hyperkzg-pcs-01.md) |        |
-| PH23-KZG      | [PH23]     | evaluation   | [The Missing Protocol PH23-PCS (Part 1)](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-01.md), [Missing Protocol PH23-PCS (Part 2)](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-02.md) |        |
-| PH23-fri      | ⭐          | evaluation   | [缺失的协议 PH23-PCS（四）],[缺失的协议 PH23-PCS（五）]      |        |
-| Mercury       | [EG25]     | evaluation   | [Mercury 笔记：实现常数证明尺寸], [Mercury 笔记：对接 KZG]   |        |
-| Samaritan     | [GPS25]    | evaluation   |                                                              |        |
-| Virgo         | [ZXZS19]   | coefficient  | [Notes on Virgo-PCS](https://github.com/sec-bit/mle-pcs/blob/main/virgo-pcs/virgo-pcs-01.md) |        |
-| Hyrax         |            | evaluation   | [Notes on Hyrax-PCS](https://github.com/sec-bit/mle-pcs/blob/main/hyrax-pcs/hyrax-01.md) |        |
-| Basefold      | [ZCF23]    | coefficient  | [Notes on Basefold (Part I): Foldable Linear Codes](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-01.md), [Notes on Basefold (Part II): IOPP](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-02.md), [Notes on Basefold (Part III): MLE Evaluation Argument](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-03.md) |        |
-| Basefold      |            | evaluation   | [An Alternative Folding Method](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-03.md#an-alternative-folding-method) | ⭐️      |
-| Deepfold      | [GLHQTZ24] | coefficient  | [Note on DeepFold: Protocol Overview](https://github.com/sec-bit/mle-pcs/blob/main/fri/deepfold.md) |        |
-| Ligerito      | [GLHQTZ24] | coefficient  | [Notes on Ligerito-PCS](https://github.com/sec-bit/mle-pcs/blob/main/ligerito/) |        |
-| WHIR          | [ACFY24b]  | coefficient  | [Note on WHIR: Reed-Solomon Proximity Testing with Super-Fast Verification](https://github.com/sec-bit/mle-pcs/blob/main/fri/whir.md) |        |
-| FRI-Binius    | [DP24]     | evaluation   | [Notes on FRI-Binius (Part I): Binary Towers](https://github.com/sec-bit/mle-pcs/blob/main/fri-binius/binius-01.md), [Notes on Binius (Part II): Subspace Polynomial](https://github.com/sec-bit/mle-pcs/blob/main/fri-binius/binius-02.md) |        |
-| Σ-Check       | [GQZGX24]  |              |                                                              |        |
-
-- [ ] 更新 zeromorph-fri 文章链接
-- [ ] 更新 gemini-fri 文章链接
-- [ ] 更新 ph23-fri 文章链接
-- [ ] 更新 mercury 文章链接
-- [ ] 添加 hyperkzg, hyrax 的参考文献
-
+| Scheme        | Paper      | Form         | Blog                                                                                                                                                                                                                                                                                                                                                                |
+| ------------- | ---------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PST13         | [XZZPS19]  | Eoefficients | [Notes on Libra-PCS](https://github.com/sec-bit/mle-pcs/blob/main/libra-pcs/libra-pcs.md)                                                                                                                                                                                                                                                                           |
+| zeromorph     | [KT23]     | Evaluations  | [Notes on Zeromorph](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph.md)                                                                                                                                                                                                                                                                           |
+| zeromorph-fri | ⭐          | evaluation   | [Zeromorph-PCS : 对接 FRI](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph-fri.md)                                                                                                                                                                                                                                                                   |
+| gemini        | [BCH+22]   | coefficient  | [Gemini-PCS (Part I)](https://github.com/sec-bit/mle-pcs/blob/main/gemini/Gemini-PCS-1.md),[Gemini-PCS (Part II)](https://github.com/sec-bit/mle-pcs/blob/main/gemini/Gemini-PCS-2.md)                                                                                                                                                                              |
+| gemini-fri    | ⭐          | coefficient  | [Gemini: Interfacing with FRI](https://github.com/sec-bit/mle-pcs/blob/main/gemini/gemini-fri.md)                                                                                                                                                                                                                                                                   |
+| hyperKZG      | N/A        | evaluation   | [Notes on HyperKZG](https://github.com/sec-bit/mle-pcs/blob/main/gemini/hyperkzg-pcs-01.md)                                                                                                                                                                                                                                                                         |
+| PH23-KZG      | [PH23]     | evaluation   | [The Missing Protocol PH23-PCS (Part 1)](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-01.md), [Missing Protocol PH23-PCS (Part 2)](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-02.md)                                                                                                                                                  |
+| PH23-fri      | ⭐          | evaluation   | [缺失的协议 PH23-PCS（四）](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-fri-01.md),[缺失的协议 PH23-PCS（五）](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-fri-02.zh.md)                                                                                                                                                                              |
+| Mercury       | [EG25]     | evaluation   | [Mercury 笔记：实现常数证明尺寸](https://github.com/sec-bit/mle-pcs/blob/main/mercury/mercury-01.zh.md), [Mercury 笔记：对接 KZG](https://github.com/sec-bit/mle-pcs/blob/main/mercury/mercury-02.zh.md)                                                                                                                                                                            |
+| Samaritan     | [GPS25]    | evaluation   |                                                                                                                                                                                                                                                                                                                                                                     |
+| Virgo         | [ZXZS19]   | coefficient  | [Notes on Virgo-PCS](https://github.com/sec-bit/mle-pcs/blob/main/virgo-pcs/virgo-pcs-01.md)                                                                                                                                                                                                                                                                        |
+| Hyrax         | [WTSTW18]  | evaluation   | [Notes on Hyrax-PCS](https://github.com/sec-bit/mle-pcs/blob/main/hyrax-pcs/hyrax-01.md)                                                                                                                                                                                                                                                                            |
+| Basefold      | [ZCF23]    | coefficient  | [Notes on Basefold (Part I): Foldable Linear Codes](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-01.md), [Notes on Basefold (Part II): IOPP](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-02.md), [Notes on Basefold (Part III): MLE Evaluation Argument](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-03.md) |
+| Basefold      | ⭐          | evaluation   | [An Alternative Folding Method](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-03.md#an-alternative-folding-method)                                                                                                                                                                                                                                 |
+| Deepfold      | [GLHQTZ24] | coefficient  | [Note on DeepFold: Protocol Overview](https://github.com/sec-bit/mle-pcs/blob/main/fri/deepfold.md)                                                                                                                                                                                                                                                                 |
+| Ligerito      | [GLHQTZ24] | coefficient  | [Notes on Ligerito-PCS](https://github.com/sec-bit/mle-pcs/blob/main/ligerito/)                                                                                                                                                                                                                                                                                     |
+| WHIR          | [ACFY24b]  | coefficient  | [Note on WHIR: Reed-Solomon Proximity Testing with Super-Fast Verification](https://github.com/sec-bit/mle-pcs/blob/main/fri/whir.md)                                                                                                                                                                                                                               |
+| FRI-Binius    | [DP24]     | evaluation   | [Notes on FRI-Binius (Part I): Binary Towers](https://github.com/sec-bit/mle-pcs/blob/main/fri-binius/binius-01.md), [Notes on Binius (Part II): Subspace Polynomial](https://github.com/sec-bit/mle-pcs/blob/main/fri-binius/binius-02.md)                                                                                                                         |
+| Σ-Check       | [GQZGX24]  |              |                                                                                                                                                                                                                                                                                                                                                                     |
 上表中在 Remark 一栏中添加“⭐️”的表示是在本项目中新增的协议描述。
 
 ### 按承诺协议的分类
@@ -541,8 +531,8 @@ Basefold 协议、Deepfold 协议和 WHIR 协议有着类似的思路，我们�
 
 	我们给出了两个不同的 PH23 协议对接 FRI 的协议。
 
-	- 协议 1 描述见 [缺失的协议 PH23-PCS（四）](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-fri-01.zh.md) ，其中内积证明通过 Grand Sum 实现。
-	- 协议 2 描述见 [缺失的协议 PH23-PCS（五）](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-fri-02.zh.md) ，其中内积证明通过 Univariate Sumcheck 方法实现。
+	- 协议 1 描述见 [缺失的协议 PH23-PCS（四）](ph23/ph23-pcs-fri-01.md) ，其中内积证明通过 Grand Sum 实现。
+	- 协议 2 描述见 [缺失的协议 PH23-PCS（五）](ph23/ph23-pcs-fri-02.md) ，其中内积证明通过 Univariate Sumcheck 方法实现。
 
 	- [ ] 更新上述文章链接为英文链接
 	
@@ -550,19 +540,39 @@ Basefold 协议、Deepfold 协议和 WHIR 协议有着类似的思路，我们�
 	
 2. **Gemini-FRI**
 	
-	协议描述见 [Gemini ：对接 FRI](https://github.com/sec-bit/mle-pcs/blob/main/gemini/gemini-fri.zh.md) 。FRI-PCS 有一个好处是对于不同次数的多项式在多个点的打开，可以用随机数合并成一个多项式，只需要再调用一次 FRI 的 low degree test 就能一次完成这些证明。因此结合 Gemini 协议和 FRI-PCS 时，只需调用一次 FRI 协议就能证明 Gemini 协议中多个多项式在不同点的打开正确。
+	协议描述见 [Gemini ：对接 FRI](https://github.com/sec-bit/mle-pcs/blob/main/gemini/gemini-fri.md) 。FRI-PCS 有一个好处是对于不同次数的多项式在多个点的打开，可以用随机数合并成一个多项式，只需要再调用一次 FRI 的 low degree test 就能一次完成这些证明。因此结合 Gemini 协议和 FRI-PCS 时，只需调用一次 FRI 协议就能证明 Gemini 协议中多个多项式在不同点的打开正确。
 
 	- [ ] 更新上述文章 gemini 链接为英文链接
 	
 ### 优化 Basefold 协议 
 
-> TODO: 补充这部分@YG
+Basefold 中的 Sumcheck 子协议中，Prover 每一步发送的 $h^{(i)}(X)$ 是一个一元二次多项式，但实际上经过 Sumcheck 优化 [Gru24]，Prover 可以仅发送一个一次多项式，这样可以减少 Sumcheck 子协议的通信量。这一点在论文 [H24] 中被提及。但进一步深入研究 Deepfold 协议，发现该协议中是一种与 [H24] 不同的 Sumcheck 协议，这部分详细描述见 [Deepfold 与 sumcheck 的联系](https://github.com/sec-bit/mle-pcs/blob/main/fri/deepfold.md#deepfold-%E4%B8%8E-sumcheck-%E7%9A%84%E8%81%94%E7%B3%BB)。
 
-通过深入研究 Deepfold 协议，发现该协议中隐式地调用了 sumcheck 协议，对比 Basefold 协议中的 sumcheck 协议，发现这两者之间存在细微的差别，这部分详细描述见 [Deepfold 与 sumcheck 的联系](https://github.com/sec-bit/mle-pcs/blob/main/fri/deepfold.zh.md#deepfold-%E4%B8%8E-sumcheck-%E7%9A%84%E8%81%94%E7%B3%BB)。Deepfold 中的 sumcheck 协议每一轮发送的一元多项式的次数更低，只有一次，而 Basefold 中的 sumcheck 协议每一轮发送的一元多项式的次数是二次的。如果将 Basefold 中的 sumcheck 协议替换为 Deepfold 中的 sumcheck 协议，再加上一些优化方法，那么可以优化 Basefold 协议，使得在证明中少发送大约 $2n$ 个有限域上的值，关于这部分的优化代码可见 [basefold_rs_opt_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/basefold_rs_opt_pcs.py) 。
+简述下，根据 $\tilde{eq}(\vec{X}, \vec{Y})$ 的定义，它可以被分解为：
 
-- [ ] 更新 deepfold 协议链接为英文链接
-- [ ] deepfold sumcheck 部分需要翻译为英文
-- [ ] basefold 协议中的 sumcheck 协议的另一种优化方式
+$$
+\tilde{eq}(\vec{X}_0\parallel\vec{X}_1, \vec{Y}_0\parallel\vec{Y}_1) = eq(\vec{X}_0, \vec{Y}_0) \cdot eq(\vec{X}_1, \vec{Y}_1)
+$$
+
+先观察下 $h^{(0)}(X)$ 的定义：
+
+$$
+h^{(0)}(X) = \sum_{b_1,b_2\in\{0,1\}^{2}} \tilde{f}(X, b_1, b_2) \cdot \tilde{eq}((u_0, u_1, u_2), (X, b_1, b_2))
+$$
+
+它的等式右边可以改写为：
+
+$$
+\begin{aligned}
+h^{(0)}(X) &= \sum_{b_1,b_2\in\{0,1\}^{2}} \tilde{f}(X, b_1, b_2) \cdot \tilde{eq}((u_0, u_1, u_2), (X, b_1, b_2)) \\
+&= \sum_{b_1,b_2\in\{0,1\}^{2}} \tilde{f}(X, b_1, b_2) \cdot eq(u_0, X) \cdot eq((u_1, u_2), (b_1, b_2)) \\
+&= eq(u_0, X) \cdot \sum_{(b_1,b_2)\in\{0,1\}^2`}  \Big( \tilde{f}(X, b_1, b_2) \cdot eq((u_1,u_2), (b_1, b_2)) \Big) \\
+\end{aligned}
+$$
+
+这样 Prover 仅发送 $g(X)=\sum_{(b_1,b_2)\in\{0,1\}^2`}  \Big( \tilde{f}(X, b_1, b_2) \cdot eq((u_1,u_2), (b_1, b_2)) \Big)$ 给 Verifier 即可，由 Verifier 补上计算 $eq(u_0, X)$，而这个计算仅是一次 Linear Combination，仅包含一次乘法。
+
+另一篇文章 [Basefold Optimization](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-opt.md) 中将 Deepfold 的优化技巧应用到了 Basefold 中，可以有效减少 Prover 和 Verifier 的计算量，同时也减少了证明长度。经过大致的估算，Sumcheck Prover 的运算量减少一半，而 Sumcheck Verifier 的运算量减少到 [H24] 的六分之一。对于 Basefold 而言，Verifier 的总体运算量中占主要成分的还是 FRI-Query 的运算量，因此这个优化并没有那么显著，但是从协议设计方面，优化后的协议更加简洁，这种技术是否可以应用到别的协议中，值得进一步研究。感兴趣的读者可以参考优化后的代码原型实现 [basefold_rs_opt_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/basefold_rs_opt_pcs.py) 。
 
 ## 代码实现（Python）
 
@@ -570,31 +580,30 @@ Basefold 协议、Deepfold 协议和 WHIR 协议有着类似的思路，我们�
 
 本项目用 Python 代码实现了许多 MLE-PCS 协议，同时有的协议还提供了 Jupyter Notebook 版本，这些代码可以帮助使用者通过代码交互的形式深入理解协议。
 
-| Scheme    | Python Code                                                                                                                                                                                                                                            | Jupyter Notebook                                                                                                                                                                                                 |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Gemini    | [bcho_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/bcho_pcs.py)                                                                                                                                                                            | [bcho_pcs.ipynb](https://github.com/sec-bit/mle-pcs/blob/main/src/bcho_pcs.ipynb)                                                                                                                                |
-| hyperKZG  | [hyperkzg_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/hyperkzg_pcs.py)                                                                                                                                                                    |                                                                                                                                                                                                                  |
-| Zeromorph | [zeromorph.py](https://github.com/sec-bit/mle-pcs/blob/main/src/zeromorph.py), [zeromorph_zk.py](https://github.com/sec-bit/mle-pcs/blob/main/src/zeromorph_zk.py), [zerofri.py](https://github.com/sec-bit/mle-pcs/blob/zeromorph_fri/src/zerofri.py) | [zeromorph.ipynb](https://github.com/sec-bit/mle-pcs/blob/main/src/zeromorph.ipynb), [zeromorph_mapping_tutorial.ipynb](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph_mapping_tutorial.ipynb) |
-| PH23      | [ph23_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/ph23_pcs.py)                                                                                                                                                                            |                                                                                                                                                                                                                  |
-| mercury   | [mercury_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/mercury_pcs.py)                                                                                                                                                                      |                                                                                                                                                                                                                  |
-| samaritan | [samaritan_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/samaritan_pcs.py)                                                                                                                                                                  |                                                                                                                                                                                                                  |
-| Basefold  | [Basefold.py](https://github.com/sec-bit/mle-pcs/blob/main/src/Basefold.py),[basefold_rs_opt_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/basefold_rs_opt_pcs.py)                                                                          | [Basefold.ipynb](https://github.com/sec-bit/mle-pcs/blob/main/src/Basefold.ipynb)                                                                                                                                |
-| Deepfold  | [deepfold_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/deepfold_pcs.py)                                                                                                                                                                    |                                                                                                                                                                                                                  |
-| WHIR      | [whir_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/whir_pcs.py)                                                                                                                                                                            |                                                                                                                                                                                                                  |
-| hyrax     | [hyrax_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/hyrax_pcs.py)                                                                                                                                                                          |                                                                                                                                                                                                                  |
-| PST13(Libra-PCS)     | [libra_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/libra_pcs.py)                                                                                                                                                                          |                                                                                                                                                                                                                  |
+| Scheme           | Python Code                                                                                                                                                                                                                                            | Jupyter Notebook                                                                                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gemini           | [bcho_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/bcho_pcs.py)                                                                                                                                                                            | [bcho_pcs.ipynb](https://github.com/sec-bit/mle-pcs/blob/main/src/bcho_pcs.ipynb)                                                                                                                                |
+| hyperKZG         | [hyperkzg_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/hyperkzg_pcs.py)                                                                                                                                                                    |                                                                                                                                                                                                                  |
+| Zeromorph        | [zeromorph.py](https://github.com/sec-bit/mle-pcs/blob/main/src/zeromorph.py), [zeromorph_zk.py](https://github.com/sec-bit/mle-pcs/blob/main/src/zeromorph_zk.py), [zerofri.py](https://github.com/sec-bit/mle-pcs/blob/zeromorph_fri/src/zerofri.py) | [zeromorph.ipynb](https://github.com/sec-bit/mle-pcs/blob/main/src/zeromorph.ipynb), [zeromorph_mapping_tutorial.ipynb](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph_mapping_tutorial.ipynb) |
+| PH23             | [ph23_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/ph23_pcs.py)                                                                                                                                                                            |                                                                                                                                                                                                                  |
+| mercury          | [mercury_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/mercury_pcs.py)                                                                                                                                                                      |                                                                                                                                                                                                                  |
+| samaritan        | [samaritan_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/samaritan_pcs.py)                                                                                                                                                                  |                                                                                                                                                                                                                  |
+| Basefold         | [Basefold.py](https://github.com/sec-bit/mle-pcs/blob/main/src/Basefold.py),[basefold_rs_opt_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/basefold_rs_opt_pcs.py)                                                                          | [Basefold.ipynb](https://github.com/sec-bit/mle-pcs/blob/main/src/Basefold.ipynb)                                                                                                                                |
+| Deepfold         | [deepfold_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/deepfold_pcs.py)                                                                                                                                                                    |                                                                                                                                                                                                                  |
+| WHIR             | [whir_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/whir_pcs.py)                                                                                                                                                                            |                                                                                                                                                                                                                  |
+| hyrax            | [hyrax_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/hyrax_pcs.py)                                                                                                                                                                          |                                                                                                                                                                                                                  |
+| PST13(Libra-PCS) | [libra_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/libra_pcs.py)                                                                                                                                                                          |                                                                                                                                                                                                                  |
 
 除了实现这些协议以外，还实现了一些 MLE-PCS 协议会用到的子协议。
 
-| Subprotocol           | Python Code | Jupyter Notebook                                                            |
-| --------------------- | ------- | --------------------------------------------------------------------------- |
-| FRI                   | [fri.py](https://github.com/sec-bit/mle-pcs/blob/main/src/fri.py) |                                                                             |
-| STIR                  | | [stir.ipynb](https://github.com/sec-bit/mle-pcs/blob/main/src/stir.ipynb)   |
-| KZG10                 | [kzg10.py](https://github.com/sec-bit/mle-pcs/blob/main/src/kzg10.py),[kzg10_hiding_m.py](https://github.com/sec-bit/mle-pcs/blob/main/src/kzg10_hiding_m.py), [kzg10_hiding_z.py](https://github.com/sec-bit/mle-pcs/blob/main/src/kzg10_hiding_z.py), [kzg10_non_hiding.py](https://github.com/sec-bit/mle-pcs/blob/main/src/kzg10_non_hiding.py),[kzg_hiding.py](https://github.com/sec-bit/mle-pcs/blob/main/src/kzg_hiding.py) | [kzg10.ipynb](https://github.com/sec-bit/mle-pcs/blob/main/src/kzg10.ipynb) |
-| IPA                   | [ipa.py](https://github.com/sec-bit/mle-pcs/blob/main/src/ipa.py) |                                                                             |
-| univariate polynomial |   unipoly2.py |                                                                             |
-| multilinear polynomial        | mle2.py |                                                                             |
-
+| Subprotocol            | Python Code                                                                                                                                                                                                                                                                                                                                                                                                                         | Jupyter Notebook                                                            |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| FRI                    | [fri.py](https://github.com/sec-bit/mle-pcs/blob/main/src/fri.py)                                                                                                                                                                                                                                                                                                                                                                   |                                                                             |
+| STIR                   |                                                                                                                                                                                                                                                                                                                                                                                                                                     | [stir.ipynb](https://github.com/sec-bit/mle-pcs/blob/main/src/stir.ipynb)   |
+| KZG10                  | [kzg10.py](https://github.com/sec-bit/mle-pcs/blob/main/src/kzg10.py),[kzg10_hiding_m.py](https://github.com/sec-bit/mle-pcs/blob/main/src/kzg10_hiding_m.py), [kzg10_hiding_z.py](https://github.com/sec-bit/mle-pcs/blob/main/src/kzg10_hiding_z.py), [kzg10_non_hiding.py](https://github.com/sec-bit/mle-pcs/blob/main/src/kzg10_non_hiding.py),[kzg_hiding.py](https://github.com/sec-bit/mle-pcs/blob/main/src/kzg_hiding.py) | [kzg10.ipynb](https://github.com/sec-bit/mle-pcs/blob/main/src/kzg10.ipynb) |
+| IPA                    | [ipa.py](https://github.com/sec-bit/mle-pcs/blob/main/src/ipa.py)                                                                                                                                                                                                                                                                                                                                                                   |                                                                             |
+| univariate polynomial  | [unipolynomial.py](https://github.com/sec-bit/mle-pcs/blob/main/src/unipolynomial.py), [unipoly.py](https://github.com/sec-bit/mle-pcs/blob/main/src/unipoly.py), [unipoly2.py](https://github.com/sec-bit/mle-pcs/blob/main/src/unipoly2.py)                                                                                                                                                                                       |                                                                             |
+| multilinear polynomial | [mle2.py](https://github.com/sec-bit/mle-pcs/blob/main/src/mle2.py)                                                                                                                                                                                                                                                                                                                                                                 |     
 ### 代数运算优化
 
 在实现 MLE-PCS 时，多项式的运算无处不在，不同的实现方式对多项式的运算复杂度有不同的影响。在本项目中，我们研究了一些多项式运算的优化方法，包括多项式除法的优化。
@@ -607,7 +616,7 @@ $$
 f(X) = g(X) \cdot q(X) + r(X)
 $$
 
-并且 $\deg(r) < \deg(g)$ ，记 $n = \deg(f), m = \deg(g)$ 。传统的除法需要 $O(n^2)$ 的计算复杂度计算出 $f(X)$ 和 $g(X)$ 相除后的商多项式 $q(X)$ 和余数多项式 $r(X)$ 。本项目介绍了一种利用 Newton Iteration 的快速除法算法，算法复杂度与多项式乘法一致，为 $O(M(n))$ ，其中 $M(n)$ 表示多项式乘法的复杂度。关于该算法的详细描述见博客文章 []() ，对应的 python 代码实现为 []() 。
+并且 $\deg(r) < \deg(g)$ ，记 $n = \deg(f), m = \deg(g)$ 。传统的除法需要 $O(n^2)$ 的计算复杂度计算出 $f(X)$ 和 $g(X)$ 相除后的商多项式 $q(X)$ 和余数多项式 $r(X)$ 。本项目介绍了一种利用 Newton Iteration 的快速除法算法，算法复杂度与多项式乘法一致，为 $O(M(n))$ ，其中 $M(n)$ 表示多项式乘法的复杂度。关于该算法的详细描述见博客文章 [基于 Newton Iteration 的多项式快速除法](https://github.com/sec-bit/mle-pcs/blob/main/math/unipoly_div.md) ，对应的 python 代码实现为 [unipolynomial.py](https://github.com/sec-bit/mle-pcs/blob/main/math/unipolynomial.py) 。
 
 ## 基于 KZG10 的 MLE-PCS 对比
 
@@ -625,13 +634,13 @@ $$
 
 对于 zeromorph 协议和 gemini 协议，我们给出了一些优化思路，因此这两个协议有多个版本。关于这些协议的描述文档和复杂度分析文档链接如下表所示。
 
-| 协议        | 版本                       | 协议描述文档                                                                                                                                             | 协议分析文档                                                      |
-| --------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| ph23      |                          | [PH23+KZG10 Protocol (Optimized Version)](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-02.md#2-ph23kzg10-protocol-optimized-version) | [ph23-analysis](../../ph23/note/analysis/ph23-analysis.md)  |
-| gemini    | 优化版 1                    | [gemini-pcs-02.zh](../../gemini/gemini-pcs-02.zh.pdf)                                                                                              | [gemini-analysis](../../gemini/analysis/gemini-analysis.md) |
-| gemini    | 优化版 2: 类似 FRI query 优化   | [gemini-pcs-03.zh](../../gemini/gemini-pcs-03.zh.pdf)                                                                                              | [gemini-analysis](../../gemini/analysis/gemini-analysis.md) |
-| zeromorph | v1: batched degree bound | [Optimized Protocol](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph.md#optimized-protocol)                                       | [zeromorph-analysis](../../zeromorph/zeromorph-analysis.md) |
-| zeromorph | v2: 优化 degree bound 证明   | [zeromorph-02-update.zh](../../zeromorph/zeromorph-02-update.zh.pdf)                                                                               | [zeromorph-analysis](../../zeromorph/zeromorph-analysis.md) |
+| 协议        | 版本                       | 协议描述文档                                                                                                                                             | 协议分析文档                                             |
+| --------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| ph23      |                          | [PH23+KZG10 Protocol (Optimized Version)](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-02.md#2-ph23kzg10-protocol-optimized-version) | [ph23-analysis](analysis/ph23-analysis.md)         |
+| gemini    | 优化版 1                    | [gemini-pcs-02.zh](https://github.com/sec-bit/mle-pcs/blob/main/gemini/gemini-pcs-02.md)                                                                                              | [gemini-analysis](analysis/gemini-analysis.md)     |
+| gemini    | 优化版 2: 类似 FRI query 优化   | [gemini-pcs-03.zh](https://github.com/sec-bit/mle-pcs/blob/main//gemini/gemini-pcs-03.md)                                                                                              | [gemini-analysis](analysis/gemini-analysis.md)     |
+| zeromorph | v1: batched degree bound | [Optimized Protocol](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph.md#optimized-protocol)                                       | [zeromorph-anlysis](analysis/zeromorph-anlysis.md) |
+| zeromorph | v2: 优化 degree bound 证明   | [zeromorph-02-update.zh](../../zeromorph/zeromorph-02-update.zh.pdf)                                                                               | [zeromorph-anlysis](analysis/zeromorph-anlysis.md) |
 
 - [ ] 更新协议描述链接
 - [ ] 将协议分析文档放到 public repo 中，并更新链接
@@ -688,7 +697,7 @@ $$
 
 $$
 \begin{align}
- (17nN + 36N + 9n - 2) ~ \mathbb{F}_{\mathsf{mul}} + {\color{blue} (n + 1) \log^2(n + 1)  ~ \mathbb{F}_{\mathsf{mul}} } + 2~ \mathbb{F}_{\mathsf{inv}} + 5 ~ \mathsf{msm}(N, \mathbb{G}_1) + 2 ~ \mathsf{msm}(N - 1, \mathbb{G}_1)
+ (17nN + 36N + 9n - 2) ~ \mathbb{F}_{\mathsf{mul}} + {(n + 1) \log^2(n + 1)  ~ \mathbb{F}_{\mathsf{mul}} } + 2~ \mathbb{F}_{\mathsf{inv}} + 5 ~ \mathsf{msm}(N, \mathbb{G}_1) + 2 ~ \mathsf{msm}(N - 1, \mathbb{G}_1)
 \end{align}
 $$
 
@@ -698,7 +707,7 @@ $$
 
 $$
 \begin{align}
-  (17nN + 39N + 9n - 4) ~ \mathbb{F}_{\mathsf{mul}} + {\color{blue} (n + 1) \log^2(n + 1)  ~ \mathbb{F}_{\mathsf{mul}} } + 3~ \mathbb{F}_{\mathsf{inv}} + 6 ~ \mathsf{msm}(N, \mathbb{G}_1) + \mathsf{msm}(N - 1, \mathbb{G}_1)
+  (17nN + 39N + 9n - 4) ~ \mathbb{F}_{\mathsf{mul}} + { (n + 1) \log^2(n + 1)  ~ \mathbb{F}_{\mathsf{mul}} } + 3~ \mathbb{F}_{\mathsf{inv}} + 6 ~ \mathsf{msm}(N, \mathbb{G}_1) + \mathsf{msm}(N - 1, \mathbb{G}_1)
 \end{align}
 $$
 
@@ -852,51 +861,44 @@ $$
 
 #### 总结
 
-通过这三个协议的复杂度分析结果对比可知，没有进行任何优化的 zeromorph-v0 协议的 msm 操作的长度是最大的，为 $n ~ \mathsf{msm}(D_{max} + 1,\mathbb{G}_1)$ ，同时 proof size 也最大，为 $(2n + 1) \mathbb{G}_1$ 。zeromorph-v1 和 zeromorph-v2 这两个协议采取了不同的方法来优化 degree bound 的证明，减少了 Prover 的 msm 的操作并降低了大约 $n ~ \mathbb{G}_1$ 的证明大小。zeromorph-v1 和 zeromorph-v2 在计算复杂度上的最大差别是，zeromorph-v2 协议避免了 Verifier 在椭圆曲线 $\mathbb{G}_2$ 上进行运算，带来的代价是增加了 Verifier 在椭圆曲线 $\mathbb{G}_1$ 常数级别的计算量和 $\mathbb{G}_1 + \mathbb{F}_q$ 的证明大小。
+通过这两个协议的复杂度分析结果对比可知，没有进行任何优化的 zeromorph 协议的 msm 操作的长度是最大的，为 $n ~ \mathsf{msm}(D_{max} + 1,\mathbb{G}_1)$ ，同时 proof size 也最大，为 $(2n + 1) \mathbb{G}_1$ ，这部分协议复杂度详细分析可见 [zeromorph-anlysis](analysis/zeromorph-anlysis.md)。zeromorph-v1 和 zeromorph-v2 这两个协议采取了不同的方法来优化 degree bound 的证明，减少了 Prover 的 msm 的操作并降低了大约 $n ~ \mathbb{G}_1$ 的证明大小。zeromorph-v1 和 zeromorph-v2 在计算复杂度上的最大差别是，zeromorph-v2 协议避免了 Verifier 在椭圆曲线 $\mathbb{G}_2$ 上进行运算，带来的代价是增加了 Verifier 在椭圆曲线 $\mathbb{G}_1$ 常数级别的计算量和 $\mathbb{G}_1 + \mathbb{F}_q$ 的证明大小。
 
 ### 对比
 
 参考 mercury 论文[EG25]中的理论分析，并结合上述分析结果，对比基于 KZG10 的协议的复杂度。
 
-| Protocol          | Prover's cost                                    | Verifier's cost                        | Proof size                            |
-| ----------------- | ------------------------------------------------ | -------------------------------------- | ------------------------------------- |
-| Libra-PCS         |                                                  |                                        |                                       |
-| PH23-KZG          | $O(nN) ~ \mathbb{F}, O(N) \mathbb{G}$            | $O(n) ~ \mathbb{F}, O(1) ~ \mathbb{G}$ | $O(n)~ \mathbb{F}, O(1) ~ \mathbb{G}$ |
-| gemini            | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(n) ~ \mathbb{F}, O(n) ~ \mathbb{G}$ | $O(n)~ \mathbb{F}, O(n) ~ \mathbb{G}$ |
-| hyperKZG          |                                                  |                                        |                                       |
-| zeromorph-v0      | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(n) ~ \mathbb{F}, O(n) ~ \mathbb{G}$ | $(2n + 1) ~ \mathbb{G}$               |
-| zeromorph-v1      | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(n) ~ \mathbb{F}, O(n) ~ \mathbb{G}$ | $(n + 2) ~ \mathbb{G}$                |
-| zeromorph-v2      | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(n) ~ \mathbb{F}, O(n) ~ \mathbb{G}$ | $\mathbb{F}, (n + 3) ~ \mathbb{G}$    |
-| mercury [EG25]    | $O(N) ~ \mathbb{F}, 2N + O(\sqrt{N}) \mathbb{G}$ | $O(n) ~ \mathbb{F}, O(1) ~ \mathbb{G}$ | $O(1)~ \mathbb{F}, O(1) ~ \mathbb{G}$ |
-| samaritan [GPS25] | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(n) ~ \mathbb{F}, O(1) ~ \mathbb{G}$ | $O(1)~ \mathbb{F}, O(1) ~ \mathbb{G}$ |
+| Protocol          | Prover's cost                                    | Verifier's cost                                  | Proof size                                      |
+| ----------------- | ------------------------------------------------ | ------------------------------------------------ | ----------------------------------------------- |
+| Libra-PCS         |                                                  |                                                  |                                                 |
+| PH23-KZG          | $O(N\log N) ~ \mathbb{F}, O(N) \mathbb{G}$       | $O(\log N) ~ \mathbb{F}, O(1) ~ \mathbb{G}$      | $O(\log N)~ \mathbb{F}, O(1) ~ \mathbb{G}$      |
+| gemini            | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(n) ~ \mathbb{G}$      | $O(\log N)~ \mathbb{F}, O(\log N) ~ \mathbb{G}$ |
+| hyperKZG          |                                                  |                                                  |                                                 |
+| zeromorph-v0      | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(\log N) ~ \mathbb{G}$ | $(2\log N + 1) ~ \mathbb{G}$                    |
+| zeromorph-v1      | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(\log N) ~ \mathbb{G}$ | $(\log N + 2) ~ \mathbb{G}$                     |
+| zeromorph-v2      | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(\log N) ~ \mathbb{G}$ | $\mathbb{F}, (\log N + 3) ~ \mathbb{G}$         |
+| mercury [EG25]    | $O(N) ~ \mathbb{F}, 2N + O(\sqrt{N}) \mathbb{G}$ | $O(\log N) ~ \mathbb{F}, O(1) ~ \mathbb{G}$      | $O(1)~ \mathbb{F}, O(1) ~ \mathbb{G}$           |
+| samaritan [GPS25] | $O(N) ~ \mathbb{F}, O(N) \mathbb{G}$             | $O(\log N) ~ \mathbb{F}, O(1) ~ \mathbb{G}$      | $O(1)~ \mathbb{F}, O(1) ~ \mathbb{G}$           |
 
 通过对比发现：
-1. 在 Prover 计算复杂度方面，PH23 复杂度最高，需要 $O(nN)$ 数量级的有限域上的计算量，而其他协议只需要 $O(N) ~ \mathbb{F}$ 的计算量。
-2. 在 Verifier 计算复杂度方面，所有协议都需要 $O(n)$ 的有限域操作， PH23, mercury 和 samaritan 协议只需要常数级别椭圆曲线上的计算，而其他协议需要 $O(n)$ 级别的椭圆曲线上的计算。
+1. 在 Prover 计算复杂度方面，PH23 复杂度最高，需要 $O(N\log N)$ 数量级的有限域上的计算量，而其他协议只需要 $O(N) ~ \mathbb{F}$ 的计算量。
+2. 在 Verifier 计算复杂度方面，所有协议都需要 $O(\log N)$ 的有限域操作， PH23, mercury 和 samaritan 协议只需要常数级别椭圆曲线上的计算，而其他协议需要 $O(\log N)$ 级别的椭圆曲线上的计算。
 3. 在 Proof size 方面，mercury 和 samaritan 协议能够达到常数级别的证明大小。我们发现，PH23 协议在使用类似 Plonk 的方案时也能达到常数的证明大小，计划在将来的工作中详细描述这部分协议。
 目前看来，mercury 和 SamaritanPCS 这两个协议效率最优，能在不牺牲 Prover 线性 $O(N)$ 的有限域运算的情况下，达到常数的证明尺寸，而非对数级别的 $O(\log N)$。
 
 - [ ] 添加 libra 的比较？
-- [ ] 将 $n$ 改为 $\log N$
 
 ## 基于 FRI 的 MLE-PCS 对比
 
-我们详细描述了 PH23、gemini 以及 zeromorph 协议对接 FRI 的协议。对于采用 mmcs 结构以及用 rolling batch 技巧进行优化的 zeromorph-fri 协议，我们详细分析了该协议的复杂度。通过与 Basefold 协议对比发现，Basefold 协议要优于 zeromorph-fri 协议。另外，我们从 Verifier 的查询复杂度的角度对比了 Basefold、Deepfold 以及 WHIR 协议。
+我们详细描述了 PH23、gemini 以及 zeromorph 协议对接 FRI 的协议。对于采用 [mmcs](https://github.com/Plonky3/Plonky3/blob/main/merkle-tree/src/mmcs.rs) 结构以及用 rolling batch [ZLGSCLD24] 技巧进行优化的 zeromorph-fri 协议，我们详细分析了该协议的复杂度。通过与 Basefold 协议对比发现，Basefold 协议要优于 zeromorph-fri 协议。另外，我们从 Verifier 的查询复杂度的角度对比了 Basefold、Deepfold 以及 WHIR 协议。
 
-| 协议            | 版本                                     | 协议描述文档                                                                                                                                                                    | 协议分析文档                                                                                     |
-| ------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| basefold      |                                        | basefold 论文 [ZCF23]                                                                                                                                                       | [basefold-analysis](../../FRI/BaseFold/analysis/basefold-analysis.md)                      |
-| ph23-fri      | 内积采用 grand sum                         | [缺失的协议 PH23-PCS（四）](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-fri-01.zh.md)                                                                              |                                                                                            |
-| ph23-fri      | 内积采用 univariate sumcheck               | [缺失的协议 PH23-PCS（五）](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-fri-02.zh.md)                                                                              |                                                                                            |
-| gemini-fri    |                                        | [Gemini ：对接 FRI](https://github.com/sec-bit/mle-pcs/blob/main/gemini/gemini-fri.zh.md)                                                                                    |                                                                                            |
-| zeromorph-fri | 直接对接 fri 协议                            | [Zeromorph-PCS : 对接 FRI](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph-fri.zh.md#%E5%AF%B9%E6%8E%A5-fri)                                               |                                                                                            |
-| zeromorph-fri | 优化版：采用 mmcs 结构承诺商多项式和 rolling batch 技巧 | [Zeromorph 对接 FRI 优化协议](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph-fri.zh.md#zeromorph-%E5%AF%B9%E6%8E%A5-fri-%E4%BC%98%E5%8C%96%E5%8D%8F%E8%AE%AE) | [zeromorph-fri-analysis](../../zeromorph/zeromorph-fri/analysis/zeromorph-fri-analysis.md) |
-
-- [ ] 更新协议描述文档链接为英文链接
-- [ ] 更新协议分析文档链接
-- [ ] 添加参考文献 rolling batch PolyFRI
-- [ ] mmcs 参考文献 plonky3
-
+| 协议            | 版本                                                                                                                         | 协议描述文档                                      | 协议分析文档                                                                                     |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| basefold      |                                                                                                                            | basefold 论文 [ZCF23]                         | [basefold-analysis](../../FRI/BaseFold/analysis/basefold-analysis.md)                      |
+| ph23-fri      | 内积采用 grand sum                                                                                                             | [ph23-pcs-fri-01](ph23/ph23-pcs-fri-01.md)  |                                                                                            |
+| ph23-fri      | 内积采用 univariate sumcheck                                                                                                   | [ph23-pcs-fri-02](ph23/ph23-pcs-fri-02.md)  |                                                                                            |
+| gemini-fri    |                                                                                                                            | [gemini-fri](gemini/gemini-fri.md)          |                                                                                            |
+| zeromorph-fri | 直接对接 fri 协议                                                                                                                | [zeromorph-fri](zeromorph/zeromorph-fri.md) |                                                                                            |
+| zeromorph-fri | 优化版：采用 [mmcs](https://github.com/Plonky3/Plonky3/blob/main/merkle-tree/src/mmcs.rs) 结构承诺商多项式和 rolling batch [ZLGSCLD24] 技巧 | [zeromorph-fri](zeromorph/zeromorph-fri.md) | [zeromorph-fri-analysis](../../zeromorph/zeromorph-fri/analysis/zeromorph-fri-analysis.md) |
 ### Basefold v.s. Zeromorph-fri
 
 下面给出 basefold 协议和 zeromorph-fri（优化版） 的复杂度分析结果，其中的记号说明如下：
@@ -1032,18 +1034,16 @@ $$
 ### 对比 Basefold， Deepfold 与 WHIR
 
 
-| Scheme        | Prover's cost                 | Verify                          | Proof Size        |
-| ------------- | ----------------------------- | ------------------------------- | ----------------- |
-| Basefold      | $O(nN) ~\mathbb{F} + O(n) ~H$ | $O(s_J  \log^2 N) ~ \mathbb{H}$ | $O(s_J \log^2 N)$ |
-| Deepfold      | $O(nN) ~\mathbb{F} + O(n) ~H$ | $O(s_L  \log^2 N) ~ \mathbb{H}$ | $O(s_L \log^2 N)$ |
-| WHIR          |                               |                                 |                   |
-| zeromorph-fri | $O(nN) ~\mathbb{F} + O(n) ~H$ | $O(s_J \log^2 N) ~ \mathbb{H}$  | $O(s_J \log^2 N)$ |
-| gemini-fri    |                               |                                 |                   |
-| PH23-fri      |                               |                                 |                   |
+| Scheme        | Prover's cost                            | Verify                          | Proof Size        |
+| ------------- | ---------------------------------------- | ------------------------------- | ----------------- |
+| Basefold      | $O(N\log N) ~\mathbb{F} + O(\log N) ~H$  | $O(s_J  \log^2 N) ~ \mathbb{H}$ | $O(s_J \log^2 N)$ |
+| Deepfold      | $O(N \log N) ~\mathbb{F} + O(\log N) ~H$ | $O(s_L  \log^2 N) ~ \mathbb{H}$ | $O(s_L \log^2 N)$ |
+| WHIR          |                                          |                                 |                   |
+| zeromorph-fri | $O(N \log N) ~\mathbb{F} + O(\log N) ~H$ | $O(s_J \log^2 N) ~ \mathbb{H}$  | $O(s_J \log^2 N)$ |
+| gemini-fri    |                                          |                                 |                   |
+| PH23-fri      |                                          |                                 |                   |
 
-关于 Basefold、Deepfold 与 WHIR 协议之间的对比在博客文章 [BaseFold vs DeepFold vs WHIR](https://github.com/sec-bit/mle-pcs/blob/main/basefold-deepfold-whir/basefold-deepfold-whir.md) 中有详细的描述，这里主要叙述这三个协议的效率对比结果。
-
-- [ ] 更新文章链接为英文文章链接
+关于 Basefold、Deepfold 与 WHIR 协议之间的对比在博客文章 [BaseFold vs DeepFold vs WHIR](basefold-deepfold-whir/basefold-deepfold-whir.md) 中有详细的描述，这里主要叙述这三个协议的效率对比结果。
 
 Basefold、Deepfold 与 WHIR 协议在协议框架上非常相似，这三个协议的框架都是 BaseFold 协议的框架，用相同的随机数同步进行 sumcheck 协议和 FRI/DEEP-FRI/STIR 协议，它们之间的不同主要也是来自 FRI 协议、DEEP-FRI 协议和 STIR 协议之间的不同。
 
@@ -1182,7 +1182,10 @@ $$
 - [ACFY24a] Gal Arnon, Alessandro Chiesa, Giacomo Fenzi, and Eylon Yogev. "STIR: Reed-Solomon proximity testing with fewer queries." In _Annual International Cryptology Conference_, pp. 380-413. Cham: Springer Nature Switzerland, 2024.
 - [ACFY24b] Gal Arnon, Alessandro Chiesa, Giacomo Fenzi, and Eylon Yogev. "WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification." _Cryptology ePrint Archive_ (2024).
 - [AHIV17] Scott Ames, Carmit Hazay, Yuval Ishai, and Muthuramakrishnan Venkitasubramaniam. Ligero: lightweight sublinear arguments without a trusted setup”. 2022. https://eprint.iacr.org/2022/1608.pdf
+- [BBB+18] Bünz, Benedikt, Jonathan Bootle, Dan Boneh, Andrew Poelstra, Pieter Wuille, and Greg Maxwell. "Bulletproofs: Short proofs for confidential transactions and more." In 2018 IEEE symposium on security and privacy (SP), pp. 315-334. IEEE, 2018. https://eprint.iacr.org/2017/1066 
 - [BBHR18] Eli Ben-Sasson, Iddo Bentov, Yinon Horesh, and Michael Riabzev. “Fast Reed–Solomon Interactive Oracle Proofs of Proximity”. In: *Proceedings of the 45th International Colloquium on Automata, Languages and Programming (ICALP)*, 2018.
+- [BCC+16] Jonathan Bootle, Andrea Cerulli, Pyrros Chaidos, Jens Groth, and Christophe Petit. "Efficient Zero-Knowledge Arguments for Arithmetic Circuits in the Discrete Log Setting."  In Advances in Cryptology–EUROCRYPT 2016: 35th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Vienna, Austria, May 8-12, 2016, Proceedings, Part II 35, pp. 327-357. Springer Berlin Heidelberg, 2016.  https://eprint.iacr.org/2016/263 
+
 - [BCH+22] Bootle, Jonathan, Alessandro Chiesa, Yuncong Hu, **et al. "Gemini: Elastic SNARKs for Diverse Environments." *Cryptology ePrint Archive* (2022). [https://eprint.iacr.org/2022/420](https://eprint.iacr.org/2022/420)
 - [BCIKS20] Eli Ben-Sasson, Dan Carmon, Yuval Ishai, Swastik Kopparty, and Shubhangi Saraf. Proximity Gaps for Reed–Solomon Codes. In *Proceedings of the 61st Annual IEEE Symposium on Foundations of Computer Science*, pages 900–909, 2020.
 - [BGKS20] Eli Ben-Sasson, Lior Goldberg, Swastik Kopparty, and Shubhangi Saraf. DEEP-FRI: sampling outside the box improves soundness. In *Thomas Vidick, editor, 11th Innovations in Theoretical Computer Science Conference, ITCS 2020, January 12-14, 2020, Seattle, Washington, USA, volume 151 of LIPIcs*, pages 5:1–5:32. Schloss Dagstuhl - Leibniz-Zentrum für Informatik, 2020.
@@ -1196,6 +1199,7 @@ $$
 - [GLHQTZ24] Yanpei Guo, Xuanming Liu, Kexi Huang, Wenjie Qu, Tianyang Tao, and Jiaheng Zhang. "DeepFold: Efficient Multilinear Polynomial Commitment from Reed-Solomon Code and Its Application to Zero-knowledge Proofs." _Cryptology ePrint Archive_ (2024).
 - [GPS25] Ganesh, Chaya, Sikhar Patranabis, and Nitin Singh. "Samaritan: Linear-time Prover SNARK from New Multilinear Polynomial Commitments." _Cryptology ePrint Archive_ (2025). https://eprint.iacr.org/2025/419
 - [GQZGX24] Shang Gao, Chen Qian, Tianyu Zheng, Yu Guo, and Bin Xiao. "$\Sigma$-Check: Compressed $\Sigma$-protocol Theory from Sum-check." (2024). https://eprint.iacr.org/2024/1654
+- [Gru24] Angus Gruen. "Some Improvements for the PIOP for ZeroCheck". (2024). https://eprint.iacr.org/2024/108.
 - [GWC19] Ariel Gabizon, Zachary J. Williamson, and Oana Ciobotaru. "Plonk: Permutations over lagrange-bases for oecumenical noninteractive arguments of knowledge." *Cryptology ePrint Archive* (2019).
 - [H24] Ulrich Haböck. "Basefold in the List Decoding Regime." _Cryptology ePrint Archive_(2024).
 - [HPS23] Lipmaa, Helger, Roberto Parisella, and Janno Siim. "Algebraic group model with oblivious sampling." *Theory of Cryptography Conference*. Cham: Springer Nature Switzerland, 2023.
@@ -1206,9 +1210,14 @@ $$
 - [NA25] Andrija Novakovic and Guillermo Angeris. Ligerito: A Small and Concretely Fast Polynomial Commitment Scheme. 2025. https://angeris.github.io/papers/ligerito.pdf.
 - [NS24] Ngoc Khanh Nguyen and Gregor Seiler. Greyhound: Fast Polynomial Commitments from Lattices. 2024.  Cryptology ePrint Archive (2024).https://eprint.iacr.org/2024/1293
 - [PH23] Papini, Shahar, and Ulrich Haböck. "Improving logarithmic derivative lookups using GKR." Cryptology ePrint Archive (2023). [https://eprint.iacr.org/2023/1284](https://eprint.iacr.org/2023/1284)
+- Plonky3. https://github.com/Plonky3/Plonky3
+
 - [PST13] Papamanthou, Charalampos, Elaine Shi, and Roberto Tamassia. "Signatures of correct computation." Theory of Cryptography Conference. Berlin, Heidelberg: Springer Berlin Heidelberg, 2013. https://eprint.iacr.org/2011/587
 - [WTSTW16] Riad S. Wahby, Ioanna Tzialla, abhi shelat, Justin Thaler, and Michael Walfish. "Doubly-efficient zkSNARKs without trusted setup."  In 2018 IEEE Symposium on Security and Privacy (SP), pp. 926-943. IEEE, 2018.  https://eprint.iacr.org/2016/263 
 - [XZZPS19] Tiancheng Xie, Jiaheng Zhang, Yupeng Zhang, Charalampos Papamanthou, and Dawn Song. "Libra: Succinct Zero-Knowledge Proofs with Optimal Prover Computation." Cryptology ePrint Archive (2019). https://eprint.iacr.org/2019/317
 - [ZCF23] Hadas Zeilberger, Binyi Chen, and Ben Fisch. "BaseFold: efficient field-agnostic polynomial commitment schemes from foldable codes." Annual International Cryptology Conference. Cham: Springer Nature Switzerland, 2024.
+- [ZLGSCLD24] Zhang, Zongyang, Weihan Li, Yanpei Guo, Kexin Shi, Sherman SM Chow, Ximeng Liu, and Jin Dong. "Fast {RS-IOP} Multivariate Polynomial Commitments and Verifiable Secret Sharing." In _33rd USENIX Security Symposium (USENIX Security 24)_, pp. 3187-3204. 2024.
+
 - [ZGX25] Lizhen Zhang, Shang Gao, and Bin Xiao.  HyperWolf: Efficient Polynomial Commitment Schemes from Lattices. Cryptology ePrint Archive (2025).https://eprint.iacr.org/2025/922 .
+- [ZSCZ24] Zhao, Jiaxing, Srinath Setty, Weidong Cui, and Greg Zaverucha. "MicroNova: Folding-based arguments with efficient (on-chain) verification." _Cryptology ePrint Archive_ (2024).
 - [ZXZS19] Jiaheng Zhang, Tiancheng Xie, Yupeng Zhang, and Dawn Song. "Transparent Polynomial Delegation and Its Applications to Zero Knowledge Proof". In 2020 IEEE Symposium on Security and Privacy (SP), pp. 859-876. IEEE, 2020. https://eprint.iacr.org/2019/1482.
