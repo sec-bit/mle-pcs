@@ -1,32 +1,31 @@
-# 多项式除法与 Ruffini 法则
+# Polynomial Division and Ruffini's Rule
 
+### Univariate Polynomial Division and Ruffini's Rule
 
-### 一元多项式除法与 Ruffini 法则
+According to Ruffini's rule, there is a close relationship between polynomial division and polynomial evaluation.
 
-根据 Ruffini 法则，一元多项式除法和多项式求值之间具有紧密的关系。
-
-如果我们利用多项式长除法来计算 $f(X)/(X-d)$，那么我们可以得到一个商多项式 $q(X)$ 和一个余数 $r$，满足：
+If we use polynomial long division to calculate $f(X)/(X-d)$, we get a quotient polynomial $q(X)$ and a remainder $r$, satisfying:
 
 $$
 f(X) = (X-d)\cdot q(X) + r
 $$
 
-这是大家熟知的多项式余数定理，即余数恰好等于 $f(d)$。所以当 $f(X)$ 减去余数之后，就可以被 $(X-d)$ 整除。那么商多项式 $q(X)$ 和 $f(d)$ 之间的是否也有一定的联系呢？
-先上一个结论：商多项式 $q(X)$ 恰好是 $f(X)$ 在 $X=d$ 处求值过程中，所产生的中间计算结果。
+This is the well-known polynomial remainder theorem, stating that the remainder equals $f(d)$. So when $f(X)$ minus the remainder, it can be divided evenly by $(X-d)$. Is there also a connection between the quotient polynomial $q(X)$ and $f(d)$?
+Here's a conclusion: the quotient polynomial $q(X)$ is exactly the intermediate calculation result produced during the evaluation of $f(X)$ at $X=d$.
 
-我们用系数形式来表示 $f(X)$，那么
+Representing $f(X)$ in coefficient form, we have:
 
 $$
 f(X) = a_0 + a_1X + a_2X^2 + \ldots + a_nX^n
 $$
 
-变化下形式可得：
+Rearranging, we get:
 
 $$
 f(X) = a_0 + X(a_1 + X(a_2 + \ldots + X(a_{n-1} + Xa_n)\ldots)
 $$  
 
-如果要计算「多项式求值」 $f(d)$, 我们从左到右依次代入 $X=d$ 到上面等式，
+To calculate the "polynomial evaluation" $f(d)$, we substitute $X=d$ from left to right into the above equation:
 
 $$
 \begin{split}
@@ -39,9 +38,9 @@ $$
 \end{split}
 $$
 
-而 $(q_0, q_1, \ldots, q_{n-1})$ 正是商多项式 $q(X)$ 的系数。换句话说，多项式的线性除法过程，其实正是多项式求值过程。
+And $(q_0, q_1, \ldots, q_{n-1})$ are precisely the coefficients of the quotient polynomial $q(X)$. In other words, the linear division process of a polynomial is actually the polynomial evaluation process.
 
-我们看一个简单例子，比如 $f(X) = 5 + 3X + 2X^2 + X^3$，我们要计算 $f(-2)$，即等同于计算 $f(X)/(X+2)$，计算过程如下：
+Let's take a simple example: $f(X) = 5 + 3X + 2X^2 + X^3$. To calculate $f(-2)$, which is equivalent to calculating $f(X)/(X+2)$, the process is:
 
 $$
 \begin{array}{lll}
@@ -52,9 +51,9 @@ $$
 \end{array}
 $$
 
-我们于是得到最后一行的结果 $f(-2) = -1$，并且在计算过程中附带得到了商多项式  $q(X) = 3 + X^2$。
+We thus get the result $f(-2) = -1$ and incidentally obtain the quotient polynomial $q(X) = 3 + X^2$.
 
-我们可以写一个简单的循环来实现这个计算过程：
+We can implement this calculation process with a simple loop:
 
 ```rust
 fn div_poly(f: &[Scalar], d: Scalar) -> (Vec<Scalar>, Scalar) {
@@ -69,48 +68,47 @@ fn div_poly(f: &[Scalar], d: Scalar) -> (Vec<Scalar>, Scalar) {
 }
 ```
 
-其实，Ruffini 法则不只针对线性多项式除法适用，也适用于除数多项式时任意次数的除法。这种一般化的算法被称为 Synthetic Division。
+Actually, Ruffini's rule applies not just to linear polynomial division but to division by polynomials of any degree. This generalized algorithm is known as Synthetic Division.
 
-以上，我们一直在讨论一元多项式的除法，那么 MLE 的除法呢？幸运的是，Ruffini 法则同样适用于 MLE 多项式除法，MLE 多项式除法的计算过程等同于 MLE 多项式求值过程。
+So far, we've been discussing univariate polynomial division. What about MLE (Multilinear Extension) division? Fortunately, Ruffini's rule also applies to MLE polynomial division; the calculation process of MLE polynomial division is equivalent to the MLE polynomial evaluation process.
 
-### MLE 多项式除法
+### MLE Polynomial Division
 
-先热身一下，当我们用一个 MLE 除以一个一元线性多项式时，我们可以把 MLE 视为一个一元多项式，其它变元被看成是互相无法计算的常数。这样我们可以用一元多项式除法来快速得到商多项式（$n-1$ 元 MLE）和余数。
+To warm up, when we divide an MLE by a univariate linear polynomial, we can view the MLE as a univariate polynomial, with other variables seen as mutually non-calculable constants. This way, we can use univariate polynomial division to quickly obtain the quotient polynomial (an $(n-1)$-variate MLE) and remainder.
 
-比如 
+For example:
 
 $$
 \tilde{f}(X_0, X_1, X_2) = 2\cdot X_0X_2 + 3\cdot X_1 + 4\cdot X_0
 $$
 
-除法如下：
+The division is:
 
 $$
 \frac{2\cdot X_0X_2 + 3\cdot X_1 + 4\cdot X_0}{(X_2-a)} = \frac{(2\cdot X_0)X_2 + (3\cdot X_1 + 4\cdot X_0)}{(X_2-a)} = 2\cdot X_0, 3X_1 + (4+ 2a)X_0
 $$
 
-其中余数为 $3X_1 + (4+ 2a)X_0$，商多项式也是一个 MLE 为 $2\cdot X_0$。那么接下来我们还可以对余数多项式继续做除法，这次我们除以 $(X_1-b)$：
+The remainder is $3X_1 + (4+ 2a)X_0$, and the quotient polynomial is an MLE, $2\cdot X_0$. Next, we can continue to divide the remainder polynomial by $(X_1-b)$:
 
 $$
 \frac{3X_1 + (4+ 2a)X_0}{(X_1-b)} = 3, (4+ 2a)X_0 + 3b
 $$
 
-余数多项式为 $(4+ 2a)X_0 + 3b$，商多项式为 $3$。最后，我们继续除法，除数多项式为 $(X_0-c)$：
+The remainder becomes $(4+ 2a)X_0 + 3b$, and the quotient is $3$. Finally, we continue division with $(X_0-c)$:
 
 $$
 \frac{(4+ 2a)X_0 + 3b}{(X_0-c)} = 4+2a, 3b + (4+2a)c 
 $$
 
-余数为 $3b + (4+2a)c$，商多项式为 $4+2a$。
+The remainder is $3b + (4+2a)c$, and the quotient is $4+2a$.
 
-至此，我们计算了三次完整的 MLE 多项式除法，分别除以 $(X_2-a)$，$(X_1-b)$ 与 $(X_0-c)$。得到了三个商多项式，和最后的余数。现看看最后的余数，它恰好等于 $\tilde{f}(\vec{X})$ 在 $(c,b,a)$ 处的取值。
-这完美符合 Ruffini 法则。
+We've now performed three complete MLE polynomial divisions, dividing by $(X_2-a)$, $(X_1-b)$, and $(X_0-c)$. We've obtained three quotients and a final remainder. Looking at the final remainder, it's exactly the value of $\tilde{f}(\vec{X})$ at $(c,b,a)$, perfectly matching Ruffini's rule:
 
 $$
 r= 3b + (4+2a)c  = \tilde{f}(c, b, a)
 $$
 
-三个商多项式如下：
+The three quotient polynomials are:
 
 $$
 \begin{split}
@@ -120,19 +118,19 @@ $$
 \end{split}
 $$
 
-不过计算多项式除法不是那么直观，那么接下来我们利用 Ruffini 法则来通过计算 MLE 求值，并且同时计算出商多项式，这个计算过程更加清晰。MLE 的计算过程可以看成是一个折叠的过程，对于每一个变元 $X_k\in\{X_{n-1},\ldots, X_0\}$，我们都可以把多项式看成一个一元线性多项式 
+Computing polynomial division isn't so intuitive, so next we'll use Ruffini's rule to calculate MLE evaluation and simultaneously compute the quotient polynomial, making the process clearer. The MLE calculation can be viewed as a folding process. For every variable $X_k\in\{X_{n-1},\ldots, X_0\}$, we can view the polynomial as a univariate linear polynomial:
 
 $$
 \tilde{f}(\vec{X},X_k)=A + B\cdot X_k
 $$
 
-当我们把 $X_k = \alpha$ 代入后，可以得到：
+When we substitute $X_k = \alpha$, we get:
 
 $$
 \tilde{f}(\vec{X},X_k)=A + \alpha\cdot B
 $$
 
-如果我们把 $\tilde{f}$ 用系数向量来表示，那么这个过程可以看作是关于 $\alpha$ 因子的折叠。例如 $\tilde{f}(X_0, X_1, X_2) = 2\cdot X_0X_2 + 3\cdot X_1 + 4\cdot X_0$，那么它的系数向量为：
+If we represent $\tilde{f}$ as a coefficient vector, this process can be seen as a folding based on the factor $\alpha$. For example, for $\tilde{f}(X_0, X_1, X_2) = 2\cdot X_0X_2 + 3\cdot X_1 + 4\cdot X_0$, its coefficient vector is:
 
 $$
 \begin{array}{cccccccc}
@@ -141,7 +139,7 @@ $$
 \end{array}
 $$
 
-这些系数分别对应于第二排的单项式。接下来，假如要计算 $f(c, b, a)$，我们可以用一个 split-and-fold 的思想来完成计算过程。
+Each coefficient corresponds to the monomial in the second row. Next, if we want to calculate $f(c, b, a)$, we can use a split-and-fold approach:
 
 $$
 \begin{split}
@@ -151,33 +149,33 @@ $$
 \end{split}
 $$
 
-每一轮，我们都将向量对半拆成两半，把左边的一半加上右边一半乘以一个因子，这样递归三轮，我们会最终得到计算结果 $3b+ (4+2a)c$，这个结果也恰好等于前面的多项式除法计算的余数。我们前面提到过，根据 Ruffini 法则，商多项式应该是求值计算过程中的中间结果，那么这个折叠过程中，哪里能找到商多项式的踪迹呢？
+In each round, we split the vector in half, add the left half to the right half multiplied by a factor. After three recursive rounds, we finally get the result $3b+ (4+2a)c$, which matches the remainder from our earlier polynomial division. As mentioned before, according to Ruffini's rule, the quotient polynomial should be the intermediate result during the evaluation. So where do we find traces of the quotient polynomial in this folding process?
 
-商多项式是蓝色标记的向量作为「系数向量」的 MLE 多项式，也就是每一轮 split-and-fold 过程中，右边的半个向量。我们来验证一下，第一行的商多项式是 $2\cdot X_0$，它是单项式 $(1,X_0,X_1,X_0X_1)$ 的系数，因此第一个商多项式为 $2X_0$；第二行商多项式是 $(3,0)$，这是一个常数多项式；第三行的商多项式是 $(4+2a)$，也是一个常数多项式。这与我们前面手动做除法得到的结果一模一样。
+The quotient polynomials are the MLEs with the blue-marked vectors as "coefficient vectors", i.e., the right half of the vector in each round of the split-and-fold process. Let's verify: the first row's quotient polynomial is $2\cdot X_0$, which is the coefficient of monomials $(1,X_0,X_1,X_0X_1)$, so the first quotient polynomial is $2X_0$; the second row's quotient is $(3,0)$, which is a constant polynomial; the third row's quotient is $(4+2a)$, also a constant polynomial. This matches the results we obtained through manual division.
 
 > TODO: q_k = f(... 1+u_k, ...) - f(... u_k, ...)
 
-不过，在 ZeroMorph 协议中，MLE 是用「点值形式」来表示，如果我们要用上面的方法来计算除法，则需要先将 MLE 从点值形式转换为系数形式。这个转换过程（类似一元多项式的FFT）的一般化算法的时间复杂度为 $O(N\log^2N)$，即 $O(2^n\cdot n^2)$。并且在计算得到商多项式之后，我们还要将 $n-1$个商多项式再通过逆向转换，从系数形式得到点值形式。这会引入不可忽略的转换开销。
+However, in the ZeroMorph protocol, MLEs are represented in "value form". If we want to use the above method for division, we'd need to first convert the MLE from value form to coefficient form. The generalized algorithm for this conversion (similar to FFT for univariate polynomials) has a time complexity of $O(N\log^2N)$, or $O(2^n\cdot n^2)$. And after calculating the quotient, we'd need to perform the inverse transformation on the $n-1$ quotient polynomials to go from coefficient form back to value form. This would introduce non-negligible conversion overhead.
 
-其实，我们可以利用 split-and-fold 的思想，直接在 MLE 的「点值形式」上进行求值计算，并且同时计算出商多项式，完全避免「点值形式」和「系数形式」的来回转换。
+In fact, we can use the split-and-fold approach to directly compute evaluation on the MLE's "value form" and simultaneously calculate the quotient polynomial, completely avoiding the back-and-forth conversion between "value form" and "coefficient form".
 
-我们看看 MLE 的点值形式上是如何计算求值的：
+Let's see how evaluation is calculated on the MLE's value form:
 
 $$
 \tilde{f}(X_0,X_1,\ldots, X_{n-2}, X_{n-1}) = \sum_{\vec{i}\in\{0,1\}^n} f_{\vec{i}} \cdot \tilde{eq}(\vec{i}, \vec{X})
 $$
 
-假设 $\tilde{f}$ 的点值形式为向量 $(f_{000}, f_{100}, \ldots, f_{111})$，对应的 HyperCube 为 $\{0,1\}^3$。
+Suppose the value form of $\tilde{f}$ is the vector $(f_{000}, f_{100}, \ldots, f_{111})$, corresponding to the HyperCube $\{0,1\}^3$.
 
-我们从右向左对 $X_{n-1},\ldots, X_0$ 逐个代入对应的值，比如我们先代入 $X_{n-1}=u_{n-1}$，那么 $\tilde{f}^{(1)}(X_0,X_1,\ldots, X_{n-2})$ 的点值式为
+We substitute values for $X_{n-1},\ldots, X_0$ from right to left. For instance, if we first substitute $X_{n-1}=u_{n-1}$, then the value form of $\tilde{f}^{(1)}(X_0,X_1,\ldots, X_{n-2})$ is:
 
 $$
 (1-u_{n-1})\cdot(f_0, f_1, \ldots, f_{2^{n-2}-1}) +  u_k\cdot(f_{2^{n-2}}, f_{2^{n-2}+1}, \ldots, f_{2^{n-1}-1})
 $$
 
-这个计算过程也是一个 split-and-fold 的过程，可以一直递归下去，直到向量被折叠成一维。
+This calculation is also a split-and-fold process, which can be recursively continued until the vector is folded into one dimension.
 
-我们再次用前面的 MLE 多项式，$\tilde{f}(X_0, X_1, X_2) = 2\cdot X_0X_2 + 3\cdot X_1 + 4\cdot X_0$，它的点值形式为：
+Using our previous example MLE polynomial, $\tilde{f}(X_0, X_1, X_2) = 2\cdot X_0X_2 + 3\cdot X_1 + 4\cdot X_0$, its value form is:
 
 $$
 \begin{array}{cccccccc}
@@ -186,9 +184,9 @@ $$
 \end{array}
 $$
 
-比如，我们代入 $(X_0=1,X_1=0,X_2=1)$，那么 $\tilde{f}(1, 0, 1)=2+4=6$ 正好对应点值向量的第 $f_{101}$ 号元素。
+For instance, if we substitute $(X_0=1,X_1=0,X_2=1)$, then $\tilde{f}(1, 0, 1)=2+4=6$, which corresponds to the $f_{101}$ element in the value vector.
 
-下面，我们代入 $(X_0=c,X_1=b,X_2=a)$，用 split-and-fold 的方式完成求值过程的计算：
+Now, let's substitute $(X_0=c,X_1=b,X_2=a)$ and use the split-and-fold approach to complete the evaluation:
 
 $$
 \begin{split}
@@ -198,9 +196,9 @@ $$
 \end{split}
 $$
 
-不出意料，最终的结果仍然是 $3b+ (4+2a)c$，不过这次我们不太容易在上面的计算过程中找到商多项式。
+As expected, the final result is still $3b+ (4+2a)c$, though it's not as easy to find the quotient polynomial in this calculation.
 
-每一行的商多项式是右边向量减去左边向量，我们依次看看每一行：
+The quotient polynomial for each row is the right vector minus the left vector. Let's examine each row:
 
 $$
 \begin{split}
@@ -210,6 +208,6 @@ q_0:          & (4+2a+3b) - (3b) = 4+2a\\
 \end{split}
 $$
 
-记住，这是商多项式的点值形式，我们可以通过多项式插值，把它们转换成「系数形式」，并且和前面的商多项式做比较。
+Remember, these are the value forms of the quotient polynomials. We can convert them to "coefficient form" through polynomial interpolation and compare with the earlier quotients.
 
-还有一种方法，是我们前面描述过的，将一个低维的 HyperCube 映射到一个高维的 HyperCube，实际上是低维 Cube 的重复， 因此我们看到 $q_2(X_0,X_1)$ 的点值形式是 $(0, 2, 0, 2)$，这正好是一个 2 维 HyperCube 的重复，表示 $X_1$ 这个变元的相关系数均为零，所以我们可以快速得到 $q_2(X_0,X_1) = 2X_0$。同样，$q_1(X_0)$ 的点值形式是 $(3,3)$ 也是重复的模式，说明含有 $X_0$ 变元的单项式系数均为零， 因此 $q_1(X_0) = 3$，最后加上 $q_0() = 4+2a$，它们和前面通过系数形式计算得到的商多项式是完全一致的。
+Another method, as described earlier, is to map a low-dimensional HyperCube to a high-dimensional one, which is actually a repetition of the low-dimensional Cube. So, seeing that the value form of $q_2(X_0,X_1)$ is $(0, 2, 0, 2)$, which is a repetition in a 2-dimensional HyperCube, indicates that the coefficient related to the variable $X_1$ is zero. Thus, we can quickly deduce $q_2(X_0,X_1) = 2X_0$. Similarly, the value form of $q_1(X_0)$ is $(3,3)$, also a repeating pattern, indicating that the coefficients of monomials containing the $X_0$ variable are zero. Hence, $q_1(X_0) = 3$. Finally, with $q_0() = 4+2a$, these matches perfectly with the quotient polynomials calculated using the coefficient form earlier.
