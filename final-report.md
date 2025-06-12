@@ -61,7 +61,7 @@ This project describes the basic principles of many MLE-PCS, and for some protoc
 | Basefold      | [ZCF23]    | [Notes on Basefold (Part I): Foldable Linear Codes](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-01.md), [Notes on Basefold (Part II): IOPP](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-02.md), [Notes on Basefold (Part III): MLE Evaluation Argument](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-03.md)              |
 | Basefold      | ⭐          | [An Alternative Folding Method](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-03.md#an-alternative-folding-method)                                                                                                                                                                                                                                              |
 | Deepfold      | [GLHQTZ24] | [Note on DeepFold: Protocol Overview](https://github.com/sec-bit/mle-pcs/blob/main/fri/deepfold.md)                                                                                                                                                                                                                                                                              |
-| Ligerito      | [GLHQTZ24] | [Notes on Ligerito-PCS](https://github.com/sec-bit/mle-pcs/blob/main/ligerito/)                                                                                                                                                                                                                                                                                                  |
+| Ligerito      | [NA25]     | [Ligerito-PCS Notes](https://github.com/sec-bit/mle-pcs/blob/main/ligerito-pcs/ligerito-01.md)                                                                                                                                                                                                                                                                                   |
 | WHIR          | [ACFY24b]  | [Note on WHIR: Reed-Solomon Proximity Testing with Super-Fast Verification](https://github.com/sec-bit/mle-pcs/blob/main/fri/whir.md)                                                                                                                                                                                                                                            |
 | FRI-Binius    | [DP24]     | [Notes on FRI-Binius (Part I): Binary Towers](https://github.com/sec-bit/mle-pcs/blob/main/fri-binius/binius-01.md), [Notes on Binius (Part II): Subspace Polynomial](https://github.com/sec-bit/mle-pcs/blob/main/fri-binius/binius-02.md)                                                                                                                                      |
 | Greyhound     | [NS24]     | [Greyhound Commitment](https://github.com/sec-bit/mle-pcs/blob/main/grey-hound/greyhound_pcs.md)                                                                                                                                                                                                                                                                                 |
@@ -1169,11 +1169,11 @@ On the other hand, the number of Verifier queries is related to the bound that c
 2. The BaseFold protocol can reach the Johnson bound $1 - \sqrt{\rho}$ for Reed Solomon encoding.
 3. The WHIR protocol is only proven in the original paper to reach $(1 - \rho)/2$, but based on the method in [H24], it is promising to prove it reaches the Johnson bound $1 - \sqrt{\rho}$.
 
-### Bulletproofs-based MLE-PCS 
+## Bulletproofs-based MLE-PCS 
 
 Bulletproofs-based MLE-PCS include [Hyrax](https://eprint.iacr.org/2017/1132.pdf) and [Σ-Check](https://eprint.iacr.org/2024/1654).
 
-#### Hyrax
+### Hyrax
 
 Multilinear polynomial evaluations can be viewed as inner-product relations and thus can be proven directly using inner-product arguments (IPAs), such as Bulletproofs. However, a major drawback of Bulletproofs is their linear verification time: for an $n$-variate multilinear polynomial, verification requires $O(2^n)$ time.
 
@@ -1200,7 +1200,7 @@ Let $F$ denote the inner matrix, $\vec{z}_1 := (1, z_2, z_3, z_2z_3)$, and $\vec
 
 As a result, the verifier only needs to compute two inner products of length $\sqrt{N}$ ($N = 2^n$), achieving sublinear verification cost. Furthermore, the prover can use an IPA to prove these inner-product relations, reducing the proof size to $O(\log n)$.
 
-#### Σ-Check
+### Σ-Check
 
 To prove a single evaluation relation $f(\vec{z}) = v$, Σ-Check employs an improved sumcheck protocol. In each round, the prover sends a linear polynomial $f_i(X) := f(r_1, \cdots, r_{i-1}, X, z_{i+1}, \cdots, z_n)$, while the verifier checks the following condition: 
 $$
@@ -1223,9 +1223,9 @@ It is worth noting that Σ-Check can also serve as an inner product argument (IP
 | $\Sigma$-Check (as PCS) | $O(k+N)$ $\mathbb{F}$, $O(N)$ $\mathbb{G}$               | $O(k+N)$ $\mathbb{F}$, $O(k+N)$ $\mathbb{G}$               | $2(\log k + \log N)$ $\mathbb{G}$ |
 | $\Sigma$-Check (as IPA) | $O(k+\sqrt{N})$ $\mathbb{F}$, $O(\sqrt{N})$ $\mathbb{G}$ | $O(k+\sqrt{N})$ $\mathbb{F}$, $O(k+\sqrt{N})$ $\mathbb{G}$ | $2(\log k + \log N)$ $\mathbb{G}$ |
 
-### Lattice-based PCS
+## Lattice-based PCS
 
-#### Greyhound
+### Greyhound
 
 Greyhound is a lattice-based PCS that relies on Labrador—a lattice-based interactive proof for proving inner product relations.
 
@@ -1257,7 +1257,7 @@ Obviously, by expanding the one-dimensional coefficient vector into a two-dimens
 
 The security of Greyhound is based on the MSIS (Modular Short Integer Solution) problem on lattices. By decomposing each column of the coefficient matrix with $\delta$ as the base, n short vectors of length nl can be obtained, where $l = \log_\delta q$. Subsequently, Ajtai Commit is performed on each short vector to generate corresponding commitment values.
 
-#### Hyperwolf
+### Hyperwolf
 
 Inspired by Greyhound, our latest research achievement Hyperwolf further optimizes the structure, generalizing it to k dimensions, with overall efficiency reaching $O(kN^{1/k})$. By setting $k = \log N$, the scheme successfully achieves log-level proof size and verification time, significantly enhancing performance.
 
