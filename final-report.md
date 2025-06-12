@@ -124,7 +124,6 @@ $$
 | FRI             | zeromorph-fri        | gemini-fri       | Virgo, PH23-fri              | Basefold, Deepfold, WHIR, FRI-Binius |
 | Pedersen Commitment |                      |                  | Hyrax, Σ-Check               |     -->
 
-
 #### Quotienting
 
 MLE-PCS 要证明的是一个多元线性多项式 $\tilde{f}(X_0, \ldots, X_{n - 1})$ 在一个公开点 $(u_0, \ldots, u_{n - 1})$ 的值为 $v$ ，即证明 $\tilde{f}(u_0, \ldots, u_{n - 1}) = v$ 。
@@ -261,9 +260,21 @@ $$
 \sum_{\vec{b} = \{0,1\}^n}\tilde{f}(\vec{b}) \cdot \tilde{eq}(\vec{b}, \vec{u}) = v
 $$
 
-那么我们可以证明上面的求和式成立，从而证明 Multilinear Polynomial 的 Evaluation 正确性。采用 Sumcheck 的问题在于：在 Sumcheck 协议的最后一步 Verifier 需要得到 $\tilde{f}$ 在一个随机点处的值来进行最后的验证，从而完成整个 sumcheck 协议。Basefold  [ZCF23] 协议的重要贡献是发现如果同步对 $\tilde{f}$ 对应的一元多项式使用 FRI 协议，在每一轮折叠时采用和 Sumcheck 协议一样的随机数，那么折叠到最后一步，得到的常数正是 sumcheck 协议最后一步想要 $\tilde{f}$ 在随机点处的值。Deepfold 协议，WHIR 协议也是采取这样的思想，不同的地方在于 Deepfold 结合的是 DEEP-FRI 协议，WHIR 协议结合的是 STIR 协议。基于 Basefold 的Ligerito 也利用了 Sumcheck 协议，在每一个 Round，Verifier 都会抽样一些 Oracle 中的点，然后这些点的编码正确性本应该由 Verifier 计算，由于这些计算是一个内积，于是 Verifier 可以利用 Sumcheck 协议将其代理给 Prover ，并且这个 Sumcheck 可以和当前轮 Basefold 协议部分的 Sumcheck 协议合并，从而大大优化协议的后续流程。
+那么我们可以证明上面的求和式成立，从而证明 Multilinear Polynomial 的 Evaluation 正确性。采用 Sumcheck 的问题在于：在 Sumcheck 协议的最后一步 Verifier 需要得到 $\tilde{f}$ 在一个随机点处的值来进行最后的验证，从而完成整个 Sumcheck 协议。Basefold  [ZCF23] 协议的重要贡献是发现如果同步对 $\tilde{f}$ 对应的一元多项式使用 FRI 协议，并且在每一轮折叠时采用和 Sumcheck 协议一样的随机数，那么当折叠到最后一步，得到的常数正是 Sumcheck 协议最后一步想要 $\tilde{f}$ 在随机点处的值。
 
-> TODO: 补充这部分
+$$
+h(r_{n-1}) \overset{?}{=} \tilde{f}(r_0, r_1, \ldots, r_{n-1})\cdot \tilde{eq}((r_0, r_1, \ldots, r_{n-1}), \vec{u})
+$$
+
+Deepfold 协议，WHIR 协议也是延续了采用 Sumcheck 的思想，不同的地方在于 Deepfold 采用了 DEEP-FRI 中的想法，Prover 提前确定多项式在某个 Out-of-domain 随机点的求值，作为某种形式的 Commitment，确保 Prover 在 List-decoding Regime 中也能确保始终承诺的是同一个多项式。而这个随机 Evaluation 也可以同样采用 Sumcheck 协议来证明。具体地说，在每一轮的 Basefold 协议交互中，Verifier 再额外随机选择一个 $z_i\leftarrow \mathbb{F}$，然后 Prover 发送 $y_i$ 并证明其是 $\hat{f}^{(i)}(z_i)$ 的值。因为 $\hat{f}^{(i)}$ 和 $\tilde{f}^{(i)}$ 存在同构映射，因此 $y_i$ 也是下面 MLE 多项式的运算值：
+
+$$
+y_i = \tilde{f}^{(i)}(z_i, z_i^2, \cdots, z_i^{2^{n-i-1}})
+$$
+
+因此，Prover 在后续的协议交互中，同样采用一个新的 Sumcheck 协议来证明 $\tilde{f}^{(i)}(z_i, z_i^2, \cdots, z_i^{2^{n-i-1}})$ 的正确性。
+
+WHIR 在 Deepfold 协议的基础上，将 Out-of-domain 和 In-domain 的随机查询都合并入 Sumcheck，使得协议达到了一个更优的状态。同样，基于 Basefold 的Ligerito 也利用了 Sumcheck 协议，在每一个 Round，Verifier 都会抽样一些 Oracle 中的点，然后这些点的编码正确性本应该由 Verifier 计算，由于这些计算是一个内积，于是 Verifier 可以利用 Sumcheck 协议将其代理给 Prover ，并且这个 Sumcheck 可以和当前轮 Basefold 协议部分的 Sumcheck 协议合并，从而大大优化协议的后续流程。
 
 #### Split-and-fold (Recursive)
 
@@ -347,7 +358,34 @@ $$
 
 ### 按 MLE 表示形式分类
 
-> TODO: 做一张表格，把 coefficient / evaluation 的协议表示出来
+MLE-PCS 协议的上层是 Multilinear PIOP 协议。而这类常见的 PIOP 通常是 Sumcheck 或者 GKR 协议。在通常的实现中，Multilinear Polynomial 会以 Evaluations Form 的形式表示。那么在 MLE-PCS 协议中，并不是所有的协议都直接对 Evaluations Form 进行证明。如果一个 MLE-PCS 协议只能对 Multilinear Polynomial 协议的 Coefficients Form 进行证明，或者进行承诺，那么 Prover 需要额外进行 Algebraic FFT（NTT）算法计算出 Multilinear Polynomial 的 Coefficients Form，这需要 $O(N\log{N})$ 的计算时间复杂度。这有可能导致 Prover 做不到线性时间的工作量。
+
+尽管一些 MLE-PCS 论文中仅描述了一种形式，比如 Coefficients Form。但是协议本身也可以支持 Evaluations Form，这在工程实践中，可以根据更进一步的性能分析，而选择适合的协议变种。下面我们列出本项目所覆盖到的 MLE-PCS 对 Multilinear Polynomial 的两种表示形式的支持情况：
+
+
+| Scheme        | Coefficients                |  Evaluations                          |
+| ------------- | ---------------------- | ------------------------------------ |
+| PST13         | [PST13] ✅| ✅  [XZZPS19]       |
+| Zeromorph     |  ❓      | ✅ [KT23]   |        |
+| Gemini        | [BCH+22]  |      |  
+| hyperKZG      |           | ✅ HyperKZG |
+| PH23-KZG      |           | ✅ [PH23]   | 
+| Mercury       |   ✔️      | ✅ [EG25]   | 
+| Samaritan     |   ✔️           | ✅ [GPS25]  |   
+| Virgo         | ✅ [ZXZS19]  | ❓ | 
+| Hyrax         |     ✅     | ✅ [WTSTW16]   |
+| Basefold      | ✅ [ZCF23]    | ✅ [H24]  |
+| Deepfold      | ✅ [GLHQTZ24] | ❓  |
+| Ligerito      | ✅ | ✅ [NA25]  |
+| WHIR          | ✅ [ACFY24b]  |  ❓ |
+| FRI-Binius    | ✔️           | ✅ [DP24]   | 
+| Σ-Check       | ✅ [GQZGX24] |  ✅ |       
+| Greyhound     | ✅ [NS24]|  ✅  |
+| Hyperwolf     | ✅ [ZGX25]| ✅  |
+
+- ✅：表示支持
+- ✔️：表示支持，但需要进一步分析
+- ❓：可能不支持，但没有进一步证明
 
 ## MLE-PCS 的安全性分析
 
@@ -1143,6 +1181,7 @@ $$
 
 - [ACFY24a] Gal Arnon, Alessandro Chiesa, Giacomo Fenzi, and Eylon Yogev. "STIR: Reed-Solomon proximity testing with fewer queries." In _Annual International Cryptology Conference_, pp. 380-413. Cham: Springer Nature Switzerland, 2024.
 - [ACFY24b] Gal Arnon, Alessandro Chiesa, Giacomo Fenzi, and Eylon Yogev. "WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification." _Cryptology ePrint Archive_ (2024).
+- [AHIV17] Scott Ames, Carmit Hazay, Yuval Ishai, and Muthuramakrishnan Venkitasubramaniam. Ligero: lightweight sublinear arguments without a trusted setup”. 2022. https://eprint.iacr.org/2022/1608.pdf
 - [BBHR18] Eli Ben-Sasson, Iddo Bentov, Yinon Horesh, and Michael Riabzev. “Fast Reed–Solomon Interactive Oracle Proofs of Proximity”. In: *Proceedings of the 45th International Colloquium on Automata, Languages and Programming (ICALP)*, 2018.
 - [BCH+22] Bootle, Jonathan, Alessandro Chiesa, Yuncong Hu, **et al. "Gemini: Elastic SNARKs for Diverse Environments." *Cryptology ePrint Archive* (2022). [https://eprint.iacr.org/2022/420](https://eprint.iacr.org/2022/420)
 - [BCIKS20] Eli Ben-Sasson, Dan Carmon, Yuval Ishai, Swastik Kopparty, and Shubhangi Saraf. Proximity Gaps for Reed–Solomon Codes. In *Proceedings of the 61st Annual IEEE Symposium on Foundations of Computer Science*, pages 900–909, 2020.
@@ -1150,7 +1189,8 @@ $$
 - [BSK18] Eli Ben-Sasson, Swastik Kopparty, and Shubhangi Saraf. Worst-case to average case reductions for the distance to a code. In *33rd Computational Complexity Conference, CCC 2018, June 22-24, 2018, San Diego, CA, USA*, pages 24:1–24:23, 2018.
 - [CBBZ22] Chen, Binyi, Benedikt Bünz, Dan Boneh, and Zhenfei Zhang. "Hyperplonk: Plonk with linear-time prover and high-degree custom gates." In _Annual International Conference on the Theory and Applications of Cryptographic Techniques_, pp. 499-530. Cham: Springer Nature Switzerland, 2023.
 - [CHM+20] Alessandro Chiesa, Yuncong Hu, Mary Maller, Pratyush Mishra, Psi Vesely, and Nicholas Ward. "Marlin: Preprocessing zkSNARKs with universal and updatable SRS." Advances in Cryptology–EUROCRYPT 2020: 39th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Zagreb, Croatia, May 10–14, 2020.
-- [DP23] Diamond, Benjamin E., and Jim Posen. "Succinct arguments over towers of binary fields." Cryptology ePrint Archive (2023).
+- [DP23a] Benjamin Diamond and Jim Posen. Proximity Testing with Logarithmic Randomness. 2023. https://eprint.iacr.org/2023/630.pdf
+- [DP23b] Diamond, Benjamin E., and Jim Posen. "Succinct arguments over towers of binary fields." Cryptology ePrint Archive (2023).
 - [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over Binary Towers." Cryptology ePrint Archive (2024).
 - [EG25] Eagen, Liam, and Ariel Gabizon. "MERCURY: A multilinear Polynomial Commitment Scheme with constant proof size and no prover FFTs." Cryptology ePrint Archive (2025). [https://eprint.iacr.org/2025/385](https://eprint.iacr.org/2025/385)
 - [GLHQTZ24] Yanpei Guo, Xuanming Liu, Kexi Huang, Wenjie Qu, Tianyang Tao, and Jiaheng Zhang. "DeepFold: Efficient Multilinear Polynomial Commitment from Reed-Solomon Code and Its Application to Zero-knowledge Proofs." _Cryptology ePrint Archive_ (2024).
@@ -1163,10 +1203,12 @@ $$
 - [KZG10] Kate, Aniket, Gregory M. Zaverucha, and Ian Goldberg. "Constant-size commitments to polynomials and their applications." In _International conference on the theory and application of cryptology and information security_, pp. 177-194. Berlin, Heidelberg: Springer Berlin Heidelberg, 2010.
 - [LPS24] Lipmaa, Helger, Roberto Parisella, and Janno Siim. "Constant-size zk-SNARKs in ROM from falsifiable assumptions." Annual International Conference on the Theory and Applications of Cryptographic Techniques. Cham: Springer Nature Switzerland, 2024.
 - [MBKM19] Mary Maller, Sean Bowe, Markulf Kohlweiss, and Sarah Meiklejohn, et al. "Sonic: Zero-knowledge SNARKs from linear-size universal and updatable structured reference strings". Proceedings of the 2019 ACM SIGSAC conference on computer and communications security, 2019.
+- [NA25] Andrija Novakovic and Guillermo Angeris. Ligerito: A Small and Concretely Fast Polynomial Commitment Scheme. 2025. https://angeris.github.io/papers/ligerito.pdf.
+- [NS24] Ngoc Khanh Nguyen and Gregor Seiler. Greyhound: Fast Polynomial Commitments from Lattices. 2024.  Cryptology ePrint Archive (2024).https://eprint.iacr.org/2024/1293
 - [PH23] Papini, Shahar, and Ulrich Haböck. "Improving logarithmic derivative lookups using GKR." Cryptology ePrint Archive (2023). [https://eprint.iacr.org/2023/1284](https://eprint.iacr.org/2023/1284)
 - [PST13] Papamanthou, Charalampos, Elaine Shi, and Roberto Tamassia. "Signatures of correct computation." Theory of Cryptography Conference. Berlin, Heidelberg: Springer Berlin Heidelberg, 2013. https://eprint.iacr.org/2011/587
 - [WTSTW16] Riad S. Wahby, Ioanna Tzialla, abhi shelat, Justin Thaler, and Michael Walfish. "Doubly-efficient zkSNARKs without trusted setup."  In 2018 IEEE Symposium on Security and Privacy (SP), pp. 926-943. IEEE, 2018.  https://eprint.iacr.org/2016/263 
 - [XZZPS19] Tiancheng Xie, Jiaheng Zhang, Yupeng Zhang, Charalampos Papamanthou, and Dawn Song. "Libra: Succinct Zero-Knowledge Proofs with Optimal Prover Computation." Cryptology ePrint Archive (2019). https://eprint.iacr.org/2019/317
-- 
 - [ZCF23] Hadas Zeilberger, Binyi Chen, and Ben Fisch. "BaseFold: efficient field-agnostic polynomial commitment schemes from foldable codes." Annual International Cryptology Conference. Cham: Springer Nature Switzerland, 2024.
+- [ZGX25] Lizhen Zhang, Shang Gao, and Bin Xiao.  HyperWolf: Efficient Polynomial Commitment Schemes from Lattices. Cryptology ePrint Archive (2025).https://eprint.iacr.org/2025/922 .
 - [ZXZS19] Jiaheng Zhang, Tiancheng Xie, Yupeng Zhang, and Dawn Song. "Transparent Polynomial Delegation and Its Applications to Zero Knowledge Proof". In 2020 IEEE Symposium on Security and Privacy (SP), pp. 859-876. IEEE, 2020. https://eprint.iacr.org/2019/1482.
