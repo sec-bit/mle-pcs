@@ -487,7 +487,35 @@ Basefold 协议、Deepfold 协议和 WHIR 协议有着类似的思路，我们�
 
 ### 基于 M-SIS 的安全性
 
-> TODO: 补充这部分
+对于基于 lattice 的多项式承诺方案，我们重点关注其knowledge soundness的证明。
+
+与基于离散对数的方案不同，lattice-based cryptography 中的 relation 通常包含额外的norm constraint，以满足 lattice 假设的安全需求。因此，在knowledge soundness的证明中，我们不仅需要证明提取出的 witness 满足如 IPA 等常规约束条件，还必须进一步证明该 witness 范数足够小，从而确保其能够与 Ajtai 承诺绑定。
+
+Greyhound 协议的安全性建立在 infinite norm 变种的 M-SIS 问题之上。在 knowledge soundness 的证明中，Greyhound证明提取出的 witness pair $(\bar{c}, \bar{w})$ 满足一个 relaxed relation。这个 relaxed relation 在其他常规约束上与 original relation 相同，仅在 norm constraint 和 binding constraint 上有所不同。
+
+对于 binding 约束，relaxed relation 要求 $\bar{c} A \bar{w} = \bar{c} \mathsf{cm}$，其中 $\mathsf{cm}$ 是 witness 的 commitment，也是公共参数。对于 norm constraint，relaxed relation 要求 $| \bar{c} \bar{w} | \le 2\bar{\beta}$，而 original relation 中要求的是 $| w | \le \beta$。
+
+通过限制 M-SIS 问题在范数为 $\min\{2\bar{\beta},\ 8T\bar{\beta}\}$时仍然成立，该证明可以保证提取出的 witness 既能与原始 commitment $\mathsf{cm}$绑定，又能满足所有其他常规约束。其中 $T$ 表示 $\bar{c}$ 的 operation norm。
+
+Hyperwolf 的安全性建立在 $\ell_2$-norm 版本的 M-SIS 问题之上。在证明 norm constraint 时，协议采用了与 Labrador 类似的技术路线：通过证明 witness 在某个随机投影下的范数较小，从而以高概率推断出原始向量的范数也在可接受范围内。
+
+为了证明向量 $\vec{a} \in \mathbb{Z}^n$ 的 $\ell_2$ 范数较小，同时避免泄露其完整信息，我们可以利用 Johnson–Lindenstrauss (JL) 引理。该引理的核心思想是，高维向量在经过随机线性投影后，其 $\ell_2$ 范数能够在较高概率下被近似保留。
+
+具体做法如下：Verifier 随机生成一个投影矩阵 $\Pi \in \mathbb{Z}^{256 \times n}$，其中每个元素独立采样自集合 ${-1, 0, 1}$，取值概率分别为 $\Pr[-1] = \Pr[1] = 1/4$，$\Pr[0] = 1/2$。Prover 计算并发送投影向量 $\vec{p} = \Pi \vec{a}$。Verifier 随后检查 $\vec{p}$ 的范数，从而估计原始向量 $\vec{a}$ 的范数是否满足约束。JL Lemma的具体内容如下：
+
+**Modular Johnson–Lindenstrauss Variant:**
+设 $q \in \mathbb{N}$，令 $\mathcal{D}$ 为定义在 ${0, \pm 1}$ 上的分布，满足 $\mathcal{D}(1) = \mathcal{D}(-1) = 1/4$，$\mathcal{D}(0) = 1/2$。对于任意 $\vec{a} \in \mathbb{Z}_q^n$，若其满足 $|\vec{a}| \le b$ 且 $b \le q/125$，则有：
+
+$$
+\begin{equation}
+\begin{split}
+\Pr_{\Pi \leftarrow \mathcal{D}^{256\times n}}[\|\Pi\vec{a}\mod q\|^2< 30b^2] \lessapprox  2^{-128}.
+\nonumber
+\end{split}
+\end{equation}
+$$
+
+根据该定理，证明 short norm 问题可以被归约为证明某个投影向量 $\vec{p}$ 是 well-formed（即满足 IPA 关系）的任务。这种方式既能以高概率保证所提取的 witness 满足 norm constraint，同时只引入了一个常数级别的 slack，在效率与安全性之间取得了良好平衡。
 
 ## 发现
 
@@ -500,6 +528,14 @@ The compressed Σ-protocol theory [AC20](https://eprint.iacr.org/2020/152), [ACF
 Our recent contribution, [Σ-Check](https://eprint.iacr.org/2024/1654), advances this research field by introducing an efficient sumcheck-based method for proving $k$ distinct polynomial evaluations, each with $n$ variables, at a cost of $O(n+\log k)$-size proofs. This approach eliminates the need for circuit-based linearization and proves to be more efficient when handling $k$ polynomials, which previously required $O(n+k)$ cost in [AC20](https://eprint.iacr.org/2020/152) and [ACF21](https://eprint.iacr.org/2020/753). A prototype implementation is available at [GitHub](https://github.com/QMorning/Compressed-Sigma-Protocol-from-Sumcheck).
 
 ### Hyperwolf 协议
+
+在 [Greyhound](https://eprint.iacr.org/2024/1293.pdf) 协议中，多项式求值过程可以被表达为长度为 $N$的系数向量 $\vec{f}$ 与两个长度为 $n = \sqrt{N}$的向量 $\vec{a}$ 和 $\vec{b}$ 的tensor product的内积形式，即 $v = \langle \vec{f}, \vec{a} \otimes \vec{b} \rangle$。换一种方式理解，该过程相当于将 $\vec{f}$ 重构为一个大小为 $n \times n$ 的矩阵 $F$，然后依次与 $\vec{a}$ 和 $\vec{b}$ 进行矩阵乘法。具体地, $\vec{f}$ 可以看作是由 $F$ 的各行按行主顺序拼接得到的。
+
+通过将多项式求值过程重写为上述结构，Greyhound 协议实现了将proof size和verification time下降到sublinear级别，同时保持prover的计算成本为linear。这种结构上的优化，使得协议在保证安全性的同时，兼顾了效率和实用性。
+
+[Hyperwolf](https://eprint.iacr.org/2025/922.pdf)协议是对[Greyhoud](https://eprint.iacr.org/2024/1293.pdf)协议的优化，其核心思想是将原本的二维结构推广到 $k$ 维（$k \ge 2$）
+
+具体地，它将一维的系数向量 $\vec{f}$ 解析为一个 $k$ 维的hypercube $[F]^{(k)}$，其维度为 $b \times b \times \cdots \times b$（共 $k$ 个维度），满足 $b^k = N$。多项式的求值过程可视为该 hypercube 依次与 $k$ 个辅助向量进行张量方向上的矩阵乘法的过程。基于这一结构，我们设计了一个包含 $k$ 轮交互的证明系统，每一轮的 proof size 和验证时间均为 $O(b)$，因此整体的 proof size 和 verification time 为 $O(kb) = O(kN^{1/k})$。当取 $k = \log N$ 时，系统的总复杂度可优化至 $O(\log N)$，显著提升了性能。
 
 ### 优化 Zeromorph 协议
 
