@@ -1,14 +1,52 @@
 # Gemini-PCS 算法复杂度分析
 
+- Jade Xie <jade@secbit.io>
+- Yu Guo <yu.guo@secbit.io>
+
 ## 优化版本 1
 
-对应 python 代码：[bcho_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/bcho_pcs.py)
+- 协议描述文档：[Gemini-PCS (Part III)](https://github.com/sec-bit/mle-pcs/blob/main/gemini/Gemini-PCS-3.md)
+- 对应 python 代码：[bcho_pcs.py](https://github.com/sec-bit/mle-pcs/blob/main/src/bcho_pcs.py)
 
-![](img/Pasted%20image%2020250122144451.png)
+下面的协议证明一个 MLE 多项式 $\tilde{f}(X_0, X_1, \ldots, X_{n-1})$ 在点 $\vec{u}=(u_0, u_1, \ldots, u_{n-1})$ 处的值 $v = \tilde{f}(u_0, u_1, \ldots, u_{n-1})$ 。其中 $\tilde{f}(X_0, X_1, \ldots, X_{n-1})$ 表示为如下的系数形式：
+
+$$
+\tilde{f}(X_0, X_1, \ldots, X_{n-1}) = \sum_{i=0}^{n-1} f_i\cdot X_0^{i_0}X_1^{i_1}\cdots X_{n-1}^{i_{n-1}}
+$$
+
+### 公共输入
+
+1. 向量 $\vec{f}=(f_0, f_1, \ldots, f_{n-1})$ 的承诺 $C_f$
+
+$$
+C_f = \mathsf{KZG10.Commit}(\vec{f})
+$$
+
+2. 求值点 $\vec{u}=(u_0, u_1, \ldots, u_{n-1})$
+
+3. $v = \tilde{f}(u_0, u_1, \ldots, u_{n-1})$
+
+### Witenss 
+
+1. 多项式 $f(X)$ 的系数 $f_0, f_1, \ldots, f_{n-1}$
 
 ### Round 1
 
-![](img/Pasted%20image%2020250122144516.png)
+1. Prover 计算 $h_1(X), h_2(X), \ldots, h_{n-1}(X)$，使得：
+
+$$
+h_{i+1}(X^2) = \frac{h_i(X) + h_i(-X)}{2} + u_i\cdot \frac{h_i(X) - h_i(-X)}{2X}
+$$
+
+其中 $h_0(X) = f(X)$
+
+2. Prover 计算承诺 $(H_1, H_2, \ldots, H_{n-1})$，使得：
+
+$$
+H_{i+1} = \mathsf{KZG10.Commit}(h_{i+1}(X))
+$$
+
+3. Prover 发送 $(H_1, H_2, \ldots, H_{n-1})$
 
 > Prover: 
 > 
@@ -42,7 +80,15 @@
 
 ### Round 2
 
-![](img/Pasted%20image%2020250122150742.png)
+1. Verifier 发送随机点 $\beta\in\mathbb{F}_p$
+
+2. Prover 计算 $h_0(\beta), h_1(\beta), \ldots, h_{n-1}(\beta)$
+
+3. Prover 计算 $h_0(-\beta), h_1(-\beta), \ldots, h_{n-1}(-\beta)$
+
+4. Prover 计算 $h_0(\beta^2)$
+
+5. Prover 发送 $\{h_i(\beta), h_i(-\beta)\}_{i=0}^{n-1}$，以及 $h_0(\beta^2)$
 
 Prover:
 
@@ -81,7 +127,40 @@ $$
 
 ### Round 3
 
-![](img/Pasted%20image%2020250122154146.png)
+
+1. Verifier 发送随机值 $\gamma\in\mathbb{F}_p$，用于聚合多个多项式
+
+2. Prover 计算 $h(X)$ 
+
+$$
+h(X) = h_0(X) + \gamma\cdot h_1(X) + \gamma^2\cdot h_2(X) + \cdots + \gamma^{n-1}\cdot h_{n-1}(X)
+$$
+
+3. 定义一个新的 Domain $D$，包含 $3$ 个元素：
+
+$$
+D = \{\beta, -\beta, \beta^2\}
+$$
+
+4. Prover 计算二次多项式 $h^*(X)$ 使得它在 $D$ 上取值等于 $h(X)$ 的取值：
+
+$$
+h^*(X) = h(\beta)\cdot \frac{(X+\beta)(X-\beta^2)}{2\beta(\beta-\beta^2)} + h(-\beta)\cdot \frac{(X-\beta)(X-\beta^2)}{2\beta(\beta^2+\beta)} + h(\beta^2)\cdot \frac{X^2-\beta^2}{\beta^4-\beta^2}
+$$
+
+5. Prover 计算商多项式 $q(X)$
+
+$$
+q(X) = \frac{h(X) - h^*(X)}{(X^2-\beta^2)(X-\beta^2)}
+$$
+
+6. Prover 计算 $q(X)$ 的承诺 $C_q$
+
+$$
+C_q = \mathsf{KZG10.Commit}(q(X))
+$$
+
+5. Prover 发送 $C_q$
 
 Prover:
 
@@ -158,7 +237,27 @@ $$
 
 ### Round 4
 
-![](img/Pasted%20image%2020250122163909.png)
+1. Verifier 发送随机点 $\zeta\in\mathbb{F}_p$
+
+2. Prover 计算线性化多项式 $r(X)$，它在 $X=\zeta$ 处取值为 $0$，即 $r(\zeta) = 0$：
+
+$$
+r(X) = h(X) - h^*(\zeta) - (\zeta^2-\beta^2)(\zeta-\beta^2)\cdot q(X)
+$$
+
+3. Prover 计算商多项式 $w(X)$
+
+$$
+w(X) = \frac{r(X)}{(X-\zeta)}
+$$
+
+4. Prover 计算 $w(X)$ 的承诺 $C_w$：
+
+$$
+C_w = \mathsf{KZG10.Commit}(w(X))
+$$
+
+5. Prover 发送 $C_w$
 
 Prover：
 
@@ -242,7 +341,12 @@ $$
 
 ### 证明表示
 
-![](img/Pasted%20image%2020250122173925.png)
+可以看出，证明包括 $n+1$ 个 $\mathbb{G}_1$ 元素，包括 $2n+1$ 个 $\mathbb{F}_p$ 元素。
+
+$$
+\pi=\Big(H_1, H_2, \ldots, H_{n-1}, C_q, C_w, \{h_i(\beta), h_i(-\beta)\}_{i=0}^{n-1}, h_0(\beta^2) \Big)
+$$
+
 
 证明大小：
 
@@ -252,7 +356,43 @@ $$
 
 ### Verification
 
-![](img/Pasted%20image%2020250122173943.png)
+
+1. Verifier 计算 $(h_1(\beta^2), h_2(\beta^2), \ldots, h_{n-1}(\beta^2))$
+
+$$
+h_{i+1}(\beta^2) = \frac{h_i(\beta) + h_i(-\beta)}{2} + u_i\cdot \frac{h_i(\beta) - h_i(-\beta)}{2\beta}
+$$
+
+2. Verifier 检查  $h_{n}(\beta^2)$ 是否等于所要证明的多项式求值 $v=\tilde{f}(\vec{u})$
+
+$$
+h_n(\beta^2) \overset{?}{=} v
+$$
+
+3. Verifier 计算 $h(X)$ 的承诺 $C_h$
+
+$$
+C_h = C_f + \gamma\cdot H_1 + \gamma^2\cdot H_2 + \cdots + \gamma^{n-1}\cdot H_{n-1}
+$$
+
+4. Verifier 计算 $r_\zeta(X)$ 的承诺 $C_r$:
+
+$$
+C_r = C_h - h^*(\zeta)\cdot[1]_1 - (\zeta^2-\beta^2)(\zeta-\beta^2)\cdot C_q
+$$
+
+5. Verifier 检查 $C_w$ 是否为 $C_r$ 在 $X=\zeta$ 处的求值证明：
+
+$$
+\mathsf{KZG10.Verify}(C_r, \zeta, 0, C_w) \overset{?}{=} 1
+$$
+
+或者直接展开为 Pairing 形式：
+
+$$
+e\Big(C_r + \zeta\cdot C_w, [1]_2\Big) \overset{?}{=} e\Big(C_w, [\tau]_2 \Big)
+$$
+
 
 Verifier:
 
@@ -405,15 +545,51 @@ $$
 
 ## 优化版本 2
 
+- 协议描述文档：[Gemini-PCS-4](https://github.com/sec-bit/mle-pcs/blob/main/gemini/Gemini-PCS-4.md)
+
 优化技巧：
 
-![](img/Pasted%20image%2020250124102451.png)
+本文介绍一个不同的优化协议，它采用了 FRI 协议的 Query-phase 中选取点的思路，对 $h_0(X)$ 挑战 $X=\beta$ 求值，进而对折叠后的多项式 $h_1(X)$ 挑战 $X=\beta^2$，依次类推，直到 $h_{n-1}(\beta^{2^{n-1}})$ 。这样做的好处是，每一次 $h_i(X)$ 的打开点可以在验证 $h_{i+1}(X)$ 的折叠时复用，从而总共可以节省 $n$ 个打开点。
 
-![](img/Pasted%20image%2020250124140921.png)
+证明目标：一个 $n$ 个变量的 MLE 多项式 $\tilde{f}(X_0, X_1, \ldots, X_{n-1})$ 在点 $\vec{u}=(u_0, u_1, \ldots, u_{n-1})$ 处的值 $v = \tilde{f}(u_0, u_1, \ldots, u_{n-1})$ 。
+
+其中 MLE 多项式 $\tilde{f}(X_0, X_1, \ldots, X_{n-1})$ 表示为如下的系数形式：
+
+$$
+\tilde{f}(X_0, X_1, \ldots, X_{n-1}) = \sum_{i=0}^{n-1} c_i\cdot X_0^{i_0}X_1^{i_1}\cdots X_{n-1}^{i_{n-1}}
+$$
+
+### 公共输入
+
+1. 向量 $\vec{c}=(c_0, c_1, \ldots, c_{n-1})$ 的承诺 $C_f$
+
+$$
+C_f = \mathsf{KZG10.Commit}(\vec{c})
+$$
+
+2. 求值点 $\vec{u}=(u_0, u_1, \ldots, u_{n-1})$
+
+3. $v = \tilde{f}(u_0, u_1, \ldots, u_{n-1})$
+
+### Witness 
+
+- 多项式 $f(X)$ 的系数 $\vec{c}=(c_0, c_1, \ldots, c_{n-1})$
 
 ### Round 1
 
-![](img/Pasted%20image%2020250124141012.png)
+1. Prover 记 $h_0(X) = f(X)$，然后计算折叠多项式 $h_1(X), h_2(X), \ldots, h_{n-1}(X)$，使得：
+
+$$
+h_{i+1}(X^2) = \frac{h_i(X) + h_i(-X)}{2} + u_i\cdot \frac{h_i(X) - h_i(-X)}{2X}
+$$
+
+2. Prover 计算承诺 $(C_{h_1}, C_{h_2}, \ldots, C_{h_{n-1}})$，使得：
+
+$$
+C_{h_{i+1}} = \mathsf{KZG10.Commit}(h_{i+1}(X))
+$$
+
+3. Prover 发送 $(C_{h_1}, C_{h_2}, \ldots, C_{h_{n-1}})$
 
 这一轮的计算方式和优化版本 1 一样，因此计算复杂度相同，为
 
@@ -423,7 +599,13 @@ $$
 
 ### Round 2
 
-![](img/Pasted%20image%2020250124142815.png)
+1. Verifier 发送随机点 $\beta\in\mathbb{F}_p$
+
+2. Prover 计算 $h_0(\beta)$
+
+3. Prover 计算 $h_0(-\beta), h_1(-\beta^2), \ldots, h_{n-1}(-\beta^{2^{n-1}})$
+
+4. Prover 发送 $\big(h_0(\beta), h_0(-\beta), h_1(-\beta^2), \ldots, h_{n-1}(-\beta^{2^{n-1}})\big)$
 
 Prover:
 
@@ -442,7 +624,21 @@ $$
 
 ### Round 3
 
-![](img/Pasted%20image%2020250124142825.png)
+1. Verifier 发送随机值 $\gamma\in\mathbb{F}_p$，用于聚合多个多项式
+
+2. Prover 计算 $q(X)$ ，满足下面的等式
+
+$$
+q(X) = \frac{h_0(X)-h_0(\beta)}{X-\beta}+ \sum_{i=0}^{n-1} \gamma^{i+1}\cdot \frac{h_i(X)-h_i(-\beta^{2^i})}{X+\beta^{2^i}}
+$$
+
+3. 定义一个新的 Domain $D$，包含 $3$ 个元素：
+
+$$
+D = \{\beta, -\beta, -\beta^2, \ldots, -\beta^{2^{n-1}}\}
+$$
+
+4. Prover 计算发送承诺 $C_q=\mathsf{KZG10.Commit}(q(X))$
 
 Prover:
 
@@ -466,7 +662,28 @@ $$
 
 ### Round 4
 
-![](img/Pasted%20image%2020250124142836.png)
+
+1. Verifier 发送随机点 $\zeta\in\mathbb{F}_q$
+
+2. Prover 计算线性化多项式 $L_\zeta(X)$，它在 $X=\zeta$ 处取值为 $0$，即 $L_\zeta(\zeta) = 0$：
+
+$$
+L_\zeta(X) = v_D(\zeta)\cdot q(X) - \frac{v_D(\zeta)}{\zeta-\beta}\cdot(h_0(X)-h_0(\beta)) - \sum_{i=0}^{n-1} \gamma^{i+1}\cdot \frac{v_D(\zeta)}{\zeta+\beta^{2^i}}\cdot(h_i(X)-h_i(-\beta^{2^i}))
+$$
+
+3. Prover 计算商多项式 $w(X)$
+
+$$
+w(X) = \frac{L_\zeta(X)}{(X-\zeta)}
+$$
+
+4. Prover 计算并发送 $w(X)$ 的承诺 $C_w$：
+
+$$
+C_w = \mathsf{KZG10.Commit}(w(X))
+$$
+
+**复杂度分析：**
 
 1. 计算 $L_{\zeta}(X)$
 
@@ -506,7 +723,12 @@ $$
 
 ### 证明表示
 
-![](img/Pasted%20image%2020250124142845.png)
+可以看出，单次证明包括 $n+1$ 个 $\mathbb{G}_1$ 元素，包括 $n+1$ 个 $\mathbb{F}_q$ 元素。
+
+$$
+\pi=\Big(C_{f_1}, C_{f_2}, \ldots, C_{f_{n-1}}, C_{q}, C_w, h_0(\beta), h_0(-\beta), h_1(-\beta^2), \ldots, h_{n-1}(-\beta^{2^{n-1}})\Big)
+$$
+
 
 证明大小为
 
@@ -516,7 +738,46 @@ $$
 
 ### Verification
 
-![](img/Pasted%20image%2020250124102533.png)
+
+1. Verifier 计算 $(h_1(\beta^2), h_2(\beta^{2^2}), \ldots, h_{n-1}(\beta^{2^{n-1}}), h_n(\beta^{2^n}))$
+
+$$
+h_{i+1}(\beta^{2^{i+1}}) = \frac{h_i(\beta^{2^i}) + h_i(-\beta^{2^i})}{2} + u_i\cdot \frac{h_i(\beta^{2^i}) - h_i(-\beta^{2^i})}{2\beta^{2^i}}
+$$
+
+2. Verifier 检查  $h_{n}(\beta^{2^n})$ 是否等于所要证明的多项式求值 $v=\tilde{f}(\vec{u})$
+
+$$
+h_n(\beta^{2^n}) \overset{?}{=} v
+$$
+
+3. Verifier 计算 $L_\zeta(X)$ 的承诺 $C_L$:
+
+$$
+C_L = v_D(\zeta)\cdot C_q - e_0\cdot(C_{h_0} - h_0(\beta)\cdot[1]_1) - \sum_{i=0}^{n-1} e_{i+1}\cdot(C_{h_i} - h_i(-\beta^{2^i})\cdot[1]_1)
+$$
+
+这里 $e_0, e_1, \ldots, e_n$ 定义如下:
+
+$$
+\begin{aligned}
+e_0 &= \frac{v_D(\zeta)}{\zeta - \beta} \\
+e_{i+1} &= \gamma^{i+1}\cdot \frac{v_D(\zeta)}{\zeta+\beta^{2^i}}, \quad i=0,1,\ldots,n-1
+\end{aligned}
+$$
+
+4. Verifier 检查 $C_w$ 是否为 $C_L$ 在 $X=\zeta$ 处的求值证明：
+
+$$
+\mathsf{KZG10.Verify}(C_L, \zeta, 0, C_w) \overset{?}{=} 1
+$$
+
+或者直接展开为 Pairing 形式：
+
+$$
+e\Big(C_L + \zeta\cdot C_w, [1]_2\Big) \overset{?}{=} e\Big(C_w, [\tau]_2 \Big)
+$$
+
 
 Verifier:
 

@@ -1,23 +1,25 @@
-## Zeromorph 复杂度分析
+# Zeromorph 系列协议复杂度分析
 
-- [Evaluation 证明协议（朴素版）](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph.zh.md#evaluation-%E8%AF%81%E6%98%8E%E5%8D%8F%E8%AE%AE)
-- [Evaluation 证明协议（优化版）](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph.zh.md#%E4%BC%98%E5%8C%96%E5%8D%8F%E8%AE%AE)
+- Jade Xie <jade@secbit.io>
+- Yu Guo <yu.guo@secbit.io>
 
-### Evaluation 证明协议（朴素版）复杂度分析
+## Evaluation 证明协议（朴素版）复杂度分析
+
+协议描述文档：[Evaluation 证明协议（朴素版）](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph.md#protocol-description)
 
 下面我们先给出一个简单朴素的协议实现，方便理解。
 
-#### 公共输入
+### 公共输入
 
 - MLE 多项式 $\tilde{f}$ 的承诺 $\mathsf{cm}([[\tilde{f}]]_n)$
 - 求值点 $\mathbf{u}=(u_0, u_1, \ldots, u_{n-1})$
 - 求值结果 $v = \tilde{f}(\mathbf{u})$
 
-#### Witness
+### Witness
 
 - MLE 多项式  $\tilde{f}$ 在 $n$ 维 HyperCube 上的点值向量 $\mathbf{a} = (a_0, a_1, \ldots, a_{2^n-1})$
 
-#### Round 1
+### Round 1
 
 Prover 发送余数多项式的承诺
 
@@ -61,7 +63,7 @@ Prover 计算，$\pi_k=\mathsf{cm}(X^{D_{max}-2^k+1}\cdot \hat{q}_k), \quad 0\le
 
 > 💡 这里计算多项式的乘法，$X^{D_{max}-2^k+1}\cdot \hat{q}_k$ 应该可以优化，直接挪动 $\hat{q}_k$ 的系数就可以了。
 
-#### Round 2
+### Round 2
 
 1. Verifier 发送随机数 $\zeta\in \mathbb{F}_p^*$
 
@@ -122,7 +124,7 @@ $$
 > $$
 
 
-#### Verification 
+### Verification 
 
 Verifier 验证下面的等式
 
@@ -180,7 +182,7 @@ $$
 > (3n + 1)~ \mathbb{F}_{\mathsf{mul}} + (n + 1) ~ \mathsf{EccMul}^{\mathbb{G}_1} + (n + 1) ~ \mathsf{EccAdd}^{\mathbb{G}_1} + \mathsf{EccMul}^{\mathbb{G}_2} + \mathsf{EccAdd}^{\mathbb{G}_2} +  (2n + 2)~P
 > $$
 
-#### 汇总
+### 汇总
 
 > **Prover 计算复杂度：**
 > 
@@ -237,19 +239,21 @@ $$
 (2n + 1) \mathbb{G}_1
 $$
 
-### Evaluation 证明协议（优化版-Degree Bound 聚合）
+## Evaluation 证明协议（优化版-Degree Bound 聚合）
 
-#### 公共输入
+协议描述文档：[Evaluation 证明协议（优化版）](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph.md#optimized-protocol)
+
+### 公共输入
 
 - MLE 多项式 $\tilde{f}$ 映射到 Univariate 多项式 $f(X)=[[\tilde{f}]]_n$ 的承诺 $\mathsf{cm}([[\tilde{f}]]_n)$
 - 求值点 $\mathbf{u}=(u_0, u_1, \ldots, u_{n-1})$
 - 求值结果 $v = \tilde{f}(\mathbf{u})$
 
-#### Witness
+### Witness
 
 - MLE 多项式  $\tilde{f}$ 的求值向量 $\mathbf{a} = (a_0, a_1, \ldots, a_{2^n-1})$
 
-#### Round 1
+### Round 1
 
 第一轮：Prover 发送余数多项式的承诺
 
@@ -279,7 +283,7 @@ $$
 
 - [ ] 计算 $Q_i$ 的算法及代码细节 
 
-#### Round 2
+### Round 2
 
 1. Verifier 发送随机数 $\beta\in \mathbb{F}_p^*$ 用来聚合多个 Degree Bound 证明
 
@@ -306,7 +310,7 @@ $$
 > (n - 2) ~ \mathbb{F}_{\mathsf{mul}} + n ~ \mathsf{polymul}(0, 2^n - 1) + \sum_{i = 0}^{n - 1} \mathsf{polymul}(2^n - 2^i, 2^i - 1) + \mathsf{msm}(2^n , \mathbb{G}_1)
 > $$
 
-#### Round 3
+### Round 3
 
 1. Verifier 发送随机数 $\zeta\in \mathbb{F}_p^*$ ，用来挑战多项式在 $X=\zeta$ 处的取值
 
@@ -364,7 +368,7 @@ $$
 > \end{aligned}
 > $$
 
-#### Round 4
+### Round 4
 
 1. Verifier 发送随机数 $\alpha\in \mathbb{F}_p^*$ ，用来聚合 $h_0(X)$ 与 $h_1(X)$
 
@@ -386,7 +390,7 @@ $$
 > \mathsf{polymul}(0, 2^n - 2) + \mathsf{polymul}(2^n - 2, D_{max}-2^n+1) + \mathsf{msm}(D_{max} + 1, {\mathbb{G}_1})
 > $$
 
-#### Verification 
+### Verification 
 
 Verifier
 
@@ -477,7 +481,7 @@ $$
 > \end{aligned}
 > $$
 
-#### 汇总
+### 汇总
 
 > **Prover 计算复杂度：**
 > 
@@ -533,13 +537,32 @@ $$
 > $$
 > (n + 2) ~ \mathbb{G}_1
 > $$
-### zeromorph-pcs (degree bound optimized)
+## zeromorph-pcs (degree bound optimized)
 
-![](img/Pasted%20image%2020250126130050.png)
+协议描述文档：[Zeromorph-PCS (Part II)](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph-02.md)
 
-#### Round 1
+### 公共输入
 
-![](img/Pasted%20image%2020250126130111.png)
+- MLE 多项式 $\tilde{f}$ 映射到 Univariate 多项式 $f(X)=[[\tilde{f}]]_n$ 的承诺 $\mathsf{cm}(f)$
+- 求值点 $\mathbf{u}=(u_0, u_1, \ldots, u_{n-1})$
+- 求值结果 $v = \tilde{f}(\mathbf{u})$
+
+### Witness
+
+- MLE 多项式  $\tilde{f}$ 的求值向量 $\mathbf{a} = (a_0, a_1, \ldots, a_{2^n-1})$
+
+### Round 1
+
+- Prover 计算 $n$ 个余数 MLE 多项式， $\{\tilde{q}_i\}_{i=0}^{n-1}$ 
+- Prover 构造余数 MLE 多项式所映射到的 Univariate 多项式 $q_i=[[\tilde{q}_i]]_i, \quad 0 \leq i < n$
+
+$$
+\tilde{f}(X_0,X_1,\ldots, X_{n-1}) - v = \sum_{i=0}^{n-1} (X_i-u_i) \cdot \tilde{q}_i(X_0,X_1,\ldots, X_{i-1})
+$$
+
+- Prover 计算并发送它们的承诺：$\mathsf{cm}(q_0), \mathsf{cm}(q_1), \ldots, \mathsf{cm}(q_{n-1})$
+
+**Prover Cost：** 
 
 这一轮和上一个 batched degree bound 协议一样，这一轮的复杂度为
 
@@ -547,11 +570,19 @@ $$
 (2^{n} - 2) ~ \mathbb{F}_{\mathsf{mul}} + \sum_{k=0}^{n-1} \mathsf{msm}(2^k,\mathbb{G}_1)
 $$
 
-#### Round 2
+### Round 2
 
-![](img/Pasted%20image%2020250126132647.png)
+1. Verifier 发送随机数 $\beta\in \mathbb{F}_q^*$ 
+2. Prover 构造 $g(X)$ 作为聚合多项式 $\{q_i(X)\}$ 的多项式，满足
 
-Prover： 
+$$
+g(X^{-1}) = \sum_{i=0}^{n-1} \beta^i \cdot X^{-2^i+1}\cdot q_i(X)
+$$
+
+3. Prover 计算并发送 $g(X)$ 的承诺 $\mathsf{cm}(g)$ 
+
+
+**Prover Cost：** 
  
 - 可以先由随机数 $\beta$ 计算得到 $\beta^2, \ldots, \beta^{n - 1}$ ，复杂度为 $(n - 2) ~ \mathbb{F}_{\mathsf{mul}}$
 - 计算 $g(X)$ 的方式可以按下面这种方式计算
@@ -574,11 +605,38 @@ $$
 (n - 2) ~ \mathbb{F}_{\mathsf{mul}} + \sum_{i = 0}^{n - 1} \mathsf{polymul}(0, 2^i - 1) + \mathsf{msm}(2^{n - 1} , \mathbb{G}_1)
 $$
 
-#### Round 3
+### Round 3
 
-![](img/Pasted%20image%2020250126132714.png)
+1. Verifier 发送随机数 $\zeta\in \mathbb{F}_p^*$ ，用来挑战多项式在 $X=\zeta$ 处的取值
 
-Prover：
+2. Prover 计算 $g(\zeta^{-1})$，并计算商多项式 $q_g(X)$ 
+
+$$
+q_g(X) = \frac{g(X) - g(\zeta^{-1})}{X-\zeta^{-1}}
+$$
+
+3. Prover 构造线性化多项式 $r_\zeta(X)$ ，$s_\zeta(X)$ 
+
+- 计算 $r_\zeta(X)$ ，
+
+$$
+r_\zeta(X) = f(X) - v\cdot \Phi_{n}(\zeta) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot q_i(X)
+$$
+- 计算 $s_\zeta(X)$ ，它在 $X=\zeta$ 处取值为零
+
+$$
+s_\zeta(X) = g(\zeta^{-1}) - \sum_i\beta^i\zeta^{2^i-1}\cdot q_i(X)
+$$
+
+- 计算商多项式 $w_r(X)$ 与 $w_s(X)$ 
+
+$$
+w_r(X) = \frac{r_\zeta(X)}{X-\zeta}, \qquad w_s(X) = \frac{s_\zeta(X)}{X-\zeta}
+$$
+
+4. 计算并发送承诺 $\mathsf{cm}(q_g)$ 
+
+**Prover Cost：**
 
 - 先根据随机数 $\zeta$ 计算出 $\zeta$ 的幂次，即 $\zeta^2, \ldots, \zeta^{2^{n}}$ ，涉及 $n$ 次有限域的乘法，复杂度为 $n ~ \mathbb{F}_{\mathsf{mul}}$ 。
 - 计算 $\zeta^{-1}$ ，复杂度为 $\mathbb{F}_{\mathsf{inv}}$ 。
@@ -611,9 +669,17 @@ $$
 \end{aligned}
 $$
 
-#### Round 4
+### Round 4
 
-![](img/Pasted%20image%2020250126132728.png)
+1. Verifier 发送随机数 $\alpha\in \mathbb{F}_p^*$ ，用来聚合 $w_r(X)$ 与 $w_s(X)$
+
+2. Prover 计算 $w(X)$ 并发送其承诺 $\mathsf{cm}(w)$ 
+
+$$
+w(X) = w_r(X) + \alpha\cdot w_s(X)
+$$
+
+**Prover Cost：**
 
 - 计算 $w_r(X) + \alpha \cdot w_s(X)$ ，复杂度为 $\mathsf{polymul}(0, 2^{n - 1} - 2)$ 。
 - 计算 $\mathsf{cm}(w)$ ，由于 $\deg(w(X)) = 2^n - 2$ ，因此复杂度为 $\mathsf{msm}(2^n - 1, \mathbb{G}_1)$ 。
@@ -624,11 +690,15 @@ $$
 \mathsf{polymul}(0, 2^{n - 1} - 2) + \mathsf{msm}(2^n - 1, \mathbb{G}_1)
 $$
 
-#### Proof
+### Proof
 
-![](img/Pasted%20image%2020250126132754.png)
+总共 $n+3$ 个 $\mathbb{G}_1$ ，$1$ 个 $\mathbb{F}_q$：
 
-Proof size:
+$$
+\pi= \Big( \mathsf{cm}(q_0), \mathsf{cm}(q_1), \ldots, \mathsf{cm}(q_{n-1}), \mathsf{cm}(g), \mathsf{cm}(q_g), \mathsf{cm}(w), g(\zeta^{-1})\Big)
+$$
+
+**Proof size:**
 
 $$
 \begin{aligned}
@@ -637,11 +707,41 @@ $$
 $$
 
 
-#### Verification
+### Verification
 
-![](img/Pasted%20image%2020250126132818.png)
+Verifier
 
-Verifier:
+1. 构造 $\mathsf{cm}(r_\zeta)$ 的承诺：
+
+$$
+\mathsf{cm}(r_\zeta) = \mathsf{cm}(f) - \mathsf{cm}(v\cdot \Phi_{n}(\zeta)) - \sum_{i=0}^{n-1} \Big(\zeta^{2^i}\cdot \Phi_{n-i-1}(\zeta^{2^{i+1}}) - u_i\cdot \Phi_{n-i}(\zeta^{2^{i}})\Big)\cdot \mathsf{cm}(q_i)
+$$
+
+2. 构造 $\mathsf{cm}(s_\zeta)$ 的承诺：
+
+$$
+\mathsf{cm}(s_\zeta) = g(\zeta^{-1})\cdot[1]_1 - \sum_{i=0}^{n-1} \beta^i \cdot \zeta^{-2^i+1}\cdot \mathsf{cm}(q_i)
+$$
+3. 验证 $r_\zeta(\zeta) = 0$ 与 $s_\zeta(\zeta) = 0$
+
+$$
+e(\mathsf{cm}(r_\zeta) + \alpha\cdot \mathsf{cm}(s_\zeta), \ [1]_2) = e(\mathsf{cm}(w),\ [\tau]_2 - \zeta\cdot [1]_2)
+$$
+
+转换下，可以得到下面的 Pairing 等式：
+
+$$
+e(\mathsf{cm}(r_\zeta) + \alpha\cdot \mathsf{cm}(s_\zeta) + \zeta\cdot\mathsf{cm}(w), \ [1]_2) = e(\mathsf{cm}(w),\ [\tau]_2)
+$$
+
+4. 验证 $g(\zeta^{-1})$ 的正确性
+
+$$
+e(\mathsf{cm}(g) - g(\zeta^{-1})\cdot [1]_1 + \zeta^{-1}\cdot\mathsf{cm}(q_g),\  [1]_2) = e(\mathsf{cm}(q_g), \ [\tau]_2)
+$$
+
+
+**Verifier Cost:**
 
 - 构造 $\mathsf{cm}(r_{\zeta})$ ，复杂度与上面的优化协议一致，为
 
@@ -701,7 +801,7 @@ $$
 \end{aligned}
 $$
 
-#### 汇总
+### 汇总
 
 **Prover 计算复杂度：**
 

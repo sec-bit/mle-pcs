@@ -1,12 +1,15 @@
 # Basefold 协议算法复杂度分析
 
+- Jade Xie <jade@secbit.io>
+- Yu Guo <yu.guo@secbit.io>
+
 ## 协议
 
-下面复杂度的分析结合论文 [Basefold](https://eprint.iacr.org/2023/1705.pdf) Protocol 4， [Evaluation Form 的 Basefold Evaluation Argument 协议](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-03.zh.md#evaluation-form-%E7%9A%84-basefold-evaluation-argument-%E5%8D%8F%E8%AE%AE) 协议描述以及代码实现 [Basefold.py](https://github.com/sec-bit/mle-pcs/blob/main/src/Basefold.py)。
+下面复杂度的分析结合论文 [Basefold](https://eprint.iacr.org/2023/1705.pdf) Protocol 4， [Basefold Evaluation Argument Protocol Based on the Evaluation Form](https://github.com/sec-bit/mle-pcs/blob/main/basefold/basefold-03.md#basefold-evaluation-argument-protocol-based-on-the-evaluation-form) 协议描述以及代码实现 [Basefold.py](https://github.com/sec-bit/mle-pcs/blob/main/src/Basefold.py)。
 
 论文中 evaluation 的协议描述如下：
 
-![](img/Pasted%20image%2020250218134311.png)
+![](img/basefold-analysis-protocol.png)
 
 ## 参数
 
@@ -49,7 +52,7 @@ verify_basefold_evaluation_arg_multilinear_basis(len(ff_code), commit=commit, pr
 
 输入：$\tilde{f}$ 的在 boolean hypercube 上的值， $\mathbf{a}=(a_0, a_1, \ldots, a_{N - 1})$ 。先将其编码成 foldable code，再用 basefold 的 eval 协议。
 
-![](./img/image.png)
+![](img/basefold-analysis-encoding-algorithm.png)
 
 - 编码过程的计算复杂度为 $\frac{\mathcal{R}}{2} \cdot dN ~ \mathbb{F}_{\mathsf{mul}}$ 。
 
@@ -325,6 +328,7 @@ $$
 #### Prover Cost Round 3
 
 复杂度与前面分析 $\pi_i$ 是一致的，复杂度为
+
 $$
 \frac{5n_0}{2} ~ \mathbb{F}_{\mathsf{mul}} + n_0~\mathbb{F}_{\mathsf{inv}} = \frac{5 }{2}  \mathcal{R}~ \mathbb{F}_{\mathsf{mul}} + \mathcal{R} ~ \mathbb{F}_{\mathsf{inv}}
 $$
@@ -333,7 +337,7 @@ $$
 
 这一轮是 Verifier 进行 IOPP.query ，主要是为了后面 verifier 来检查折叠的正确性。论文中的协议描述如下：
 
-![](img/Pasted%20image%2020250219141711.png)
+![](img/basefold-analysis-IOPP-query.png)
 
 重复 $l$ 次：
 

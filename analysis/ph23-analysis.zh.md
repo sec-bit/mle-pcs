@@ -1,12 +1,13 @@
-# PH23 协议性能分析
+# PH23 协议复杂度分析
 
-协议来源：[PH23+KZG10 协议（优化版）](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-02.zh.md#2-ph23kzg10-%E5%8D%8F%E8%AE%AE%E4%BC%98%E5%8C%96%E7%89%88)
+- Jade Xie <jade@secbit.io>
+- Yu Guo <yu.guo@secbit.io>
 
-## PH23+KZG10 协议（优化版）
+PH23+KZG10 协议（优化版）协议描述文档：[PH23+KZG10 Protocol (Optimized Version)](https://github.com/sec-bit/mle-pcs/blob/main/ph23/ph23-pcs-02.md#2-ph23kzg10-protocol-optimized-version)
 
 对于 KZG10 协议，因为其 Commitment 具有加法同态性。
 
-### Precomputation 
+## Precomputation 
 
 1. 预计算 $s_0(X),\ldots, s_{n-1}(X)$ 以及 $v_H(X)$	
 
@@ -26,13 +27,13 @@ $$
 
 3. 预计算 Lagrange Basis 的 KZG10 SRS $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$ 
 
-### Common inputs
+## Common inputs
 
 1. $C_a=[\hat{f}(\tau)]_1$:  the (uni-variate) commitment of $\tilde{f}(X_0, X_1, \ldots, X_{n-1})$ 
 2. $\vec{u}=(u_0, u_1, \ldots, u_{n-1})$: 求值点
 3. $v=\tilde{f}(u_0,u_1,\ldots, u_{n-1})$: MLE 多项式 $\tilde{f}$ 在 $\vec{X}=\vec{u}$ 处的运算值
 
-### Commit 计算过程
+## Commit 计算过程
 
 1. Prover 构造一元多项式 $a(X)$，使其 Evaluation form 等于 $\vec{a}=(a_0, a_1, \ldots, a_{N-1})$，其中 $a_i = \tilde{f}(\mathsf{bits}(i))$, 为 $\tilde{f}$ 在 Boolean Hypercube $\{0,1\}^n$ 上的取值。
 
@@ -60,7 +61,7 @@ $$
 > \mathsf{msm}(N, \mathbb{G}_1)
 > $$
 
-### Evaluation 证明协议
+## Evaluation 证明协议
 
 回忆下证明的多项式运算的约束：
 
@@ -70,7 +71,7 @@ $$
 
 这里 $\vec{u}=(u_0, u_1, u_2, \ldots, u_{n-1})$ 是一个公开的挑战点。
 
-###### Prover Memory
+### Prover Memory
 
 - KZG10 SRS : $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$
 - Bary-Centric Weights: $\{\hat{w}_i\}$
@@ -81,15 +82,15 @@ $$
 - $v=\tilde{f}(u_0,u_1,\ldots, u_{n-1})$
 - $\vec{c} = \{c_0, \ldots, c_{N-1}\}$
 
-#### Round 1.
+### Round 1.
 
 Prover:
 
-##### Round 1-1
+#### Round 1-1
 
 1. 计算向量 $\vec{c}$，其中每个元素 $c_i=\overset{\sim}{eq}(\mathsf{bits}(i), \vec{u})$
 
-###### Prover Cost 1-1
+##### Prover Cost 1-1
 
 > Prover: 
 > 
@@ -137,7 +138,7 @@ Prover:
 > 
 > 因此这里的计算复杂度为 $(N - 1) ~ \mathbb{F}_{\mathsf{mul}}$ 。
 
-###### Prover Memory 1-1
+##### Prover Memory 1-1
 
 - KZG10 SRS : $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$
 - Bary-Centric Weights: $\{\hat{w}_i\}$
@@ -147,7 +148,7 @@ Prover:
 - $v=\tilde{f}(u_0,u_1,\ldots, u_{n-1})$
 - $\vec{c} = \{c_0, \ldots, c_{N-1}\}$
 
-##### Round 1-2
+#### Round 1-2
 
 构造多项式 $c(X)$，其在 $H$ 上的运算结果恰好是 $\vec{c}$ 。
 
@@ -156,12 +157,12 @@ c(X) = \sum_{i=0}^{N-1} c_i \cdot L_i(X)
 $$
 
 
-######  Prover Cost 1-2
+#####  Prover Cost 1-2
 
 Prover: 这一步不需要计算 $c(X)$ ，直接拿到 $\vec{c}$ 进行后续的计算。
 
 
-##### Round 1-3
+#### Round 1-3
 
 计算 $c(X)$ 的承诺 $C_c= [c(\tau)]_1$，并发送 $C_c$
 
@@ -170,7 +171,7 @@ C_c = \mathsf{KZG10.Commit}(\vec{c})  =  [c(\tau)]_1
 $$
 
 
-###### Prover Cost 1-3
+##### Prover Cost 1-3
 
 $C_c$ 的承诺计算方法为
 
@@ -180,7 +181,7 @@ $$
 
 这里算法复杂度为  $\mathsf{msm}(N, \mathbb{G}_1)$
 
-##### Prover Cost Round 1
+#### Prover Cost Round 1
 
 > 
 > Prover 复杂度为：
@@ -189,7 +190,7 @@ $$
 > (N - 1) ~ \mathbb{F}_{\mathsf{mul}}  + \mathsf{msm}(N, \mathbb{G}_1)
 > $$
 
-##### Prover Memory Round 1
+#### Prover Memory Round 1
 
 - KZG10 SRS : $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$
 - Bary-Centric Weights: $\{\hat{w}_i\}$
@@ -199,13 +200,13 @@ $$
 - $v=\tilde{f}(u_0,u_1,\ldots, u_{n-1})$
 - $\vec{c} = \{c_0, \ldots, c_{N-1}\}$
 
-#### Round 2.
+### Round 2.
 
 Verifier: 发送挑战数 $\alpha\leftarrow_{\$}\mathbb{F}_p$ 
 
 Prover: 
 
-##### Round 2-1
+#### Round 2-1
 
 构造关于 $\vec{c}$ 的约束多项式 $p_0(X),\ldots, p_{n}(X)$
 
@@ -217,7 +218,7 @@ p_k(X) &= s_{k-1}(X) \cdot \Big( u_{n-k}\cdot c(X) - (1-u_{n-k})\cdot c(\omega^{
 $$
 
 
-###### Prover Cost 2-1
+##### Prover Cost 2-1
 
 > 📝 **笔记**：先介绍一般如何快速的做有限域上的多项式乘法和除法，不妨设
 > $$
@@ -301,7 +302,7 @@ $$
 \end{aligned}
 $$
 
-###### Prover Memory 2-1
+##### Prover Memory 2-1
 
 - KZG10 SRS : $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$
 - Bary-Centric Weights: $\{\hat{w}_i\}$
@@ -315,7 +316,7 @@ $$
 - $\{[p_k(x)|_{x \in gH}]\}_{k = 0}^n$
 
 
-##### Round 2-2
+#### Round 2-2
 
 把 $\{p_i(X)\}$ 聚合为一个多项式 $p(X)$ 
 
@@ -324,7 +325,7 @@ p(X) = p_0(X) + \alpha\cdot p_1(X) + \alpha^2\cdot p_2(X) + \cdots + \alpha^{n}\
 $$
 
 
-###### Prover Cost 2-2
+##### Prover Cost 2-2
 
 这一步其实算的并不是多项式的系数，而是中间计算出 $[p(x)|_{x \in gH}]$ 。
 
@@ -343,7 +344,7 @@ $$
 (nN + n - 1) ~ \mathbb{F}_{\mathsf{mul}}
 $$
 
-###### Prover Memory 2-2
+##### Prover Memory 2-2
 
 - KZG10 SRS : $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$
 - Bary-Centric Weights: $\{\hat{w}_i\}$
@@ -356,7 +357,7 @@ $$
 - $[p(x)|_{x \in gH}]$
 
 
-##### Round 2-3
+#### Round 2-3
 
 构造累加多项式 $z(X)$，满足
 
@@ -369,7 +370,7 @@ z(\omega^{N-1}) &= v \\
 $$
 
 
-###### Prover Cost 2-3
+##### Prover Cost 2-3
 
 前面已经得到了 $[a(x)|_{x \in H}]$ 以及 $[c(x)|_{x \in H}]$ ，得到 $[z(x)|_{x \in H}]$ 就比较好计算了。
 
@@ -385,7 +386,7 @@ $$
 
 涉及的复杂度为 $N ~ \mathbb{F}_{\mathsf{mul}}$
 
-###### Prover Memory 2-3
+##### Prover Memory 2-3
 
 - KZG10 SRS : $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$
 - Bary-Centric Weights: $\{\hat{w}_i\}$
@@ -401,7 +402,7 @@ $$
 - $[p(x)|_{x \in gH}]$
 - $[z(x)|_{x \in H}]$
 
-##### Round 2-4
+#### Round 2-4
 
 构造约束多项式 $h_0(X), h_1(X), h_2(X)$，满足
 
@@ -414,7 +415,7 @@ h_2(X) & = L_{N-1}(X)\cdot\big( z(X) - v \big) \\
 $$
 
 
-###### Prover Cost 2-4
+##### Prover Cost 2-4
 
 要计算出 $[h_0(x)|_{x \in gH}], [h_1(x)|_{x \in gH}], [h_2(x)|_{x \in gH}]$ 。
 - 先计算出 $[z(x)|_{x \in gH}]$ ，复杂度为 $\mathsf{FFT}(N) + \mathsf{IFFT}(N)$ 。
@@ -429,7 +430,7 @@ $$
 2~ \mathsf{FFT}(N) + 2~ \mathsf{IFFT}(N) + 5N ~ \mathbb{F}_{\mathsf{mul}}
 $$
 
-###### Prover Memory 2-4
+##### Prover Memory 2-4
 
 这一轮增加 $[h_0(x)|_{x \in gH}], [h_1(x)|_{x \in gH}], [h_2(x)|_{x \in gH}]$ 。
 
@@ -449,7 +450,7 @@ $$
 - $z(X)$ 的系数 (Round 2-4)
 - $[h_0(x)|_{x \in gH}], [h_1(x)|_{x \in gH}], [h_2(x)|_{x \in gH}]$
 
-##### Round 2-5
+#### Round 2-5
 
 把 $p(X)$ 和 $h_0(X), h_1(X), h_2(X)$ 聚合为一个多项式 $h(X)$，满足
 
@@ -459,7 +460,7 @@ h(X) &= p(X) + \alpha^{n+1} \cdot h_0(X) + \alpha^{n+2} \cdot h_1(X) + \alpha^{n
 \end{split}
 $$
 
-###### Prover Cost 2-5
+##### Prover Cost 2-5
 
 这一轮计算 $[h(x)_{x \in gH}]$ 。
 - 在这一轮中的前面第 2 步已经计算出 $\alpha^2, \ldots, \alpha^n$ ，现在要计算 $\alpha^{n + 1}, \alpha^{n + 2} , \alpha^{n + 3}$ ，这里涉及 $3$ 次有限域上的乘法，因此复杂度为 $3 ~ \mathbb{F}_{\mathsf{mul}}$ 。
@@ -468,7 +469,7 @@ $$
 $$
 (3N + 3) ~ \mathbb{F}_{\mathsf{mul}}
 $$
-###### Prover Memory 2-5
+##### Prover Memory 2-5
 
 - KZG10 SRS : $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$
 - Bary-Centric Weights: $\{\hat{w}_i\}$
@@ -486,14 +487,14 @@ $$
 - $[h_0(x)|_{x \in gH}], [h_1(x)|_{x \in gH}], [h_2(x)|_{x \in gH}]$
 - $[h(x)|_{x \in gH}]$
 
-##### Round 2-6
+#### Round 2-6
 
 计算 Quotient 多项式 $t(X)$，满足
 
 $$
 h(X) =t(X)\cdot v_H(X)
 $$
-###### Prover Cost 2-6
+##### Prover Cost 2-6
 
 计算出 $[t(x)|_{x \in gH}]$ ，对于 $\forall x \in gH$
 
@@ -502,7 +503,7 @@ t(x) = h(x) \cdot (v_H(x))^{-1} =  h(x) \cdot (g^N - 1)^{-1}
 $$
 复杂度为 $N ~ \mathbb{F}_{\mathsf{mul}}$ 。
 
-###### Prover Memory 2-6
+##### Prover Memory 2-6
 
 - KZG10 SRS : $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$
 - Bary-Centric Weights: $\{\hat{w}_i\}$
@@ -519,7 +520,7 @@ $$
 - $[z(x)|_{x \in H}]$
 - $[t(x)|_{x \in gH}]$
 
-##### Round 2-7
+#### Round 2-7
 
 计算 $C_t=[t(\tau)]_1$， $C_z=[z(\tau)]_1$，并发送 $C_t$ 和 $C_z$
 
@@ -529,7 +530,7 @@ C_t &= \mathsf{KZG10.Commit}(t(X)) = [t(\tau)]_1 \\
 C_z &= \mathsf{KZG10.Commit}(z(X)) = [z(\tau)]_1
 \end{split}
 $$
-######  Prover Cost 2-7
+#####  Prover Cost 2-7
 
 计算 $C_t$ 
 
@@ -566,7 +567,7 @@ $$
 > $$
 > 这种方案会少一次 FFT 和一次 IFFT，节省 $N \log N ~ \mathbb{F}_{\mathsf{mul}}$ 的计算。
 
-#### Prover Cost Round 2
+### Prover Cost Round 2
 
 汇总上面所有步骤的 Prover 计算复杂度
 
@@ -578,13 +579,13 @@ $$
 \end{aligned}
 $$
 
-#### Round 3.
+### Round 3.
 
 Verifier: 发送随机求值点 $\zeta\leftarrow_{\$}\mathbb{F}_p$ 
 
 Prover: 
 
-##### Round 3-1
+#### Round 3-1
 
 1. 计算 $s_i(X)$ 在 $\zeta$ 处的取值：
 
@@ -592,7 +593,7 @@ $$
 s_0(\zeta), s_1(\zeta), \ldots, s_{n-1}(\zeta)
 $$
 
-###### Prover Cost  3-1
+##### Prover Cost  3-1
 
 这里 Prover 可以高效计算 $s_i(\zeta)$ ，由 $s_i(X)$ 的公式得
 $$
@@ -622,20 +623,23 @@ $$
 >   (n - 1) ~ \mathbb{F}_{\mathsf{mul}} + (n - 1) ~ \mathbb{F}_{\mathsf{mul}} = 2(n - 1) ~ \mathbb{F}_{\mathsf{mul}}
 > $$
 
-##### Round 3-2
+#### Round 3-2
+
 定义求值 Domain $D'$，包含 $n+1$ 个元素：
 
 $$
 D'=D\zeta = \{\zeta, \omega\zeta, \omega^2\zeta,\omega^4\zeta, \ldots, \omega^{2^{n-1}}\zeta\}
 $$
 
-##### Round 3-3
+#### Round 3-3
+
 计算并发送 $c(X)$ 在 $D'$ 上的取值 
 
 $$
 c(\zeta), c(\zeta\cdot\omega), c(\zeta\cdot\omega^2), c(\zeta\cdot\omega^4), \ldots, c(\zeta\cdot\omega^{2^{n-1}})
 $$
-###### Prover Cost 3-3
+##### Prover Cost 3-3
+
 - 这里 $(1, \omega, \omega^2, \ldots, \omega^{2^{n - 1}})$ 可以提前计算好，因此计算点 $(\zeta, \zeta \cdot \omega, \zeta \cdot \omega^2, \ldots, \zeta \cdot \omega^{2^{n - 1}})$ 会涉及 $n$ 个有限域乘法，复杂度为 $n ~\mathbb{F}_{\mathsf{mul}}$ 。
 - 计算 $[c(x)|_{x \in D'}]$ ，在 Round 2-1 中求得了 $c(X)$ 的系数，这里用 FFT 方法可以在一个大小为 $N$ 的子群 $D' \subset D^{(2)}$ 求出 $[c(x)|_{x \in D^{(2)}}]$ ，其中  $|D'| = n, |D^{(2)}| = N$ 。自然就能得到 $[c(x)|_{x \in D'}]$ ，复杂度为 $\mathsf{FFT}(N)$ 。
 
@@ -648,11 +652,11 @@ $$
 $$
 n ~\mathbb{F}_{\mathsf{mul}} + \mathsf{FFT}(N)
 $$
-##### Round 3-4
+#### Round 3-4
 
 计算并发送 $z(\omega^{-1}\cdot\zeta)$
 
-###### Prover Cost 3-4
+##### Prover Cost 3-4
 
 在 Round 2-4 已经计算出 $z(X)$ 的系数式，这里可以直接拿着系数式求 $z(X)$ 在一点的值。
 
@@ -664,7 +668,7 @@ $$
 >   (N + 1) ~ \mathbb{F}_{\mathsf{mul}}
 > $$
 
-######  Prover Memory  3-4
+#####  Prover Memory  3-4
 
 - KZG10 SRS : $A_0 =[L_0(\tau)]_1, A_1= [L_1(\tau)]_1, A_2=[L_2(\tau)]_1, \ldots, A_{N-1} = [L_{2^{n-1}}(\tau)]_1$
 - Bary-Centric Weights: $\{\hat{w}_i\}$
@@ -690,7 +694,7 @@ $$
 - $z(\omega^{-1}\cdot\zeta)$
 - $\alpha, \alpha^2, \ldots, \alpha^{n + 3}$ (Round 2-5)
 
-##### Round 3-5
+#### Round 3-5
 
 计算 Linearized Polynomial $l_\zeta(X)$
 
@@ -711,7 +715,7 @@ $$
 
 显然，$l_\zeta(\zeta)= 0$，因此这个运算值不需要发给 Verifier，并且 $[l_\zeta(\tau)]_1$ 可以由 Verifier 自行构造。
 
-###### Prover Cost 3-5
+##### Prover Cost 3-5
 
 计算得到 $[l_{\zeta}(x)|_{x \in H}]$ 。
 
@@ -729,7 +733,7 @@ $$
 $$
 (12 N + 4n + 2) ~ \mathbb{F}_{\mathsf{mul}}
 $$
-##### Round 3-6
+#### Round 3-6
 
 构造多项式 $c^*(X)$，它是下面向量在 $D\zeta$ 上的插值多项式
 
@@ -751,7 +755,7 @@ $$
 \hat{w}_j = \prod_{l\neq j} \frac{1}{\omega^{2^j} - \omega^{2^l}}
 $$
 
-###### Prover Cost 3-6
+##### Prover Cost 3-6
 
 > 📝 Notes
 > - $c(X)$ 的系数在前面已经计算得到了
@@ -783,7 +787,7 @@ $$
 $$
 
 
-##### Round 3-7
+#### Round 3-7
 
 因为 $l_\zeta(\zeta)= 0$，所以存在 Quotient 多项式 $q_\zeta(X)$ 满足
 
@@ -791,7 +795,7 @@ $$
 q_\zeta(X) = \frac{1}{X-\zeta}\cdot l_\zeta(X)
 $$
 
-###### Prover Cost 3-7
+##### Prover Cost 3-7
 
 > 这一步的计算采用的是下面的算法，代码为
 > 
@@ -951,25 +955,25 @@ $$
 \mathbb{F}_{\mathsf{inv}} + (4N - 3) ~ \mathbb{F}_{\mathsf{mul}}
 $$
 
-##### Round 3-8
+#### Round 3-8
 第 8 步. 构造 $D\zeta$ 上的消失多项式 $z_{D_{\zeta}}(X)$
 
 $$
 z_{D_{\zeta}}(X) = (X-\zeta\omega)\cdots (X-\zeta\omega^{2^{n-1}})(X-\zeta)
 $$
 
-###### Prover Cost 3-8
+##### Prover Cost 3-8
 
 在 Round 3-6 中已经计算出消失多项 $z_{D_{\zeta}}(X)$ 的系数形式。
 
-##### Round 3-9
+#### Round 3-9
 第 9 步，构造 Quotient 多项式  $q_c(X)$ :
 
 $$
 q_c(X) = \frac{(c(X) - c^*(X))}{(X-\zeta)(X-\omega\zeta)(X-\omega^2\zeta)\cdots(X-\omega^{2^{n-1}}\zeta)}
 $$
 
-###### Prover Cost 3-9
+##### Prover Cost 3-9
 
 这里由于分母的多项式的次数比较高，因此用点值式来进行计算会比较高效。
 
@@ -986,7 +990,7 @@ $$
 2 ~ \mathsf{FFT}(N) + \mathbb{F}_{\mathsf{inv}} + (4N - 3) ~ \mathbb{F}_{\mathsf{mul}}
 $$
 
-##### Round 3-10
+#### Round 3-10
 
 第 10 步，构造 Quotient 多项式 $q_{\omega\zeta}(X)$
 
@@ -994,7 +998,7 @@ $$
 q_{\omega\zeta}(X) = \frac{z(X) - z(\omega^{-1}\cdot\zeta)}{X - \omega^{-1}\cdot\zeta}
 $$
 
-###### Prover Cost 3-10
+##### Prover Cost 3-10
 
 方法一：用系数式进行相除。
 
@@ -1014,11 +1018,11 @@ $$
 
 可以看到，由于分母只是一次多项式，用方法一会更高效一些。
 
-##### Round 3-11
+#### Round 3-11
 
 第 11 步，发送 $\big(Q_c = [q_c(\tau)]_1, Q_\zeta=[q_\zeta(\tau)]_1, Q_{\omega\zeta}=[q_{\omega\zeta}(\tau)]_1,  \big)$
 
-###### Prover Cost 3-11
+##### Prover Cost 3-11
 
 1. 在 Round 3-9 得到的 $[q_c(x)|_{x \in H}]$ ，那么
 
@@ -1061,7 +1065,7 @@ $$
 $$
 3 ~ \mathsf{msm}(N, \mathbb{G}_1)
 $$
-##### Prover Cost Round 3
+#### Prover Cost Round 3
 
 将这一轮的计算复杂度相加为
 
@@ -1093,13 +1097,13 @@ $$
 $$
 
 
-#### Round 4.
+### Round 4.
 
-##### Round 4-1
+#### Round 4-1
 
  Verifier 发送第二个随机挑战点 $\xi\leftarrow_{\$}\mathbb{F}_p$ 
 
-##### Round 4-2
+#### Round 4-2
 
 Prover 构造第三个 Quotient 多项式 $q_\xi(X)$
 
@@ -1107,7 +1111,7 @@ $$
 q_\xi(X) = \frac{c(X) - c^*(\xi) - z_{D_\zeta}(\xi)\cdot q_c(X)}{X-\xi}
 $$
 
-###### Prover Cost 4-2
+##### Prover Cost 4-2
 
 - $c^*(X)$ 的次数为 $N - 1$ ，因此计算 $c^*(\xi)$ 的复杂度为 $N ~ \mathbb{F}_{\mathsf{mul}}$ 。
 - $z_{D_\zeta}(X)$ 的次数为 $n + 1$ ，因此计算 $z_{D_\zeta}(\xi)$ 的复杂度为 $(n + 2) ~ \mathbb{F}_{\mathsf{mul}}$
@@ -1120,21 +1124,21 @@ $$
 $$
 \mathsf{IFFT}(N) + (3N + n + 1) ~ \mathbb{F}_{\mathsf{mul}} 
 $$
-##### Round 4-3
+#### Round 4-3
 
 Prover 计算并发送 $Q_\xi$
 
 $$
 Q_\xi = \mathsf{KZG10.Commit}(q_\xi(X)) = [q_\xi(\tau)]_1
 $$
-###### Prover Cost 4-3
+##### Prover Cost 4-3
 
 前面一步计算得到的是 $q_\xi(X)$ 的系数式，因此这一步承诺的复杂度主要看多项式的次数， $\deg(q_\xi) = N - 2$ ，复杂度为 $\mathsf{msm}(N - 1, \mathbb{G}_1)$ 。
 
 
 这种方法要求内存中要存储 SRS $(G, \tau G, \ldots, \tau^{N - 2}G)$ 。
 
-##### Prover Cost Round 4
+#### Prover Cost Round 4
 
 汇总这一轮的复杂度
 
@@ -1142,7 +1146,7 @@ $$
 \mathsf{IFFT}(N) + (3N + n + 1) ~ \mathbb{F}_{\mathsf{mul}} + \mathsf{msm}(N - 1, \mathbb{G}_1)
 $$
 
-#### Prover Cost
+### Prover Cost
 
 汇总所有轮的 Prover Cost
 
@@ -1174,7 +1178,7 @@ $$
 $$
 
 
-### 证明表示
+## 证明表示
 
 $7\cdot\mathbb{G}_1$, $(n+1)\cdot\mathbb{F}_{p}$ 
 
@@ -1186,9 +1190,10 @@ $$
 $$
 
 
-### 验证过程
+## 验证过程
 
-#### Step 1
+### Step 1
+
 1. Verifier 计算 $c^*(\xi)$ 使用预计算的 Barycentric Weights $\{\hat{w}_i\}$
 
 $$
@@ -1197,9 +1202,7 @@ $$
 
 再计算对应的承诺 $C^*(\xi)=[c^*(\xi)]_1$ 。
 
-###### Verifier Cost 1
-
-- [x] 待计算复杂度，主要涉及重心插值算法。 ✅ 2025-04-24
+#### Verifier Cost 1
 
 > Verifier:
 > 
@@ -1217,7 +1220,8 @@ $$
 > \end{aligned}
 > $$
 
-#### Step 2
+### Step 2
+
 Verifier 计算 $v_H(\zeta), L_0(\zeta), L_{N-1}(\zeta)$ 
 
 
@@ -1232,7 +1236,7 @@ $$
 $$
 L_{N-1}(\zeta) = \frac{\omega^{N-1}}{N}\cdot \frac{v_{H}(\zeta)}{\zeta-\omega^{N-1}}
 $$
-###### Verifier Cost 2
+#### Verifier Cost 2
 
 > Verifier:
 > - $v_H(\zeta)$ : $\zeta^N$ 可以用 $\log N$ 次有限域乘法计算得到，复杂度为 $\log N ~ \mathbb{F}_{\mathsf{mul}}$
@@ -1241,14 +1245,17 @@ $$
 >
 > 因此这一步的总复杂度为 $2 ~ \mathbb{F}_{\mathsf{inv}} + (\log N + 4) ~ \mathbb{F}_{\mathsf{mul}}$
 
-#### Step 3
+### Step 3
+
 Verifier 计算 $s_0(\zeta), \ldots, s_{n-1}(\zeta)$ ，其计算方法可以采用前文提到的递推方式进行计算。
 
-###### Verifier Cost 3
+#### Verifier Cost 3
+
 - $\zeta^2, \zeta^4, \ldots, \zeta^{2^{n - 1}}$ 在 Step 2 中求 $\zeta^N$ 中可以得到。
 - 剩下求值与在 Round 3-1 的分析一致，这一步的复杂度为 $(n - 1) ~ \mathbb{F}_{\mathsf{mul}}$ 。
 
-#### Step 4
+### Step 4
+
 Verifier 计算 $z_{D_\zeta}(\xi)$ ，
    
 $$
@@ -1256,13 +1263,13 @@ z_{D_{\zeta}}(\xi) = (\xi-\zeta\omega)\cdots (\xi-\zeta\omega^{2^{n-1}})(\xi-\ze
 $$
 
 
-###### Verifier Cost 4
+#### Verifier Cost 4
 
 > Verifier:
 > 
 > $\xi-\zeta\omega^i$ 的计算在本轮的第 $1$ 步已经计算得到，因此这里的复杂度主要为 $n$ 个有限域上的数相乘，复杂度为 $(n - 1) ~ \mathbb{F}_{\mathsf{mul}}$ 。
 
-#### Step 5
+### Step 5
 
 Verifier 计算线性化多项式的承诺 $C_l$ 
 
@@ -1283,7 +1290,7 @@ C_l & =
 \end{split}
 $$
 
-###### Verifier Cost 5
+#### Verifier Cost 5
 
 > Verifier: 
 >
@@ -1328,7 +1335,7 @@ $$
 > \end{aligned}
 > $$
 
-#### Step 6
+### Step 6
 
 Verifier 产生随机数 $\eta$ 来合并下面的 Pairing 验证：
 
@@ -1359,7 +1366,7 @@ $$
 e\Big(P, [1]_2\Big) \overset{?}{=} e\Big(Q_\zeta + \eta\cdot Q_\xi + \eta^2\cdot Q_{\omega\zeta}, [\tau]_2\Big)
 $$
 
-###### Verifier Cost 6
+#### Verifier Cost 6
 
 > Verifier:
 > 
@@ -1388,7 +1395,7 @@ $$
 > \end{aligned}
 > $$
 
-#### Verifier Cost
+### Verifier Cost
 
 $$
 \begin{aligned}

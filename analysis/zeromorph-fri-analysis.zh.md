@@ -1,10 +1,13 @@
-# zeromroph fri 协议复杂度分析
+# Zeromroph-fri 协议复杂度分析
 
-协议来源：[zeromorph-fri](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph-fri.zh.md)
+- Jade Xie <jade@secbit.io>
+- Yu Guo <yu.guo@secbit.io>
 
-### Evaluation 证明协议
+## Evaluation 证明协议
 
-#### 公共输入
+- 协议描述文档：[Zeromorph-PCS: Integration with FRI](https://github.com/sec-bit/mle-pcs/blob/main/zeromorph/zeromorph-fri.md)
+
+### 公共输入
 
 - MLE 多项式 $\tilde{f}$ 的承诺 $\mathsf{cm}([[\tilde{f}]]_n)$
 - 求值点 $\mathbf{u}=(u_0, u_1, \ldots, u_{n-1})$
@@ -13,11 +16,11 @@
 - FRI 协议中进行 low degree test 查询阶段的重复查询的次数参数: $l$
 - FRI 协议中编码的乘法子群：$D, D^{(0)}, \ldots, D^{(n - 1)}$ 
 
-#### Witness
+### Witness
 
 - MLE 多项式 $\tilde{f}$ 在 $n$ 维 HyperCube 上的点值向量 $\mathbf{a} = (a_0, a_1, \ldots, a_{2^n-1})$
 
-#### Round 1
+### Round 1
 
 Prover 发送余数多项式的承诺
 
@@ -40,7 +43,7 @@ $$
 \mathsf{cm}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0) = \mathsf{MMCS.commit}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0)
 $$
 
-##### Prover Cost Round 1
+#### Prover Cost Round 1
 
 -  直接用 [Zeromorph](https://eprint.iacr.org/2023/917) 论文 Appendix A.2 的算法能计算出 $q_k$ 在 Hypercube 上的值，即可以得到 $\hat{q}_k$ 的系数，根据论文的结论，整个算法复杂度为 $(2^{n+1} - 3) ~ \mathbb{F}_{\mathsf{add}}$ 以及 $(2^{n} - 2) ~ \mathbb{F}_{\mathsf{mul}}$ 。这里不计入加法的复杂度，因此计算出 $\hat{q}_k=[[\tilde{q}_k]]_k, \quad 0 \leq k < n$ 的复杂度为 $(N - 2) ~ \mathbb{F}_{\mathsf{mul}}$ 。
 - 计算 $\{[\hat{q}_k(x)|_{x \in D^{(k)}}]\}_{k = 0}^{n - 1}$ ，由于已经计算得到 $\hat{q}_k(X)$ 的系数，现在直接代入 $D^{(k)}$ 进行求值计算。在一个点进行求值，使用 FFT 方法进行计算。
@@ -95,13 +98,13 @@ $$
 \end{align}
 $$
 
-#### Round 2
+### Round 2
 
 1. Verifier 发送随机数 $\zeta \stackrel{\$}{\leftarrow} \mathbb{F} \setminus D$ 
 2. Prover 计算并发送 $\hat{f}(\zeta)$ 
 3. Prover 计算并发送  $\{\hat{q}_k(\zeta)\}_{k = 0}^{n - 1}$ 。
 
-##### Prover Cost Round 2
+#### Prover Cost Round 2
 
 - 计算 $\hat{f}(\zeta)$ ，Prover 有 $\hat{f}$ 的系数式，现在是求在一点的值，用 Horner 方法来计算，复杂度为 $N ~ \mathbb{F}_{\mathsf{mul}}$ 。
 
@@ -123,7 +126,7 @@ N ~ \mathbb{F}_{\mathsf{mul}} + (N - 1) ~ \mathbb{F}_{\mathsf{mul}} = (2N - 1) ~
 $$
 
 
-#### Round 3
+### Round 3
 
 1. Verifier 发送随机数 $\lambda \stackrel{\$}{\leftarrow} \mathbb{F}$ 
 2. Prover 计算 
@@ -145,7 +148,7 @@ $$
 
 在 $D^{(k)}$ 上的值。
 
-##### Prover Cost Round 3
+#### Prover Cost Round 3
 
 - 计算 $[q_{f_\zeta}(x)|_{x \in D}]$ 。
 	- 先通过 $f(X)$ 的系数式用 FFT 计算得到 $[f(x)|_{x \in D}]$ 。由于 $|D| = N \cdot \mathcal{R}$ ，因此复杂度为 $(\mathcal{R}N \cdot\log(\mathcal{R}N)) ~ \mathbb{F}_{\mathsf{mul}} = (\mathcal{R} \cdot nN + \mathcal{R}\log\mathcal{R} \cdot N) ~ \mathbb{F}_{\mathsf{mul}}$ 。
@@ -181,7 +184,7 @@ $$
 \end{aligned}
 $$
 
-#### Round 4
+### Round 4
 
 Prover 与 Verifier 进行 FRI 协议的 low degree test 交互，这里使用 rolling batch 技巧进行优化，对于 $k = 0, \ldots, n - 1$ ， 一次证明所有 $q_{\hat{q}_k}(X)$ 的次数小于 $2^k$ ，同时证明 $q_{f_\zeta}(X)$ 的次数小于 $2^n$ 。为了方便后续协议的叙述，这里记
 
@@ -228,7 +231,7 @@ $$
 - 当 $i = 0$ 时，由于最后折叠到常数多项式，Prover 选取 $D^{(0)}$ 中的任意一个点 $y_0 \in D^{(0)}$，发送折叠到最后的值 $\mathsf{fold}^{(0)}(y_0)$ 。
 
 
-##### Prover Cost Round 4
+#### Prover Cost Round 4
 
 - 对于 $i = n-1，\ldots, 0$
 	- Prover 计算
@@ -319,7 +322,7 @@ $$
 > [!note] 
 一般地，要证明一个多项式的次数小于 $2^n$ ，在 FRI low degree test 阶段的复杂度如上所示。
 
-#### Round 5
+### Round 5
 
 这一轮是接着 Prover 与 Verifier 进行 FRI 协议的 low degree test 交互的查询阶段，Verifier 重复查询 $l$ 次 ：
 - Verifier 从 $D^{(n)}$ 中随机选取一个数 $t^{(n)} \stackrel{\$}{\leftarrow} D^{(n)}$
@@ -362,13 +365,13 @@ $$
 >
 > 以及这些值对应的 Merkle Path。
 > 
-> ![](./img/zeromorph-fri-query.svg)
+> ![](img/zeromorph-fri-analysis-fri-query.svg)
 
-##### Prover Cost Round 5
+#### Prover Cost Round 5
 
 在查询阶段，Prover 的计算复杂度主要来自计算 $s^{(i + 1)} = (s^{(i)})^2$ ，但这些数都是来自 $D_i$ 中的元素，不需要再额外计算，可以通过索引值得到。
 
-#### Prover Cost
+### Prover Cost
 
 汇总 Prover Cost，
 
@@ -384,7 +387,7 @@ $$
 \end{aligned}
 $$
 
-#### Proof
+### Proof
 
 Prover 发送的证明为
 
@@ -405,7 +408,7 @@ $$
 \end{aligned}
 $$
 
-##### Proof Size
+#### Proof Size
 
 1. $\mathsf{cm}(\hat{q}_{n - 1}, \hat{q}_{n - 2}, \ldots, \hat{q}_0)$ ，这里承诺是用 mmcs 结构进行承诺的，发送的是一个 Hash 值，记为 $H$ 。
 2. $\hat{f}(\zeta), \hat{q}_0(\zeta), \ldots, \hat{q}_{n - 1}(\zeta)$ ，都是有限域中的值，大小为 $(n + 1) ~ \mathbb{F}$ 。
@@ -477,11 +480,11 @@ $$
 \end{align}
 $$
 
-#### Verification
+### Verification
 
-Verifier
+Verifier：
 
-##### Step 1
+#### Step 1
 
 
 1. 对 $q_{f_{\zeta}}(X)$ 以及 $n$ 个商多项式 $\{q_{\hat{q}_k}\}_{k = 0}^{n - 1}$ 一次进行 low degree test 的验证，记为
@@ -595,10 +598,10 @@ $$
 > 
 > 例如对于前面 Verifier 查询的例子，这里 Verifier 通过 Prover 发送的值，计算图中紫色的值，以及验证 Prover 发送的关于橙色部分的 Merkle Tree 的证明，最后 Verifier 验证自己计算得到的最后一个紫色部分的值是否等于 Prover 之前发送的值。
 > 
-> ![](./img/zeromorph-fri-verify.svg)
+> ![](img/zeromorph-fri-analysis-fri-verify.svg)
 
 
-###### Verifier Cost 1
+##### Verifier Cost 1
 
 汇总上面 Verifier 的复杂度
 
@@ -618,7 +621,7 @@ $$
 (ln^2 + (2 \log \mathcal{R}l - l) n + l - 2 \log \mathcal{R}l) ~C + (\frac{l}{2} n^2 + (\frac{3l}{2} + \log \mathcal{R}l)n - l) ~H + (7ln + 5l) ~ \mathbb{F}_{\mathsf{mul}} + (3ln + 2l) ~ \mathbb{F}_{\mathsf{inv}}
 $$
 
-##### Step 2
+#### Step 2
 
 2. 计算 $\Phi_n(\zeta)$ 以及 $\Phi_{n - k}(\zeta^{2^k})(0 \le k < n)$ ，由于
 
@@ -635,7 +638,7 @@ $$
 \Phi_{n-k}(\zeta^{2^k}) = 1 + \zeta^{2^k} + \zeta^{2\cdot 2^k} + \ldots + \zeta^{(2^{n-k}-1)\cdot 2^k}
 $$
 
-###### Verifier Cost 2
+##### Verifier Cost 2
 
 Verifier 计算 
 
@@ -669,7 +672,7 @@ $$
 2n ~ \mathbb{F}_{\mathsf{mul}} + n ~ \mathbb{F}_{\mathsf{inv}}
 $$
 
-##### Step 3
+#### Step 3
 
 验证下述等式的正确性
 
@@ -677,7 +680,7 @@ $$
 \hat{f}(\zeta) - v\cdot\Phi_n(\zeta) = \sum_{k = 0}^{n - 1} \Big(\zeta^{2^k}\cdot \Phi_{n-k-1}(\zeta^{2^{k+1}}) - u_k\cdot\Phi_{n-k}(\zeta^{2^k})\Big)\cdot \hat{q}_k(\zeta)
 $$
 
-###### Verifier Cost 3
+##### Verifier Cost 3
 
 - 计算 $v\cdot\Phi_n(\zeta)$ 复杂度为 $\mathbb{F}_{\mathsf{mul}}$ 。
 - 计算 $\sum_{k = 0}^{n - 1} \Big(\zeta^{2^k}\cdot \Phi_{n-k-1}(\zeta^{2^{k+1}}) - u_k\cdot\Phi_{n-k}(\zeta^{2^k})\Big)\cdot \hat{q}_k(\zeta)$ 复杂度为 
@@ -688,7 +691,7 @@ $$
 
 因此总复杂度为 $(3n + 1) ~ \mathbb{F}_{\mathsf{mul}}$ 。
 
-#### Verifier Cost
+### Verifier Cost
 
 汇总 Verifier 的复杂度
 
