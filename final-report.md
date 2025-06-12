@@ -72,13 +72,6 @@ NOTE: Items marked with "⭐️" in the Remarks column represent new protocol de
 
 ### Classification by Commitment Protocols
 
-| Commitments         | Algebra                   | Schemes                                                                                            |
-| ------------------- | ------------------------- | -------------------------------------------------------------------------------------------------- |
-| KZG10               | Paring Friendly ECC based | PST13(mKZG or Liba-PCS), Zeromorph, Gemini, HyperKZG, PH23-KZG, Mercury, Samaritan                 |
-| Merkle Tree         | Linear code based         | Ligero, Virgo, Basefold, Deepfold, WHIR, PH23-fri, Zeromorph-fri, Gemini-fri, Ligerito, FRI-Binius |
-| Pedersen Commitment | ECC based                 | Hyrax, Σ-Check                                                                                     |
-| Ajtai Commitment    | Lattice based             | Greyhound, Hyperwolf                                                                               |
-
 All MLE-PCS protocols are extended from Univariate PCS or built directly on them.
 
 For a univariate polynomial $f(X)$,
@@ -89,6 +82,13 @@ $$
 
 Different ways of committing to $f(X)$ correspond to different Univariate PCS.
 
+| Commitments         | Algebra                   | Schemes                                                                                            |
+| ------------------- | ------------------------- | -------------------------------------------------------------------------------------------------- |
+| KZG10               | Paring Friendly ECC based | PST13(mKZG or Liba-PCS), Zeromorph, Gemini, HyperKZG, PH23-KZG, Mercury, Samaritan                 |
+| Merkle Tree         | Linear code based         | Ligero, Virgo, Basefold, Deepfold, WHIR, PH23-fri, Zeromorph-fri, Gemini-fri, Ligerito, FRI-Binius |
+| Pedersen Commitment | ECC based                 | Hyrax, Σ-Check                                                                                     |
+| Ajtai Commitment    | Lattice based             | Greyhound, Hyperwolf                                                                               |
+
 #### KZG10
 
 KZG10 polynomial commitment requires a Trusted Setup to produce a set of vectors with internal algebraic structure,
@@ -97,7 +97,7 @@ $$
 (G_0, G_1, \ldots, G_{N-1}, H_0, H_1) = (G, \gamma G, \gamma^2 G, \ldots, \gamma^{N- 1} G, H, \gamma H)
 $$
 
-Here, $\gamma$ is a random number generated through Trusted Setup, which must not be leaked after generation. $G, H$ are generators on elliptic curves $\mathbb{G}_1, \mathbb{G}_2$ respectively, and there exists a bilinear mapping between them: $e : \mathbb{G}_1\times \mathbb{G}_2 \rightarrow \mathbb{G}_T$.
+Here, $\gamma$ is a random number generated through Trusted Setup, which must not be leaked after generation. $G, H$ are generators on elliptic curve groups $\mathbb{G}_1, \mathbb{G}_2$ respectively, and there exists a bilinear mapping between them: $e: \mathbb{G}_1\times \mathbb{G}_2 \rightarrow \mathbb{G}_T$.
 
 The commitment to polynomial $f(X)$ is:
 
@@ -122,9 +122,9 @@ e(C_{f(X)} - y \cdot G, H) \overset{?}{=} e(C_{q(X)} , \gamma H - \zeta H)
 $$
 
 From the above description, it can be seen that the KZG10 commitment scheme has the following characteristics:
-- Requires trusted setup to generate public parameters with specific algebraic structure
-- Uses bilinear mapping on elliptic curves to verify opening proofs
-- The opening proof verification requires only one group element, which often makes the proof size constant
+- Requires a trusted setup to generate public parameters with a specific algebraic structure.
+- Uses bilinear mapping on elliptic curves to verify opening proofs.
+- The opening proof verification requires only one group element, which often makes the proof size constant.
 
 #### Merkle Tree
 
@@ -136,7 +136,7 @@ $$
 
 The elements of this vector, or their hash values, serve as the leaf nodes of the Merkle Tree, and the root of this Merkle Tree is the commitment to $f(X)$.
 
-To prove $f(\zeta) =y (\zeta \notin H)$, taking the FRI protocol to construct a PCS as an example [H22], one proves:
+To prove $f(\zeta) = y$ (for $\zeta \notin H$), taking the FRI protocol to construct a PCS as an example [H22], one proves:
 
 $$
 f^{(0)}(X) =\frac{f(X) - y}{X - \zeta} + \lambda \cdot X \cdot \frac{f(X) - y}{X - \zeta}
@@ -145,9 +145,9 @@ $$
 with degree less than $N$, where $\lambda \leftarrow \mathbb{F}_q$ is a random number sent by the Verifier. The Prover first encodes $f^{(0)}(X)$ on $H$ using Reed-Solomon, commits to the encoded vector using a Merkle Tree, and then the Prover and Verifier proceed with the FRI protocol. In the Query phase of the protocol, if leaf nodes on the Merkle Tree need to be opened, the Prover must send the corresponding Merkle Paths as proof.
 
 Protocols using Merkle Trees as commitment schemes have the following characteristics:
-- Do not require trusted setup
-- Commitment computation mainly relies on hash operations, which has less computational overhead compared to KZG10 which requires operations on elliptic curves
-- Due to the need to send Merkle Paths during the proof process, the proof size is often larger than KZG10
+- Do not require trusted setup.
+- Commitment computation mainly relies on hash, which has less computational overhead compared to KZG10 since KZG10 requires operations on elliptic curves.
+- Prover needs to send Merkle Paths during the proof process, making the proof size larger than KZG10 in most cases.
 
 #### Pedersen Commitment
 
@@ -163,7 +163,7 @@ $$
 \mathsf{cm}(\vec{a}) = a_0 G_0 + a_1 G_1 + \ldots + a_{N-1} G_{N-1}
 $$
 
-If the Prover can also generate a random factor $\rho\leftarrow \mathbb{F}$, then this commitment can be a Perfectly Hiding commitment:
+If the Prover can also generate a random factor $\rho\leftarrow \mathbb{F}$, then the Pedersen commitment is Perfectly Hiding:
 
 $$
 \mathsf{cm}(\vec{a}) = a_0 G_0 + a_1 G_1 + \ldots + a_{N-1} G_{N-1} + \rho H_0
@@ -179,18 +179,31 @@ We can typically use either the Bulletproof approach or the ∑-Check approach t
 
 Protocols that use Pedersen Commitment as their commitment scheme have the following characteristics:
 
-- No Trusted Setup required
-- Commitment computation primarily relies on elliptic curve multiplication
-- Using Bulletproof-based inner product proofs, the proof size is $O(\log(N))$, but the Verifier's computational complexity is $O(N)$
+- No Trusted Setup required.
+- Commitment computation primarily relies on elliptic curve multiplication.
+- Using Bulletproof-based inner product proofs, the proof size is $O(\log(N))$, but the Verifier's computational complexity is $O(N)$.
 
 #### Ajtai Commitment
 
-Ajtai commitment is a lattice-based commitment method with quantum-resistant properties. Assuming the vector to be committed is $\vec{f}$ (in polynomial commitment, the coefficients of polynomial $f(X)$ can be viewed as vector $\vec{f}$, similar to Pedersen commitment), Ajtai commitment first selects an $n \times m$-size matrix $G$ (similar to the group element in Pedersen commitment), and computes $G \vec{f} = \vec{t}$ to get the commitment result $\vec{t}$. Like Pedersen Commitment, Ajtai commitment also doesn't require trusted setup. The most important difference is:
+Ajtai commitment is a lattice-based commitment method with post-quantum security. Assuming the vector to be committed is $\vec{a}$, Ajtai commitment first selects an $n \times m$-size matrix $G$ (similar to the group element in Pedersen commitment), and computes 
+$$
+\mathsf{cm}(\vec{a}) = G \vec{a}
+$$ 
+to get the commitment result $\vec{t}$. 
 
-- Ajtai commitment requires that the committed content $\vec{f}$ must be "small enough", meaning there is an upper bound $B$ such that for all $f_i$, $|f_i| < B$. This is due to the requirements of the SIS/LWE hard problem; only under this condition can the binding/hiding properties of Ajtai commitment be reduced to the SIS/LWE problem. To commit to polynomials with arbitrary coefficients, a common method is to split each coefficient into smaller but longer arrays (such as binary representation), and then commit to the split result. This satisfies the $< B$ requirement. Similarly, during opening, an additional step is needed to recover the original coefficients by computing the inner product of the binary vector with $(1, 2, 2^2, \cdots)$.
-- Since the result of Ajtai commitment is itself a vector, implementing "commitment-of-commitment" becomes very easy. That is, after splitting, multiple commitments can again undergo Ajtai commitment. This technique is widely used in lattice designs to further reduce proof volume.
+The key differences between Ajtai commitments and Pedersen commitments are:
 
-To improve efficiency, many implementations use polynomial rings to implement Ajtai commitment (note that the polynomial ring here is unrelated to the polynomials in polynomial commitment), where the elements of vectors/matrices are elements in a polynomial ring. This more general case allows the security of Ajtai commitment to be reduced to the M-SIS/M-LWE problem.
+1. Ajtai commitment requires that the committed content $\vec{a}$ must be "small enough", meaning there is an upper bound $B$ such that for all $a_i$, $|a_i| < B$. This is due to the hardness requirements of the SIS/LWE problem, and only under this condition can the binding/hiding properties of Ajtai commitment be reduced to the SIS/LWE problem. To commit to polynomials with arbitrary coefficients, a common method is to split each coefficient into smaller but longer arrays (such as binary representation), and then commit to the split result. This satisfies the $< B$ requirement. Similarly, during opening, an additional step is needed to recover the original coefficients by computing the inner product of the binary vector with $(1, 2, 2^2, \cdots)$.
+2. Since the result of Ajtai commitment is itself a vector, implementing "commitment-of-commitment" becomes very easy. That is, after splitting, multiple commitments can again undergo Ajtai commitment. This technique is widely used in lattice designs to further reduce proof volume.
+
+To improve efficiency, many implementations use polynomial rings to implement Ajtai commitment (note that the polynomial ring here is unrelated to the polynomials in polynomial commitments), where the elements of vectors/matrices are ring elements. This more general case allows the security of Ajtai commitment to be reduced to the M-SIS/M-LWE problem.
+
+Protocols that use Ajtai Commitment as their commitment scheme have the following characteristics:
+
+- No Trusted Setup required.
+- Commitment computation primarily relies on matrix multiplication.
+- An additional norm check for the opening is required.
+- Using LaBRADOR-based inner product proofs, the proof size is $O(\log(N))$, but the Verifier's computational complexity is $O(N)$.
 
 ### Classification by Evaluation Proof Principles
 
@@ -272,7 +285,7 @@ $$
 
 That is, proving that the inner product of vector $\vec{f}$ and vector $\otimes_{j=0}^{n - 1}(1, u_i)$ is $v$. There are many protocols that construct MLE-PCS through this inner product proof method, including Virgo[ZXZS19], Hyrax[WTSTW16], PH23-PCS[PH23], Mercury[EG25], and Samaritan[GPS25].
 
-Virgo-PCS[ZXZS19] is described in the Coefficients Form of MLE polynomials, where proving $\tilde{f}(u_0, \ldots, u_{n - 1}) = v$ means proving the inner product:
+Virgo-PCS[ZXZS19] is described in the Coefficients Form of MLE polynomials, where proving $\tilde{f}(u_0, \ldots, u_{n - 1}) = v$ is equivalent to the inner product relation:
 
 $$
 \langle \vec{f}, \otimes_{j=0}^{n - 1}(1, u_i)\rangle = v
@@ -327,7 +340,7 @@ u_0u_1 \\
 \end{bmatrix}
 $$
 
-Then the matrix is committed row by row. Hyrax uses Pedersen Commitment, which has additive homomorphism, so the commitment vectors can first be inner-producted with $(1, u_2, u_3, u_2u_3)$ to get a single commitment, and then prove that the inner product of the vector corresponding to this commitment and $(1, u_0, u_1, u_0u_1)$ equals $v$. This final inner product proof uses the Bulletproofs-IPA protocol, with the Verifier's computational complexity at $O\sqrt{N}$ and the Proof size at $O(\log(N))$.
+Then the matrix is committed row by row. Hyrax uses Pedersen Commitment, which has additive homomorphism, so the commitment vectors can first be inner-producted with $(1, u_2, u_3, u_2u_3)$ to get a single commitment, and then prove that the inner product of the vector corresponding to this commitment and $(1, u_0, u_1, u_0u_1)$ equals $v$. This final inner product proof uses the Bulletproofs-IPA protocol, with the Verifier's computational complexity at $O(\sqrt{N})$ and the Proof size at $O(\log(N))$.
 
 The Mercury [EG25] and Samaritan [GPS25] protocols have very similar approaches, both improving on the matrix multiplication equation described in Hyrax. Unlike Hyrax, Mercury and Samaritan only need to compute commitments for the vector as a whole, rather than row by row, generating $\sqrt{N}$ commitments. Then they transform the overall Evaluation proof into two inner product proofs. Additionally, Mercury batches the two inner product proofs into one, further optimizing the protocol.
 
