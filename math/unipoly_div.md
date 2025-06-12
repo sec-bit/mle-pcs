@@ -1,35 +1,35 @@
-# 基于 Newton Iteration 的多项式快速除法
+# Fast Polynomial Division Based on Newton Iteration
 
-传统的多项式的带余除法 (Synthetic Division) 需要 $O(n^2)$ 的计算复杂度。本节介绍一种利用 Newton Iteration 的快速除法算法，算法复杂度与多项式乘法一致，仅为 $O(M(n))$。其中 $M(n)$ 表示多项式乘法的复杂度。
+Traditional polynomial synthetic division requires a computational complexity of $O(n^2)$. This section introduces a fast division algorithm using Newton Iteration, with a complexity consistent with polynomial multiplication, only $O(M(n))$. Here, $M(n)$ represents the complexity of polynomial multiplication.
 
-## 逆序多项式
+## Reversed Polynomials
 
-假设一个有限域 $F$，对于 $F[X]$ 上的多项式 $f(X)$ 与 $g(X)$，因为 $F[X]$ 是一个 Euclidian Domain，所以 $f(X)$ 与 $g(X)$ 满足下面的带余除法等式：
+Let's consider a finite field $F$, and polynomials $f(X)$ and $g(X)$ in $F[X]$. Since $F[X]$ is a Euclidean Domain, $f(X)$ and $g(X)$ satisfy the division with remainder equation:
 
 $$
 f(X) = g(X)\cdot q(X) + r(X)
 $$
-并且 $\deg(r)<\deg(g)$。为了方便后续的描述，我们记 $n=\deg(f)$，$m=\deg(g)$。
+where $\deg(r)<\deg(g)$. For convenience, let's denote $n=\deg(f)$ and $m=\deg(g)$.
 
-下面我们先介绍一个重要的概念，**逆序多项式**。假如 $f(X)$ 表示为如下的系数形式：
+First, let's introduce an important concept: the **reversed polynomial**. If $f(X)$ is represented in coefficient form as:
 
 $$
 f = a_0 + a_1X + \cdots + a_{n-1}X^{n-1} \in F[X] 
 $$
 
-那么它的逆序多项式为：
+Then its reversed polynomial is:
 
 $$
 \mathsf{rev}(f) = a_{n-1} + a_{n-2}X + \cdots + a_1X^{n-2} + a_0X^{n-1}  \in F[X] 
 $$
 
-简单来说，$\mathsf{rev}(f)$ 就是把 $f$ 的系数按顺序倒转，原多项式最高次项系数作为逆序多项式的常数项，次高项系数作为逆序多项式的 $X$ 项系数，依此类推。下面我们给出逆序变换的定义：$\mathsf{rev}_k(f):F[X]\to F[X]$:
+Simply put, $\mathsf{rev}(f)$ reverses the coefficients of $f$, making the highest-degree coefficient the constant term, the second-highest the coefficient of $X$, and so on. The formal definition of the reverse transformation is: $\mathsf{rev}_k(f):F[X]\to F[X]$:
 
 $$
 \mathsf{rev}_k(f): f \longmapsto X^kf\left(\frac{1}{X}\right)
 $$
 
-如果 $k=\deg(f)$，那么 $\mathsf{rev}_k(f)$ 就表示 $f$ 的逆序多项式，我们可以用省略下标 $k$ ，写为 $\mathsf{rev}(f)$。下面展开下 $\mathsf{rev}_k(f)$ 的定义：
+If $k=\deg(f)$, then $\mathsf{rev}_k(f)$ represents the reversed polynomial of $f$, and we can omit the subscript $k$, writing it as $\mathsf{rev}(f)$. Let's expand the definition of $\mathsf{rev}_k(f)$:
 
 $$
 \begin{aligned}
@@ -40,13 +40,13 @@ $$
 \end{aligned}
 $$
 
-其中 $k\ge (n-1)$ 。 如果 $k=n-1$，那么 $\mathsf{rev}_k(f)$ 正好等于 $f$ 的逆序多项式。容易验证，$\mathsf{rev}_k$ 满足加法同态：
+where $k\ge (n-1)$. If $k=n-1$, then $\mathsf{rev}_k(f)$ exactly equals the reversed polynomial of $f$. It's easy to verify that $\mathsf{rev}_k$ satisfies additive homomorphism:
 
 $$
 \mathsf{rev}_k(f+g) = \mathsf{rev}_k(f) + \mathsf{rev}_k(g)
 $$
 
-并且 $\mathsf{rev}_k$ 也满足下面的乘法关系：
+And $\mathsf{rev}_k$ also satisfies the following multiplicative relationship:
 
 $$
 \mathsf{rev}_k(f\cdot g) = \mathsf{rev}_j(f)\cdot \mathsf{rev}_{k-j}(g)
@@ -56,7 +56,7 @@ $$
 \mathsf{rev}_k(f) = X^d \cdot \mathsf{rev}_{k-d}(f)
 $$
 
-我们把 $f(X)$ 的除法分解的等式代入 $\mathsf{rev}(f)$ 的定义，可得：
+Substituting the division decomposition of $f(X)$ into the definition of $\mathsf{rev}(f)$, we get:
 
 $$
 \begin{aligned}
@@ -66,63 +66,61 @@ $$
 \end{aligned}
 $$
 
-然后我们可以得到下面的等式：
+Then we can derive the following equation:
 
 $$
 \mathsf{rev}(f) \equiv \mathsf{rev}_{n-m}(q)\cdot \mathsf{rev}_{m-1}(g) \mod{X^{n-m+1}}
 $$
 
-注意到，上面的等式中 $r(X)$ 被 $X^{n-m+1}$ 提升变成了高次项，因此我们可以通过多项式模运算抹掉。
+Note that in the above equation, $r(X)$ is elevated into higher-degree terms by $X^{n-m+1}$, so we can eliminate it through polynomial modular arithmetic.
 
-这么做的目的是，多项式的除法运算不再需要考虑余数多项式 $r(X)$，我们只要通过上面的等式来计算商多项式 $q(X)$ 的逆序多项式 $\mathsf{rev}(q)$ 即可。
+The purpose of doing this is that polynomial division no longer needs to consider the remainder polynomial $r(X)$; we only need to calculate the reversed polynomial of the quotient polynomial $\mathsf{rev}(q)$ using the equation above.
 
-然后我们再对上面等式进行变换，得到 $\mathsf{rev}_{n-m}(q)$ 的计算式：
+We can further transform the equation to get the calculation formula for $\mathsf{rev}_{n-m}(q)$:
 
 $$
 \mathsf{rev}_{n-m}(q) \equiv \mathsf{rev}_{n-1}(f)\cdot \mathsf{rev}_{m-1}(g)^{-1} \mod{X^{n-m+1}}
 $$
 
-计算商多项式 $q(X)$ 则进一步依赖一个模运算下的多项式求逆运算，即如何计算 $\mathsf{rev}_{m-1}(g)^{-1}$，使得 $\mathsf{rev}_{m-1}(g)\cdot \mathsf{rev}_{m-1}(g)^{-1} \equiv 1\mod{X^{n-m+1}}$。为了方便起见，我们引入一个新的常数变量：$l=n-m+1$。注意到 因为 $l>n-m=\deg(q)$，所以
+Calculating the quotient polynomial $q(X)$ depends on finding the multiplicative inverse of a polynomial under modular arithmetic, i.e., how to compute $\mathsf{rev}_{m-1}(g)^{-1}$ such that $\mathsf{rev}_{m-1}(g)\cdot \mathsf{rev}_{m-1}(g)^{-1} \equiv 1\mod{X^{n-m+1}}$. For convenience, let's introduce a new constant variable: $l=n-m+1$. Note that since $l>n-m=\deg(q)$, we have:
 
 $$
 \mathsf{rev}_{n-m}(q) = \mathsf{rev}_{n-m}(f)\cdot \mathsf{rev}_{m-1}(g)^{-1}
 $$
 
-如果我们能顺利计算出 $\mathsf{rev}_{n-m}(q)$，那么 $q(X)$ 就可以求解出：
+If we can successfully calculate $\mathsf{rev}_{n-m}(q)$, then $q(X)$ can be solved as:
 
 $$
 q = \mathsf{rev}_{n-m}(\mathsf{rev}_{n-m}(q))
 $$
 
-接下来一个疑问是，在带有模运算的多项式等式中，计算一个多项式的乘法逆（Multiplicative Inverse）会更容易计算吗？换句话说，我们如何计算商环 $F[X]/\langle X^l \rangle$ 中的乘法逆？
+The next question is, in a polynomial equation with modular arithmetic, is calculating the multiplicative inverse of a polynomial easier? In other words, how do we calculate the multiplicative inverse in the quotient ring $F[X]/\langle X^l \rangle$?
 
-## 商环中乘法逆元的存在性
+## Existence of Multiplicative Inverses in Quotient Rings
 
-我们知道环中只有 Unit Element 才有乘法逆元，那么对于商环 $F[X]/\langle X^l \rangle$ 中的元素，哪些多项式才存在乘法逆元？因为 $X^l$ 显然并不是一个 Irreducible Polynomial，所以 $F[X]/\langle X^l \rangle$ 并不构成一个 Field。
+We know that only unit elements have multiplicative inverses in a ring. So which polynomials have multiplicative inverses in the quotient ring $F[X]/\langle X^l \rangle$? Since $X^l$ is clearly not an irreducible polynomial, $F[X]/\langle X^l \rangle$ does not form a field.
 
-进而我们可以考虑 $F[X]$ 的子环 $F[X]/\langle X^l \rangle$，其中任何一个多项式 $f(X)$ 是否都存在一个 Inverse Element？答案是 Yes。这是因为
-对于任何一个 Euclidean Domain $R$，如果其中两个元素 $a, m\in R$，它们互素，即 $\gcd(a, m)=1$，那么通过 Extended Euclidean Algorithm 可以计算得到 $s, t\in R$ ，
-它们满足下面的 Bezout 等式：
+We can consider the subring $F[X]/\langle X^l \rangle$ of $F[X]$. Does every polynomial $f(X)$ have an inverse element? The answer is yes. This is because for any Euclidean Domain $R$, if two elements $a, m\in R$ are coprime, i.e., $\gcd(a, m)=1$, then through the Extended Euclidean Algorithm, we can compute $s, t\in R$ that satisfy the Bezout equation:
 
 $$
 s a + t m = 1
 $$
 
-而对于任何一个模 $X^l$ 的多项式 $f\in F[X]/\langle X^l \rangle$，只要它的常数项不为零，那么 $\gcd(f, X^l)=1$，满足上面的性质，所以我们可以通过 Extended Euclidean Algorithm 计算得到 $f\bmod{X^l}$ 的 Inverse，不过这需要 $O(n^2)$ 的复杂度。
+For any polynomial $f\in F[X]/\langle X^l \rangle$ modulo $X^l$, as long as its constant term is non-zero, $\gcd(f, X^l)=1$, satisfying the above property. So we can compute the inverse of $f\bmod{X^l}$ using the Extended Euclidean Algorithm, but this requires $O(n^2)$ complexity.
 
-而对于我们要解决的问题，计算 $g\cdot h \equiv 1\mod{X^l}$ 中的 $h$ 来说，因为 $g$ 为某个多项式的逆序多项式，所以它的常数项一定不为零，特别是如果原多项式为 Monic （首项为一）多项式，那么它的常数项为 1，即 $g(0)=1$。
+For our problem of calculating $h$ in $g\cdot h \equiv 1\mod{X^l}$, since $g$ is the reversed polynomial of some polynomial, its constant term must be non-zero. In particular, if the original polynomial is a monic polynomial (with leading coefficient 1), then its constant term is 1, i.e., $g(0)=1$.
 
-我们当然可以采用上面的递推式来计算 $h$ 的近似解，即计算 $(b_0, b_1, \cdots, b_{l-1})$ 的系数，不过这需要 $O(l^2)$ 的复杂度。
+We could use the recursive formula above to calculate an approximate solution for $h$, i.e., calculate the coefficients $(b_0, b_1, \cdots, b_{l-1})$, but this requires $O(l^2)$ complexity.
 
-## 幂级数环与多项式求逆
+## Formal Power Series Ring and Polynomial Inversion
 
-为了计算多项式的求逆，我们需要介绍一个重要概念，形式幂级数环（Formal Power Series Ring）。对于多项式环 $F[X]$ 中的多项式，如果我们对其扩充，对任意的多项式都加上具有无限非零高次项，那么我们就可以得到一个形式幂级数环 $F[[X]]$：
+To calculate the inverse of a polynomial, we need to introduce an important concept, the formal power series ring (Formal Power Series Ring). If we extend the polynomial ring $F[X]$ to include polynomials with infinitely many non-zero higher-degree terms, we get the formal power series ring $F[[X]]$:
 
 $$
 p(X) = \sum_{i=0}^{\infty} a_iX^i \in F[[X]]
 $$
 
-对于任意的 $p_1, p_2\in F[[X]]$，环的加法和乘法定义如下：
+For any $p_1, p_2\in F[[X]]$, addition and multiplication in the ring are defined as:
 
 $$
 p_1(X) + p_2(X) = \sum_{i=0}^{\infty}(a_i + b_i)X^i
@@ -132,23 +130,23 @@ $$
 p_1(X)\cdot p_2(X) = \sum_{i=0}^{\infty}\Big(\sum_{j=0}^{i}a_j b_{i-j}\Big)X^i
 $$
 
-另外任何一个非零的 $p(X)$ 都可以唯一地分解为 $X^n p_0(X)$，其中 $p_0(X)$ 的常数项非零。$F[[X]]$ 是一个 UFD，即唯一分解环。定义函数 $\delta(p) = n$，那么 $F[[X]]$ 是一个 Euclidean Domain。
+Additionally, any non-zero $p(X)$ can be uniquely factored as $X^n p_0(X)$, where the constant term of $p_0(X)$ is non-zero. $F[[X]]$ is a UFD (Unique Factorization Domain). If we define the function $\delta(p) = n$, then $F[[X]]$ is a Euclidean Domain.
 
-而对于多项式环中的任意多项式 $f(X)\in F[X]$，我们可以把它看成高次项系数为零的幂级数，即 
+For any polynomial $f(X)\in F[X]$, we can view it as a power series with zero coefficients for higher-degree terms:
 
 $$
 f(X) = \sum_{i=0}^{d}a_iX^i + \sum_{i=d+1}^{\infty}0X^i
 $$
 
-我们也可以通过多项式的模运算，把任何一个幂级数 $p(X)$ 映射到 $F[X]$ 中的多项式，即
+We can also map any power series $p(X)$ to a polynomial in $F[X]$ using modular arithmetic:
 
 $$
 p(X) = \sum_{i=0}^{d}a_iX^i + O(X^{d+1}) \equiv f(X) \mod{X^d}
 $$
 
-这里 $O(X^{d+1})$ 表示的是所有 $X^{d+1}$ 及更高次项的项，通过把高于 $X^d$ 的项标记为不关心的尾项，我们就可以得到幂级数 $p(X)$ 的近似表示，其中 $d$ 表示近似的精度。
+Here, $O(X^{d+1})$ represents all terms of degree $X^{d+1}$ and higher. By marking terms higher than $X^d$ as tail terms we don't care about, we get an approximate representation of the power series $p(X)$, where $d$ represents the precision of the approximation.
 
-因此我们可以得到结论，$F[X]$ 是 $F[[X]]$ 的子环，我们可以通过一个单同态映射将 $F[X]$ 中的元素嵌入到 $F[[X]]$ 中：
+So we can conclude that $F[X]$ is a subring of $F[[X]]$, and we can embed elements of $F[X]$ into $F[[X]]$ via a monomorphism:
 
 $$
 \begin{aligned}
@@ -157,25 +155,25 @@ $$
 \end{aligned}
 $$
 
-为何我们要引入幂级数环？因为幂级数环还有一个非常有用的**性质**：
+Why introduce the power series ring? Because the power series ring has another very useful **property**:
 
-- 任何一个常数项非零的幂级数 $p(X)$ 都存在一个乘法逆元 $\tilde{p}(X)$，使得 $p(X)\cdot \tilde{p}(X) = 1$
+- Any power series $p(X)$ with a non-zero constant term has a multiplicative inverse $\tilde{p}(X)$ such that $p(X)\cdot \tilde{p}(X) = 1$
 
-这个结论看起来有点神奇，我们先看一个简单的例子：
+This conclusion seems a bit magical. Let's look at a simple example:
 
 $$
 p_1(X)\in \mathbb{F}_7[X] = 1 + 2X + 3X^2 + 2X^3
 $$
 
-那么它的乘法逆元素为一个可能无限长的幂级数。为了方便表示，我们仅取其前十项，即精度为 $10$：
+Its multiplicative inverse is a potentially infinitely long power series. For convenience, we'll take only its first ten terms, i.e., with precision 10:
 
 $$
 \tilde{p}_1(X) = 1 + 5X + X^2 + 2X^3 + 4X^4 + 5X^5 + 2X^6 + X^7 + 3X^8 + X^9 + O(X^{10})
 $$
 
-而它的尾项 $O(X^{10})$ 则表示的是所有 $X^{10}$ 之后的项的总和。
+And its tail term $O(X^{10})$ represents the sum of all terms after $X^{10}$.
 
-我们可以试着再将去掉尾项的 $\tilde{p}_1(X)$ 作为一个多项式，把它乘以 $p_1(X)$，看看运算结果是什么：
+We can try treating $\tilde{p}_1(X)$ without the tail term as a polynomial and multiplying it by $p_1(X)$ to see the result:
 
 $$
 \begin{aligned}
@@ -184,68 +182,67 @@ $$
 \end{aligned}
 $$
 
-我们得到了一个近似等于 1 的多项式。乘积结果的尾巴上只带有未知数次数大于等于 10 的项。换句话说，如何考虑精度为 10，那么这个乘积结果正是约等于 1。
+We get a polynomial approximately equal to 1. The product has only terms of degree 10 or higher in its tail. In other words, if we consider a precision of 10, this product is indeed approximately equal to 1.
 
-如果我们如何计算这个可能无限长的 $\tilde{p}(X)$ 呢？下面我们推导下计算公式。
+How do we calculate this possibly infinitely long $\tilde{p}(X)$? Let's derive the calculation formula.
 
-假设
+Assume 
  
 $$
 \tilde{p}(X)=\sum_{i=0}^{\infty}b_iX^i
 $$ 
 
-那么显然下面的公式成立：
+Then clearly the following formula holds:
 
 $$
 \Big(\sum_{i=0}^{\infty}b_iX^i\Big)\Big(\sum_{i=0}^{\infty}a_iX^i\Big) = 1
 $$
 
-因为 $a_0\neq 0$，那么 $b_0 = \frac{1}{a_0}$，这是因为 $a_0b_0 = 1$。然后我们再考虑乘积的一次项，
-因为 $X$ 项的系数为零，所以
+Since $a_0\neq 0$, we have $b_0 = \frac{1}{a_0}$ because $a_0b_0 = 1$. Then considering the coefficient of the first-degree term in the product, since the coefficient of $X$ is zero, we have:
 
 $$
 a_1b_0 + a_0b_1 = 0
 $$
 
-所以我们可以得到 
+So we get: 
 
 $$
 b_1 = -\frac{a_1b_0}{a_0}
 $$
 
-通过类似的推导，我们可以得到 $b_2$ 的表达式：
+Through similar derivation, we can get the expression for $b_2$:
 
 $$
 b_2 = -\frac{a_1b_1 + a_2b_0}{a_0}
 $$
 
-这个规律可以推广到任意 $b_k$，得到一个递推计算公式：
+This pattern can be generalized to any $b_k$, giving a recursive calculation formula:
 
 $$
 b_k = -\frac{a_1b_{k-1} + a_2b_{k-2} + \cdots a_kb_0 }{a_0} = -\frac{1}{a_0}\Big(\sum_{j=1}^{k}a_{j}b_{k-j}\Big)
 $$
 
-这个递推式可以一直持续下去，依次从 $\tilde{p}(X)$ 的低次项系数计算到高次项系数，直到达到所要求的计算精度为止。
+This recursive formula can continue, calculating the coefficients of $\tilde{p}(X)$ from low-degree to high-degree until the required computational precision is reached.
 
-形式幂级数环 $F[[X]]$ 实际上是一个局部环（Local Ring），即它只有一个极大理想 $\langle X \rangle$ 。所有这个极大理想之外的幂级数（常数项非零的元素）都是 Unit Elements，即存在乘法逆元。
+The formal power series ring $F[[X]]$ is actually a local ring (Local Ring), meaning it has only one maximal ideal $\langle X \rangle$. All power series outside this maximal ideal (elements with non-zero constant terms) are unit elements, i.e., they have multiplicative inverses.
 
-回到我们的问题，已知一个多项式 $g\in F[X]$，我们需要求解它的乘法逆元 $h\in F[X]$ 满足 $g\cdot h \equiv 1 \mod{X^l}$。又因为这个多项式 $g$ 是某个多项式的逆序多项式，那么我们可以肯定它的常数项一定非零。于是，根据上面的算法，我们就可以求出一个 $\tilde{g}\in F[[X]]$ 满足 $\tilde{g}\cdot g = 1$ 。当然，我们不需要求出 $\tilde{g}$ 的精确结果，因为 $\tilde{g}$ 是一个无限长的幂级数，我们只需要求出它的近似解即可，近似精度只需要大于 $X^l$ 即可停止递推计算。
+Back to our problem, given a polynomial $g\in F[X]$, we need to solve for its multiplicative inverse $h\in F[X]$ such that $g\cdot h \equiv 1 \mod{X^l}$. Since this polynomial $g$ is the reversed polynomial of some polynomial, we can be sure its constant term is non-zero. So, according to the algorithm above, we can find a $\tilde{g}\in F[[X]]$ such that $\tilde{g}\cdot g = 1$. Of course, we don't need to compute the exact result of $\tilde{g}$ since $\tilde{g}$ is an infinitely long power series; we only need to compute its approximate solution, stopping the recursive calculation once the precision exceeds $X^l$.
 
 $$
 h(X) = b_0 + b_1X + b_2X^2 + \cdots + b_{l-1}X^{l-1}
 $$
 
-到这里，我们已经有了一个多项式除法的算法，但是这个算法的复杂度是 $O(l^2)$，
+At this point, we have an algorithm for polynomial division, but its complexity is $O(l^2)$.
 
-下面我们介绍如何采用牛顿迭代法（Newton Iteration）来计算多项式的乘法逆元，算法复杂度为 $O(M(l))$，其中 $M(l)$ 表示多项式乘法的计算量，假如有限域 $F$ 为 FFT 友好，那么 $O(M(l))$ 的复杂度为 $O(l\log l)$。
+Next, we'll introduce how to use Newton's method (Newton Iteration) to calculate the multiplicative inverse of a polynomial, with a complexity of $O(M(l))$, where $M(l)$ represents the computational cost of polynomial multiplication. If the finite field $F$ is FFT-friendly, then the complexity $O(M(l))$ is $O(l\log l)$.
 
-## 牛顿迭代法
+## Newton's Method
 
-牛顿迭代法是数学分析中求解多项式根的一种逐步逼近的迭代算法，比如对于一个实数域上的可导函数 $\phi: \mathbb{R}\to \mathbb{R}$ ，求解 $\alpha$ 满足 $\phi(\alpha)=0$ 。首先我们猜测一个初始值 $x=\alpha_0$ ，然后逐步求解 $\alpha_1, \alpha_2, \cdots, \alpha_k$，直至 $\alpha_k\cong\alpha$。如下图所示，
+Newton's method is an iterative algorithm in mathematical analysis for approximating the roots of polynomials. For example, for a differentiable function $\phi: \mathbb{R}\to \mathbb{R}$ on the real number field, to solve for $\alpha$ such that $\phi(\alpha)=0$. First, we guess an initial value $x=\alpha_0$, then iteratively solve for $\alpha_1, \alpha_2, \cdots, \alpha_k$ until $\alpha_k\cong\alpha$. As shown in the figure,
 
-![alt text](image-1.png)
+![Newton Iteration](image-1.png)
 
-假设 $\phi(x)$ 在 $x=\alpha_i$ 处的切线斜率为 $\phi'(\alpha_i)$，将切线与 $x$ 轴的交点记为 $\alpha_{i+1}$，那么它们满足下面的等式：
+Suppose the slope of the tangent line of $\phi(x)$ at $x=\alpha_i$ is $\phi'(\alpha_i)$. Denote the intersection of the tangent line with the $x$-axis as $\alpha_{i+1}$. Then they satisfy the following equation:
 
 $$
 \frac{\phi(\alpha_i)}{
@@ -253,133 +250,129 @@ $$
 } = \phi'(\alpha_{i})
 $$
 
-经过简单的公式变换，我们可以得到 $\alpha_{i+1}$ 的递推表达式：
+After a simple formula transformation, we get the recursive expression for $\alpha_{i+1}$:
 
 $$
 \alpha_{i+1} = \alpha_i - \frac{\phi(\alpha_i)}{\phi'(\alpha_i)}
 $$
 
-通过反复迭代 $k$ 次，我们可以得到一个快速收敛的近似解 $\alpha_k\cong\alpha$。
+By repeatedly iterating $k$ times, we can get a fast-converging approximate solution $\alpha_k\cong\alpha$.
 
-同样，如果求解 $g\cdot h \equiv 1 \mod{X^l}$，我们可以仿造上面的实数函数 $\phi(x)$ 构造一个形式幂级数环上的函数 $\Phi: F[[X]] \to F[[X]]$，
+Similarly, to solve $g\cdot h \equiv 1 \mod{X^l}$, we can construct a function $\Phi: F[[X]] \to F[[X]]$ on the formal power series ring, imitating the real-valued function $\phi(x)$:
 
 $$
 \Phi(Y) = \frac{1}{Y} - g
 $$
 
-其导数函数记为 $\Phi'(Y)$：
+Its derivative function is denoted as $\Phi'(Y)$:
 
 $$
 \Phi'(Y) = (\frac{1}{Y} - g)' = -\frac{1}{Y^2}
 $$
 
-该函数的根 $Y = \tilde{g}\in F[[X]]$ 将满足 $\tilde{g}\cdot g = 1$：
+The root $Y = \tilde{g}\in F[[X]]$ of this function will satisfy $\tilde{g}\cdot g = 1$:
 
 $$
 \Phi(\tilde{g}) = \frac{1}{\tilde{g}} - g = g - g = 0
 $$
 
-
-请再次注意，因为 $\tilde{g}$ 是一个无限多项的幂级数，而我们只需要得到一个近似解 $h\approx \tilde{g}$ ，即
+Please note again that since $\tilde{g}$ is a power series with infinitely many terms, we only need to get an approximate solution $h\approx \tilde{g}$, i.e.,
 
 $$
 \Phi(h) = \frac{1}{h} - g \approx 0
 $$
 
-这个精确解 $\tilde{g}$ 在 $X^l$ 或更高次项 $X^{\leq l}$ 的系数不为零，而近似解 $h$ 只需要满足低次项系数与 $\tilde{g}$ 的低次项系数相同即可：
+This exact solution $\tilde{g}$ has non-zero coefficients for terms of degree $X^l$ or higher, but the approximate solution $h$ only needs to have the same coefficients as $\tilde{g}$ for lower-degree terms:
 
 $$
 \tilde{g} = h + O(X^l)
 $$
 
-那么显然 $h$ 只需要包含所有低于 $X^l$ 的项，这样一来，$h$ 是多项式环 $F[X]/\langle X^l \rangle$ 中的元素：
+Then obviously $h$ only needs to include all terms lower than $X^l$, making $h$ an element of the polynomial ring $F[X]/\langle X^l \rangle$:
 
 $$
 h = \sum_{i=0}^{l-1}b_iX^i \quad \in F[X]/\langle X^l \rangle
 $$
 
-并且满足
+And it satisfies:
 
 $$
  g\cdot h = g \cdot (\tilde{g} - O(X^l)) = 1 - g\cdot O(X^l) \equiv 1 \mod{X^l}
 $$
 
-下面我们尝试用牛顿迭代法来求解 $h$ ，其递推公式如下：
+Now let's try to solve for $h$ using Newton's method, with the recursive formula:
 
 $$
 h_{i+1} = h_i - \frac{\Phi(h_i)}{\Phi'(h_i)} = h_i - \frac{\frac{1}{h_i} - g}{-\frac{1}{h_i^2}} = 2h_i - g\cdot h_i^2
 $$
 
-
-
-首先我们不妨设 $g$ 的常数项为 $1$，所以 $g=1+O(X)$ 。 然后我们再猜测一个迭代计算的初始值 $h_0 = 1$，当代入 $Y=h_0$ 到 $\Phi(Y)$ 中，
+First, let's assume the constant term of $g$ is 1, so $g=1+O(X)$. Then let's guess an initial value for iteration: $h_0 = 1$. When we substitute $Y=h_0$ into $\Phi(Y)$:
 
 $$
 \Phi(h_0) = \frac{1}{h_0} - g = 1 - g = O(X)
 $$
 
-我们可以用 $\bmod{X}$ 模运算来**去除**上面等式右边的尾项 $O(X)$，于是可以得到下面的等式：
+We can use $\bmod{X}$ modular arithmetic to **remove** the tail term $O(X)$ on the right side of the equation, getting:
 
 $$
 \Phi(h_0) = O(X) \equiv 0 \mod{X}
 $$
 
-上面这个等式可以解读为：$h_0$ 是**精度**为 $X$ 的 $\Phi(Y)$ 函数的近似根。
+This equation can be interpreted as: $h_0$ is an approximate root of the function $\Phi(Y)$ with **precision** $X$.
 
-然后我们利用牛顿迭代递推公式法来进行第一步的迭代计算，得到 $h_1$：
+Then we use Newton's iteration formula to perform the first step of iteration, getting $h_1$:
 
 $$
 h_1 = h_0 - \frac{\Phi(h_0)}{\Phi'(h_0)} = 2h_0 - g\cdot h_0^2 = 2 - g
 $$
 
-我们再测下 $g\cdot h_1$ 距离 $1$ 有多远，
+Let's test how far $g\cdot h_1$ is from 1:
 
 $$
 1 - g\cdot h_1 = 1- g(2-g) = (1 - g)^2 = (O(X))^2 = O(X^2) \equiv 0 \mod{X^2}
 $$
 
-这时我们可以认为： $h_1$ 是**精度**为 $X^2$ 的 $\Phi(Y)$ 函数的近似根。
+Now we can consider $h_1$ as an approximate root of the function $\Phi(Y)$ with **precision** $X^2$.
 
-再继续尝试迭代计算 $h_2$：
+Continuing to iterate for $h_2$:
 
 $$
 h_2 = h_1 - \frac{\Phi(h_1)}{\Phi'(h_1)} = 2h_1 - g\cdot h_1^2 = 4 - 2g - g(2-g)^2 = 4 - 2g - 4g + 4g^2 - g^3
 $$
 
-继续测试 $g\cdot h_2$ 距离 $1$ 有多远，假设 $g = 1 + e_0X + e_1X^2 + e_2X^3 + O(X^4)$，那么
+Continue testing how far $g\cdot h_2$ is from 1. Assume $g = 1 + e_0X + e_1X^2 + e_2X^3 + O(X^4)$, then:
 
 $$
 \begin{aligned}
 1 - g\cdot h_2 &= 1- g(4-6g+4g^2-g^3) \\
 & = 1 - 4g + 6g^2 - 4g^3 + g^4 \\
-
 \end{aligned}
 $$
 
-代入 $g = 1 + e_0X + e_1X^2 + e_2X^3 + O(X^4)$ 到上式右边，略去中间的繁琐计算步骤，我们可以发现所有 $X, X^2, X^3$ 项的系数都被消除为零，最终得到
+Substituting $g = 1 + e_0X + e_1X^2 + e_2X^3 + O(X^4)$ into the right side of the equation, skipping the tedious intermediate calculation steps, we can find that all coefficients for terms $X, X^2, X^3$ are eliminated to zero, finally getting:
 
 $$
 1 - g\cdot h_2 = \cdots = O(X^4) \equiv 0 \mod{X^4}
 $$
 
-那么，$h_2$ 是精度为 $X^4$ 的 $\Phi(X)$ 函数的近似根。
+So, $h_2$ is an approximate root of the function $\Phi(X)$ with precision $X^4$.
 
-通过观察不难发现，每次采用牛顿迭代法都会使计算结果逐步接近 $\Phi(Y)$ 的根，并且 $(1-g\cdot h_i)$ 的尾项上只带有 $X^{2^i}$ 及更高次项的项。我们可以猜测下面的结论：
+It's not hard to observe that each time we apply Newton's method, the calculation result gradually approaches the root of $\Phi(Y)$, and $(1-g\cdot h_i)$ only has terms of degree $X^{2^i}$ and higher in its tail. We can conjecture the following conclusion:
 
 $$
 g\cdot h_i \equiv 1 \mod{X^{2^i}}
 $$
 
-这里 $h_i$ 通过下面的方式计算：
+Here, $h_i$ is calculated through:
 
 $$
 h_{i} = h_{i-1} - \frac{\Phi(h_{i-1})}{\Phi'(h_{i-1})} \equiv 2\cdot h_{i-1} - g\cdot h_{i-1}^2 \mod{X^{2^{i}}}
 $$
 
-我们用数学归纳法来证明上面的定理：
+We can use mathematical induction to prove the theorem above:
 
-- 如果 $i = 0$， 那么 $h_0 = 1$，显然 $g\cdot h_0 = 1 + O(X) \equiv 1 \mod{X}$，所以 $i=0$ 时，定理成立。
-- 假设 $g\cdot h_i \equiv 1 \mod{X^{2^i}}$ 成立，那么考虑 $h_{i+1}$ ，展开 $1-gh_{i+1}$，同样证明 $h_{i+1}$ 满足定理等式：
+- If $i = 0$, then $h_0 = 1$, clearly $g\cdot h_0 = 1 + O(X) \equiv 1 \mod{X}$, so the theorem holds for $i=0$.
+- Assume $g\cdot h_i \equiv 1 \mod{X^{2^i}}$ holds, then considering $h_{i+1}$, expand $1-gh_{i+1}$ to similarly prove that $h_{i+1}$ satisfies the theorem equation:
 
 $$
 \begin{aligned}
@@ -390,11 +383,11 @@ $$
 \end{aligned}
 $$
 
-现在我们可以理解到最初为何我们要采用 $\mathsf{rev}(g)$ 函数要得到 $g$ 的逆序多项式，这是由于逆序多项式被当作幂级数运算时，其常数项稳定，高次项虽然出现大量的交叉项，但是可以通过模运算抹除精度。
+Now we can understand why we initially used the $\mathsf{rev}(g)$ function to get the reversed polynomial of $g$. This is because when the reversed polynomial is treated as a power series, its constant term is stable. Although there are many cross terms in the higher-degree terms, they can be eliminated through modular arithmetic for precision.
 
-## 多项式求逆算法
+## Polynomial Inversion Algorithm
 
-下面我们再详细列出来 $h_k$ 的计算过程
+Let's detail the calculation process for $h_k$:
 
 $$
 \begin{aligned}
@@ -406,7 +399,7 @@ h_{1}(X) & \equiv 2\cdot h_{0}(X) - f(X)\cdot h_{0}(X) \mod X\\
 \end{aligned}
 $$
 
-如果假设 $l$ 是2的整数次幂，即 $l=2^k$，那么我们可以得到如下的多项式求逆算法（Python 代码），其中参数为某个已知的多项式 $g(X)\in F[X]$，算法返回多项式 $h\in F[X]/\langle X^l \rangle$，满足 $gh\equiv 1 \mod{X^l}$ ：
+If we assume that $l$ is a power of 2, i.e., $l=2^k$, then we can develop the following polynomial inversion algorithm (Python code). The parameter is a known polynomial $g(X)\in F[X]$, and the algorithm returns a polynomial $h\in F[X]/\langle X^l \rangle$ satisfying $gh\equiv 1 \mod{X^l}$:
 
 ```python
 def poly_inverse(g: list[F], l: int):
@@ -430,27 +423,26 @@ def poly_mul(f, g):
     ...
 ```
 
-那么如果 $l$ 不是2的整数次幂，应该如何处理呢？
+How should we handle it if $l$ is not a power of 2?
 
-我们有两种方法来应对。先介绍第一种方法，出自论文 [CC11]。这个方法处理非常直接，假设 $k$ 是 $l$ 按 2 的整数次幂对其的整数，那么 $l\leq k$
-，我们可以有下面的结论：
+We have two methods to address this. Let's first introduce the first method, from paper [CC11]. This method is very direct. Let $k$ be the integer power of 2 such that $l\leq k$. Then we have the following conclusion:
 $$
 X^k\mid (1 - gh) \Rightarrow  X^l\mid (1 - gh)
 $$
 
-这个结论非常容易证明，在这里略过。我们只要思考下直觉上它为什么成立。如果一个幂级数按照 $X^k$ 的精度计算得到零，那么它在较低的精度进行抹除上也一定是零，这好比 $1 + O(X^k)$ 一定可以表示为 $1 + O(X^l)$。因此我们只需要计算 $X^k\mid 1 - gh^*$ 的 $h^*$ 多项式，然后通过模运算得到 $h = h^*\mod{X^l}$，它一定满足：
+This conclusion is very easy to prove, so we'll skip it here. We just need to think intuitively why it holds. If a power series calculates to zero with precision $X^k$, then it must be zero at lower precisions as well, just like how $1 + O(X^k)$ can definitely be represented as $1 + O(X^l)$. Therefore, we only need to calculate the polynomial $h^*$ satisfying $X^k\mid 1 - gh^*$, and then get $h = h^*\mod{X^l}$, which will definitely satisfy:
 
 $$
 X^l\mid 1 - gh
 $$
 
-所以我们可以通过计算 $X^k\mid 1 - gh$ 的 $h$ 多项式，然后通过模运算得到 $X^l\mid 1 - gh$ 的 $h$ 多项式。
+So we can calculate the polynomial $h$ satisfying $X^k\mid 1 - gh$, and then get the polynomial $h$ satisfying $X^l\mid 1 - gh$ through modular arithmetic.
 
-另外一个需要处理的细节是，考虑到 $g(0)$ 的常数项可能不是 1。这个情况非常常见，因为 $g$ 的逆序多项式很可能不是一个首项为一的 Monic 多项式。虽然我们有简单的办法把一个非 Monic 多项式转换成 Monic 多项式，但是这个转换过程需要额外引入 $O(l)$ 次有限域乘法。不过，我们可以直接去除这个限制条件，让最初始的猜测 $h_0$ 设置为 $g(0)^{-1}$，然后再继续进行后续的牛顿迭代法的计算。
+Another detail that needs to be handled is considering that the constant term of $g(0)$ might not be 1. This situation is very common because the reversed polynomial of $g$ is likely not a monic polynomial. Although we have a simple way to convert a non-monic polynomial to a monic one, this conversion process requires an additional $O(l)$ finite field multiplications. However, we can directly remove this constraint by setting the initial guess $h_0$ to $g(0)^{-1}$ and then continuing with the subsequent Newton's method calculations.
 
-第三个可以改进的点是，在每一次多项式乘法运算中，都可以事先针对精度进行多项式的截断，减少多项式的长度，从而减少计算量。比如每一次计算 $g\cdot h_{i-1}^2$ 时，我们只需计算 $(g\bmod{X^{2^i}})\cdot h_{i-1}^2$，即先对 $g$ 多项式进行精度截断，再进行乘法运算。
+A third improvement is that in each polynomial multiplication operation, we can first truncate the polynomial according to precision, reducing the length of the polynomial and thus reducing computational cost. For example, when calculating $g\cdot h_{i-1}^2$, we only need to calculate $(g\bmod{X^{2^i}})\cdot h_{i-1}^2$, i.e., first truncate the polynomial $g$ according to precision, then perform the multiplication operation.
 
-下面是修改过后的 Python 代码：
+Here is the modified Python code:
 
 ```python
 def poly_inverse_rev1(g: list[F], l: int):
@@ -467,45 +459,44 @@ def poly_inverse_rev1(g: list[F], l: int):
     return h
 ```
 
-### 复杂度分析
+### Complexity Analysis
 
-这个多项式求逆的算法时间复杂度为 $3M(l) + 2l$。
+The time complexity of this polynomial inversion algorithm is $3M(l) + 2l$.
 
-首先每一轮的多项式乘法有两次，一次是 $h_i^2$，时间复杂度为 $M(2^{i-1})$，一次是 $h_i^2\cdot g$，时间复杂度为 $M(2^i)$，计算 $2h_i - g\cdot h_i^2$ 的时间复杂度为 $2^i$。
+First, in each round, there are two polynomial multiplications: one is $h_i^2$ with time complexity $M(2^{i-1})$, and one is $h_i^2\cdot g$ with time complexity $M(2^i)$. The time complexity for calculating $2h_i - g\cdot h_i^2$ is $2^i$.
 
-一次迭代的总的开销如下：
+The total cost of one iteration is as follows:
 $$
 M(2^i) + M(2^{i-1}) + 2^i \leq = \frac{3}{2}M(2^{i}) + 2^i
 $$
 
-迭代 $r$ 轮的总开销为：
+The total cost for $r$ iterations is:
 
 $$
 \sum_{1\leq i \leq r} \Big(\frac{3}{2}M(2^i) + 2^i\Big) \lt 3M(2^r) + 2^{r+1}
 $$
 
+## Polynomial Division Algorithm
 
-## 多项式除法算法
-
-我们现在已经掌握了如何计算多项式的乘法逆元，那么接下来我们梳理下多项式除法的算法步骤。假设我们有两个多项式 $f, g\in F[X]$，其中 $f$ 的次数为 $n$，$g$ 的次数为 $m$，并且 $n\geq m$，算法的返回商多项式 $q$，其次数为 $n-m$，余数多项式 $r$ ，其次数严格小于 $m-1$，它们满足下面的等式：
+Now that we've mastered how to calculate the multiplicative inverse of a polynomial, let's outline the steps of the polynomial division algorithm. Suppose we have two polynomials $f, g\in F[X]$, where $f$ is of degree $n$, $g$ is of degree $m$, and $n\geq m$. The algorithm returns the quotient polynomial $q$ of degree $n-m$ and the remainder polynomial $r$ of degree strictly less than $m-1$, satisfying:
 
 $$
 f(X) = q(X)\cdot g(X) + r(X)
 $$
 
-算法第一步检查参数 $f$ 与 $g$ 的最高次项的系数不能为零，然后计算得到两者的次数之差，记为 $d=\deg{f}-\deg{g}$，这里假设 $\deg{f}\geq \deg{g}$。
+The first step of the algorithm checks that the highest-degree coefficients of parameters $f$ and $g$ are non-zero, then calculates the difference in their degrees, denoted as $d=\deg{f}-\deg{g}$. Here we assume $\deg{f}\geq \deg{g}$.
 
-第二步计算 $f$ 和 $g$ 的逆序多项式，记为 $\mathsf{rev}_n(f)$ 和 $\mathsf{rev}_m(g)$，这里 $n=\deg{f}$，$m=\deg{g}$。
+The second step calculates the reversed polynomials of $f$ and $g$, denoted as $\mathsf{rev}_n(f)$ and $\mathsf{rev}_m(g)$, where $n=\deg{f}$ and $m=\deg{g}$.
 
-第三步计算 $\mathsf{rev}_m(g)$ 在幂级数环 $F[[X]]$ 上的 Inverse Element，精度为 $X^{d+1}$，计算结果记为 $\tilde{g}_{d}=\mathsf{rev}_m(g)^{-1}$。
+The third step calculates the Inverse Element of $\mathsf{rev}_m(g)$ in the power series ring $F[[X]]$ with precision $X^{d+1}$, with the result denoted as $\tilde{g}_{d}=\mathsf{rev}_m(g)^{-1}$.
 
-第四步计算 $q^* \equiv \mathsf{rev}_m(f)\cdot \tilde{g}_d \mod X^{d+1}$，记为 $\mathsf{rev}_m(q)$。
+The fourth step calculates $q^* \equiv \mathsf{rev}_m(f)\cdot \tilde{g}_d \mod X^{d+1}$, denoted as $\mathsf{rev}_m(q)$.
 
-第五步计算 $\mathsf{rev}_{n-m}(q^*)=\mathsf{rev}_{n-m}(\mathsf{rev}_{n-m}(q))=q$。
+The fifth step calculates $\mathsf{rev}_{n-m}(q^*)=\mathsf{rev}_{n-m}(\mathsf{rev}_{n-m}(q))=q$.
 
-第六步计算余数多项式 $r = f - q\cdot g$。
+The sixth step calculates the remainder polynomial $r = f - q\cdot g$.
 
-下面给出除法的 Python 代码，然后我们再分析它的复杂度。
+Here's the Python code for division, and then we'll analyze its complexity:
 
 ```python
 def poly_div_rem(f: list[F], g: list[F]):
@@ -533,62 +524,16 @@ def poly_div_rem(f: list[F], g: list[F]):
     return q, r
 ```
 
+### Complexity Analysis
 
-### 复杂度分析
-
-算法的第三步，需要 $3M(l) + 2l$ 次多项式乘法运算；而在第四步需要一次多项式乘法，时间复杂度为 $M(l)$；第六步需要一次多项式乘法运算，时间复杂度为 $M(l)$，还需要一次多项式的减法，时间复杂度为 $n$。那么总共的时间复杂度为
+The third step of the algorithm requires $3M(l) + 2l$ polynomial multiplications; the fourth step requires one polynomial multiplication with time complexity $M(l)$; the sixth step requires one polynomial multiplication with time complexity $M(l)$, and one polynomial subtraction with time complexity $n$. So the total time complexity is:
 
 $$
 5M(l) + 2l + n
 $$
-
-
 
 ## References
 
 - [CC11] Zhengjun Cao, Hanyue Cao. Note on fast division algorithm for polynomials using Newton iteration. 2011. https://arxiv.org/pdf/1112.4014
 - https://cs.uwaterloo.ca/~r5olivei/courses/2021-winter-cs487/lec5-ref.pdf
 - https://math.stackexchange.com/questions/710252/multiplicative-inverse-of-a-power-series
-
-
-
-
-
-## OLD
-
-
-我们可以快速推导一下上面这个公式，我们先用 $X=\frac{1}{X}$ 代入 $f(X)$ 的等式，可得：
-
-$$
-f\Big(\frac{1}{X}\Big) = g\Big(\frac{1}{X}\Big)\cdot q\Big(\frac{1}{X}\Big) + r\Big(\frac{1}{X}\Big)
-$$
-
-然后两边同时乘上 $X^{n-1}$，可得：
-
-$$
-X^{n-1}\cdot f\Big(\frac{1}{X}\Big) = X^{m-1}\cdot g\Big(\frac{1}{X}\Big)\cdot X^{n-m}\cdot q\Big(\frac{1}{X}\Big) + X^{n-m+1}\cdot X^{m-2}\cdot r\Big(\frac{1}{X}\Big)
-$$
-
-分析下等式左边 $X^{n-1}\cdot f(\frac{1}{X})$， 
-
-$$
-\begin{aligned}
-X^{n-1}\cdot f\Big(\frac{1}{X}\Big) & = X^{n-1}\cdot \Big(a_{0} + \frac{a_{1}}{X} + \cdots + \frac{a_{n-2}}{X^{n-2}} + \frac{a_{n-1}}{X^{n-1}}\Big) \\
-& = a_{0}X^{n-1} + a_{1}X^{n-2} + \cdots + a_{n-2}X + a_{n-1} \\
-& = \mathsf{rev}_{n-1}(f)
-\end{aligned}
-$$
-
-再分析下 
-
-$$X^{m-1}\cdot g(\frac{1}{X}) = \mathsf{rev}_{m-1}(g)$$
-
-$$X^{n-m}\cdot q(\frac{1}{X}) = \mathsf{rev}_{n-m}(q)$$
-
-$$X^{n-m+1}\cdot X^{m-2}\cdot r(\frac{1}{X}) = X^{n-m+1}\cdot \mathsf{rev}_{m-2}(r)$$
-
-所以，我们可以得到倒序多项式之间的关系等式：
-
-$$
-\mathsf{rev}_{n-1}(f) = \mathsf{rev}_{n-m}(q)\cdot \mathsf{rev}_{m-1}(g) + {X^{n-m+1}}\cdot \mathsf{rev}_{m-2}(r)
-$$
