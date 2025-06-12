@@ -100,8 +100,6 @@ $$
 
 我们知道环中只有 Unit Element 才有乘法逆元，那么对于商环 $F[X]/\langle X^l \rangle$ 中的元素，哪些多项式才存在乘法逆元？因为 $X^l$ 显然并不是一个 Irreducible Polynomial，所以 $F[X]/\langle X^l \rangle$ 并不构成一个 Field。
 
-> TODO:
-
 进而我们可以考虑 $F[X]$ 的子环 $F[X]/\langle X^l \rangle$，其中任何一个多项式 $f(X)$ 是否都存在一个 Inverse Element？答案是 Yes。这是因为
 对于任何一个 Euclidean Domain $R$，如果其中两个元素 $a, m\in R$，它们互素，即 $\gcd(a, m)=1$，那么通过 Extended Euclidean Algorithm 可以计算得到 $s, t\in R$ ，
 它们满足下面的 Bezout 等式：
@@ -115,8 +113,6 @@ $$
 而对于我们要解决的问题，计算 $g\cdot h \equiv 1\mod{X^l}$ 中的 $h$ 来说，因为 $g$ 为某个多项式的逆序多项式，所以它的常数项一定不为零，特别是如果原多项式为 Monic （首项为一）多项式，那么它的常数项为 1，即 $g(0)=1$。
 
 我们当然可以采用上面的递推式来计算 $h$ 的近似解，即计算 $(b_0, b_1, \cdots, b_{l-1})$ 的系数，不过这需要 $O(l^2)$ 的复杂度。
-
-> TODO
 
 ## 幂级数环与多项式求逆
 
