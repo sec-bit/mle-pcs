@@ -151,6 +151,38 @@ Protocols using Merkle Trees as commitment schemes have the following characteri
 
 #### Pedersen Commitment
 
+Pedersen Commitment is another commitment scheme based on elliptic curves. Unlike KZG10, Pedersen Commitment doesn't require a Trusted Setup to generate vectors with specific algebraic structures. Instead, it uses a Hash-to-point algorithm to generate a set of random elliptic curve group elements:
+
+$$
+G_0, G_1, \ldots, G_{M-1}, H_0 \leftarrow \mathbb{G}
+$$
+
+With these elements, we can commit to a vector $\vec{a}$ of length $N<M$:
+
+$$
+\mathsf{cm}(\vec{a}) = a_0 G_0 + a_1 G_1 + \ldots + a_{N-1} G_{N-1}
+$$
+
+If the Prover can also generate a random factor $\rho\leftarrow \mathbb{F}$, then this commitment can be a Perfectly Hiding commitment:
+
+$$
+\mathsf{cm}(\vec{a}) = a_0 G_0 + a_1 G_1 + \ldots + a_{N-1} G_{N-1} + \rho H_0
+$$
+
+Although these random group points have no internal structure, we can still prove that the vector behind the commitment satisfies certain properties. One of the most typical is the inner product proof:
+
+$$
+\langle \vec{a}, \vec{b} \rangle = v
+$$
+
+We can typically use either the Bulletproof approach or the ∑-Check approach to prove the inner product. Based on inner product proofs, we can also prove Hadamard products of vectors, or even more complex matrix multiplications. The biggest issue with this commitment scheme is that the Verifier's computational complexity is $O(N)$, but we can still use amortization or recursive proof techniques to mitigate the Verifier's computational burden.
+
+Protocols that use Pedersen Commitment as their commitment scheme have the following characteristics:
+
+- No Trusted Setup required
+- Commitment computation primarily relies on elliptic curve multiplication
+- Using Bulletproof-based inner product proofs, the proof size is $O(\log(N))$, but the Verifier's computational complexity is $O(N)$
+
 #### Ajtai Commitment
 
 Ajtai commitment is a lattice-based commitment method with quantum-resistant properties. Assuming the vector to be committed is $\vec{f}$ (in polynomial commitment, the coefficients of polynomial $f(X)$ can be viewed as vector $\vec{f}$, similar to Pedersen commitment), Ajtai commitment first selects an $n \times m$-size matrix $G$ (similar to the group element in Pedersen commitment), and computes $G \vec{f} = \vec{t}$ to get the commitment result $\vec{t}$. Like Pedersen Commitment, Ajtai commitment also doesn't require trusted setup. The most important difference is:
