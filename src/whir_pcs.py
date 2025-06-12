@@ -30,8 +30,8 @@ from random import Random, randint
 
 Fp = BN254_Fr
 
-#from ff.tiny import F193
-#Fp = F193
+# from ff.tiny import F193
+# Fp = F193
 
 MLEPolynomial.set_field_type(Fp)
 UniPolynomial.set_field_type(Fp)
@@ -1154,14 +1154,19 @@ def test_pcs():
             Fp(-1), Fp(2), Fp(3), Fp(1),
             Fp(3), Fp(1), Fp(-2), Fp(3),
             Fp(0), Fp(-1), Fp(-2), Fp(3),
+            Fp(0), Fp(-1), Fp(-2), Fp(3),
+            Fp(0), Fp(-1), Fp(-2), Fp(3),
+            Fp(0), Fp(-1), Fp(-2), Fp(3),
             ]
     us = [Fp(2), Fp(-1), Fp(2), Fp(-2), Fp(3)]
-
+    
     # evals = evals + evals
     # us = us + us
 
     eqs = MLEPolynomial.eqs_over_hypercube(us)
-    
+    print(f"eqs = {eqs}")
+    print(f"len(eqs) = {len(eqs)}")
+
     y = inner_product(evals, eqs, Fp.zero())
     f_mle = MLEPolynomial(evals, len(us))
     assert f_mle.evaluate(us) == y

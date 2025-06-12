@@ -1,7 +1,6 @@
 # Gemini ：对接 FRI
 
 - Jade Xie  <jade@secbit.io>
-- Yu Guo <yu.guo@secbit.io>
 
 Gemini 协议 [BCH+22] 为我们提供了一种将 multilinear polynomial PCS 转换为一元多项式承诺方案的思路。简单回顾下，即为了证明一个 MLE 多项式在某个点的打开值为 $v$ ，可以转换为一个内积证明，该内积证明是对一个一元多项式不断进行类似 sumcheck 或者 FRI 协议中的 split-and-fold 得到的，这样又把内积证明转换为了要证明一些一元多项式在某些随机点处的值是正确的。在 Gemini 原论文中采用 KZG10 的一元多项式 PCS 实现了该证明。其实，一元多项式 PCS 也可以采用 FRI PCS 的方案。FRI PCS 有一个好处是对于不同次数的多项式在多个点的打开，可以用随机数合并成一个多项式，只需要再调用一次 FRI 的 low degree test 就能一次完成这些证明。
 

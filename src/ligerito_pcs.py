@@ -24,9 +24,9 @@ from mle2 import MLEPolynomial
 from unipoly2 import UniPolynomial, UniPolynomialWithFft, bit_reverse_permutation
 from merkle import MerkleTree, verify_decommitment
 
-from ff.tiny import Fp
+# from ff.tiny import Fp
 
-# Fp = BN254_Fr
+Fp = BN254_Fr
 MLEPolynomial.set_field_type(Fp)
 UniPolynomial.set_field_type(Fp)
 UniPolynomialWithFft.set_field_type(Fp)
