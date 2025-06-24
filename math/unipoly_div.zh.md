@@ -1,12 +1,18 @@
 # 基于 Newton Iteration 的快速多项式除法
 
+Yu Guo <yu.guo@secbit.io>
+
+*最后更新日期：2025-06-24*
+
+---
+
 传统的多项式的带余除法 [Synthetic Division](https://en.wikipedia.org/wiki/Synthetic_division) 需要 $O(n^2)$ 的计算复杂度。本节介绍一种利用 Newton Iteration 的快速除法算法，算法复杂度与多项式乘法一致，仅为 $O(M(n))$。其中 $M(n)$ 表示多项式乘法的复杂度。这个算法描述来自于 "Modern Computer Algebra" 一书的 9.1 节。
 
 在介绍牛顿迭代法之前，我们先介绍一个简单的概念，**逆序多项式**，然后讨论与 **幂级数** 的关系。
 
 ## 逆序多项式
 
-假设 $F$ 是一个有限域，对于 $F[X]$ 上的多项式 $f(X)$ 以及任意非零多项式 $g(X)$， Euclidian Division 定理，存在唯一的 $q(X)$ 与 $r(X)$ 满足：
+假设 $F$ 是一个有限域，对于 $F[X]$ 上的多项式 $f(X)$ 以及任意非零多项式 $g(X)$，根据 Euclidian Division 定理，存在唯一的 $q(X)$ 与 $r(X)$ 满足：
 
 $$
 f(X) = g(X)\cdot q(X) + r(X), \qquad\text{and} \deg(r)<\deg(g)
@@ -194,7 +200,7 @@ $$
 可以看出，这是一个近似等于 $1$ 的多项式，乘积结果的尾巴上只带有未知数次数大于等于 10 的项。换句话说，如果考虑精度为 $10$，那么这个乘积结果约等于 $1$。
 
 那我们如何计算这个可能无限长的 $\tilde{p}(X)$ 呢？下面我们推导下计算公式。假设 $p(X)$ 的乘法逆元 $\tilde{p}(X)$ 为：
- 
+
 $$
 \tilde{p}(X)=\sum_{i=0}^{\infty}b_iX^i
 $$
@@ -234,7 +240,7 @@ $$
 
 牛顿迭代法是数学分析中求解多项式根的一种逐步逼近的迭代算法，比如对于一个实数域上的可导函数 $\phi: \mathbb{R}\to \mathbb{R}$ ，求解 $\alpha$ 满足 $\phi(\alpha)=0$ 。首先我们猜测一个初始值 $x=\alpha_0$ ，然后逐步求解 $\alpha_1, \alpha_2, \cdots, \alpha_k$，直至 $\alpha_k\cong\alpha$，或者说精度满足要求为止。逐步逼近的思路可以简单用下图表示：
 
-![alt text](image-1.png)
+![alt text](newton_it.png)
 
 假设 $\phi(x)$ 在 $x=\alpha_i$ 处的切线斜率为 $\phi'(\alpha_i)$，将切线与 $x$ 轴的交点记为 $\alpha_{i+1}$，那么它们满足下面的等式：
 

@@ -206,7 +206,7 @@ Next, we'll introduce how to use Newton's method (Newton Iteration) to accelerat
 
 Newton's method is an iterative algorithm in mathematical analysis for finding polynomial roots by successive approximation. For example, for a differentiable function φ: ℝ→ℝ in the real domain, to find α satisfying φ(α)=0, we first guess an initial value x=α₀, then successively solving for α₁, α₂, …, α_k, until α_k≅α, or until the precision meets requirements. The idea of successive approximation can be simply illustrated by the figure:
 
-![alt text](image-1.png)
+![alt text](newton_it.png)
 
 Assume the slope of φ(x) at x=α_i is φ'(α_i), and the intersection of the tangent line with the x-axis is denoted as α_{i+1}, then they satisfy:
 $$
