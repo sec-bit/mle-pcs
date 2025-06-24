@@ -1,23 +1,29 @@
 # Fast Polynomial Division Based on Newton Iteration
 
-Traditional polynomial division with remainder [Synthetic Division](https://en.wikipedia.org/wiki/Synthetic_division) requires O(n²) computational complexity. This section introduces a fast division algorithm using Newton Iteration, with complexity matching polynomial multiplication at only O(M(n)), where M(n) represents the complexity of polynomial multiplication. This algorithm is described in Chapter 9.1 of "Modern Computer Algebra".
+Yu Guo <yu.guo@secbit.io>
+
+*Last updated: 2025-06-24*
+
+---
+
+Traditional polynomial division with remainder [Synthetic Division](https://en.wikipedia.org/wiki/Synthetic_division) requires $O(n^2)$ computational complexity. This section introduces a fast division algorithm using Newton Iteration, with complexity matching polynomial multiplication at only $O(M(n))$, where $M(n)$ represents the complexity of polynomial multiplication. This algorithm is described in Chapter 9.1 of "Modern Computer Algebra".
 
 Before introducing Newton's method, we'll first discuss the simple concept of **reversed polynomials**, and then examine their relationship with **power series**.
 
 ## Reversed Polynomials
 
-Given a finite field F, for polynomials f(X) and g(X) in F[X], since F[X] is a Euclidean Domain, f(X) and g(X) satisfy the following division with remainder equation:
+Given a finite field $F$, for polynomials $f(X)$ and $g(X)$ in $F[X]$, since $F[X]$ is a Euclidean Domain, $f(X)$ and $g(X)$ satisfy the following division with remainder equation:
 
 $$
-f(X) = g(X)\cdot q(X) + r(X)
+f(X) = g(X)\cdot q(X) + r(X), \qquad\text{and} \deg(r)<\deg(g)
 $$
 
-where deg(r) < deg(g). For convenience, we denote n as the length of the coefficient vector of f(X), with deg(f)=n-1, and m as the length of the coefficient vector of g(X), with deg(g)=m-1.
+For convenience, we denote $n-1$ as the length of the coefficient vector of $f(X)$, with $\deg(f)=n-1$, and $m-1$ as the length of the coefficient vector of $g(X)$, with $\deg(g)=m-1$.
 
-Let's first introduce what a **reversed polynomial** is. If f(X) is expressed in coefficient form as:
+Let's first introduce what a **reversed polynomial** is. If $f(X)$ is expressed in coefficient form as:
 
 $$
-f = a_0 + a_1X + \cdots + a_{n-1}X^{n-1}
+f(X) = a_0 + a_1X + \cdots + a_{n-1}X^{n-1}
 $$
 
 Then its reversed polynomial is:
@@ -26,13 +32,13 @@ $$
 \mathsf{rev}(f) = a_{n-1} + a_{n-2}X + \cdots + a_1X^{n-2} + a_0X^{n-1}
 $$
 
-Simply put, rev(f) reverses the order of coefficients in f, making the highest degree coefficient of the original polynomial the constant term of the reversed polynomial; likewise, the second-highest coefficient becomes the X term coefficient, and so on. Here's the formal definition of the reversal transformation: $\mathsf{rev}_k(f):F[X]\to F[X]$:
+Simply put, $\mathsf{rev}(f)$ reverses the order of coefficients in $f$, making the highest degree coefficient of the original polynomial the constant term of the reversed polynomial; likewise, the second-highest coefficient becomes the $X$ term coefficient, and so on. Here's the formal definition of the reversal transformation: $\mathsf{rev}_k(f):F[X]\to F[X]$:
 
 $$
-\mathsf{rev}_k(f): f \longmapsto X^kf\left(\frac{1}{X}\right)
+\mathsf{rev}_k(f): f(X) \longmapsto X^kf\left(\frac{1}{X}\right)
 $$
 
-If k=m=deg(f)+1, then $\mathsf{rev}_k(f)$ represents f's reversed polynomial, and we omit the subscript k, denoting it as rev(f). Let's expand the definition of $\mathsf{rev}_k(f)$:
+If $k=m=\deg(f)+1$, then $\mathsf{rev}_k(f)$ represents $f$'s reversed polynomial, and we omit the subscript $k$, denoting it as $\mathsf{rev}_k(f)$. Let's expand the definition of $\mathsf{rev}_k(f)$:
 
 $$
 \begin{aligned}
@@ -43,7 +49,7 @@ $$
 \end{aligned}
 $$
 
-If k=n-1, then $\mathsf{rev}_k(f)$ is exactly the reversed polynomial of f. It's easy to verify that $\mathsf{rev}_k$ satisfies additive homomorphism:
+If $k=n-1$, then $\mathsf{rev}_k(f)$ is exactly the reversed polynomial of $f$. It's easy to verify that $\mathsf{rev}_k$ satisfies additive homomorphism:
 
 $$
 \mathsf{rev}_k(f+g) = \mathsf{rev}_k(f) + \mathsf{rev}_k(g)
@@ -59,7 +65,7 @@ $$
 \mathsf{rev}_k(f) = X^d \cdot \mathsf{rev}_{k-d}(f)
 $$
 
-Substituting f(X)'s divisional decomposition equation into the definition of rev(f), we get:
+Substituting $f(X)$'s divisional decomposition equation into the definition of $\mathsf{rev}(f)$, we get:
 
 $$
 \begin{aligned}
@@ -75,9 +81,9 @@ $$
 \mathsf{rev}_{n}(f) \equiv \mathsf{rev}_{n-m}(q)\cdot \mathsf{rev}_{m}(g) \mod{X^{n-m+1}}
 $$
 
-Note that in the above equation, the reversed polynomial of the remainder polynomial r(X) is lifted by X^(n-m+1) to become a higher-degree term, so we can eliminate it using polynomial **modular arithmetic**.
+Note that in the above equation, the reversed polynomial of the remainder polynomial $r(X)$ is lifted by $X^{n-m+1}$ to become a higher-degree term, so we can eliminate it using polynomial **modular arithmetic**.
 
-The purpose of this treatment is that polynomial division operations no longer need to consider the remainder polynomial r(X); we only need to calculate the reversed polynomial rev(q) of the quotient polynomial q(X) using the equation above.
+The purpose of this treatment is that polynomial division operations no longer need to consider the remainder polynomial $r(X)$; we only need to calculate the reversed polynomial $\mathsf{rev}(q)$ of the quotient polynomial $q(X)$ using the equation above.
 
 We can further transform the modular equation to get a formula for $\mathsf{rev}_{n-m}(q)$:
 
@@ -85,37 +91,51 @@ $$
 \mathsf{rev}_{n-m}(q) \equiv \mathsf{rev}_{n}(f)\cdot \mathsf{rev}_{m}(g)^{-1} \mod{X^{n-m+1}}
 $$
 
-This way, calculating the quotient polynomial q(X) further depends on a polynomial inverse operation under modular arithmetic, specifically how to calculate $\mathsf{rev}_{m}(g)^{-1}$ such that $\mathsf{rev}_{m}(g)\cdot \mathsf{rev}_{m}(g)^{-1} \equiv 1\mod{X^{n-m+1}}$.
+This way, calculating the quotient polynomial $q(X)$ further depends on a polynomial inverse operation under modular arithmetic, specifically how to calculate $\mathsf{rev}_{m}(g)^{-1}$ such that $\mathsf{rev}_{m}(g)\cdot \mathsf{rev}_{m}(g)^{-1} \equiv 1\mod{X^{n-m+1}}$.
 
-If we can successfully calculate $\mathsf{rev}_{n-m}(q)$, then q(X) can be solved as:
+If we can successfully calculate $\mathsf{rev}_{n-m}(q)$, then $q(X)$ can be solved as:
 
 $$
 q = \mathsf{rev}_{n-m}(\mathsf{rev}_{n-m}(q))
 $$
 
-The next question is, is it easier to compute a polynomial's multiplicative inverse in a polynomial equation with modular arithmetic? In other words, how do we calculate the multiplicative inverse in the quotient ring F[X]/⟨X^(n-m+1)⟩?
+The next question is, is it easier to compute a polynomial's multiplicative inverse in a polynomial equation with modular arithmetic? In other words, how do we calculate the multiplicative inverse in the quotient ring $F[X]/\langle X^{n-m+1} \rangle$?
 
-For convenience, let's introduce a new constant notation: l=n-m+1.
+For convenience, let's introduce a new constant: $l=n-m+1$.
 
 ## Existence of Multiplicative Inverses in Quotient Rings
 
-We know that only Unit Elements in a ring have multiplicative inverses. So for elements in the quotient ring F[X]/⟨X^l⟩, which polynomials have multiplicative inverses? Since X^l is obviously not an Irreducible Polynomial, F[X]/⟨X^l⟩ doesn't form a Field, meaning not every element has a multiplicative inverse.
+We know that only unit elements in a ring have multiplicative inverses. So for elements in the quotient ring $F[X]/\langle X^l\rangle$, which polynomials have multiplicative inverses? 
 
-However, we can deduce that polynomials with non-zero constant terms in F[X]/⟨X^l⟩ definitely have multiplicative inverses. This is because for any Euclidean Domain R, if two coprime elements a, m∈R exist, i.e., gcd(a, m)=1, then using the Extended Euclidean Algorithm we can find s, t∈R that satisfy the Bezout equation:
+We can deduce that polynomials with non-zero constant terms in $F[X]/\langle X^l\rangle$ definitely have multiplicative inverses. This is because for any Euclidean Domain $R$, if two coprime elements $a, m\in R$ exist, i.e., $\gcd(a, m)=1$, then using the *Extended Euclidean Algorithm* we can find $s, t\in R$ that satisfy the Bezout equation:
+
 $$
 s a + t m = 1
 $$
-For any polynomial f∈F[X]/⟨X^l⟩ modulo X^l, as long as its constant term is non-zero, it satisfies gcd(f, X^l)=1, meaning we can calculate the Inverse of f mod X^l using the Extended Euclidean Algorithm, though this requires O(n^2) complexity.
 
-For the problem we need to solve, calculating h in g·h ≡ 1 mod X^l, since g is the reversed polynomial of some polynomial, its constant term must be non-zero, especially if the original polynomial is Monic (leading coefficient is 1), then its constant term is 1, i.e., g(0)=1.
+or equivalently:
+
+$$
+\begin{aligned}
+s &\equiv a^{-1} \mod{m} \\
+t &\equiv m^{-1} \mod{a}
+\end{aligned}
+$$
+
+For any polynomial $f\in F[X]/\langle X^l\rangle$ modulo $X^l$, as long as its constant term is non-zero, it satisfies $\gcd(f, X^l)=1$, meaning we can calculate the Inverse of $f$ mod $X^l$ using the Extended Euclidean Algorithm, though this requires $O(n^2)$ complexity.
+
+For the problem we need to solve, calculating $h$ in $g\cdot h \equiv 1 \mod{X^l}$, since $g$ is the reversed polynomial of some polynomial, its constant term must be non-zero, especially if the original polynomial is Monic (leading coefficient is one), then its constant term is $1$, i.e., $g(0)=1$.
 
 ## Power Series Rings and Polynomial Inversion
 
-To calculate the multiplicative inverse of a polynomial, we need to introduce an important concept, the **Formal Power Series Ring**. If we extend polynomials in F[X] by adding infinitely many non-zero higher-degree terms to any polynomial, we get a formal power series ring F[[X]]:
+To calculate the multiplicative inverse of a polynomial, we need to introduce an important concept, the **Formal Power Series Ring**. If we extend polynomials in $F[X]$ by adding infinitely many non-zero higher-degree terms to any polynomial, we get a formal power series ring $F[[X]]$:
+
 $$
 p(X) = \sum_{i=0}^{\infty} a_iX^i \in F[[X]]
 $$
-For any p₁, p₂∈F[[X]], the ring's addition and multiplication are defined as follows:
+
+For any $p_1, p_2\in F[[X]]$, the ring's addition and multiplication are defined as follows:
+
 $$
 p_1(X) + p_2(X) = \sum_{i=0}^{\infty}(a_i + b_i)X^i
 $$
@@ -123,188 +143,247 @@ $$
 $$
 p_1(X)\cdot p_2(X) = \sum_{i=0}^{\infty}\Big(\sum_{j=0}^{i}a_j b_{i-j}\Big)X^i
 $$
-Additionally, any non-zero p(X) can be uniquely factored as X^n p₀(X), where p₀(X) has a non-zero constant term. F[[X]] is a UFD, a Unique Factorization Domain. Defining function δ(p) = n, F[[X]] becomes a Euclidean Domain.
 
-For any polynomial f(X)∈F[X], we can view it as a power series with higher-degree term coefficients of zero, i.e.,
+Additionally, any non-zero $p(X)$ can be uniquely factored as $X^n p_0(X)$, where $p_0(X)$ has a non-zero constant term. $F[[X]]$ is a Unique Factorization Domain (UFD). Defining function $\delta(p) = n$, $F[[X]]$ is a Euclidean Domain.
+
+For any polynomial $f(X)\in F[X]$, we can view it as a power series with higher-degree term coefficients of zero, i.e.,
+
 $$
 f(X) = \sum_{i=0}^{d}a_iX^i + \sum_{i=d+1}^{\infty}0X^i \in F[[X]]
 $$
-We can also map any power series p(X)∈F[[X]] to a polynomial in F[X] through polynomial modular arithmetic:
+
+We can also map any power series $p(X)\in F[[X]]$ to a polynomial in $F[X]$ through polynomial modular arithmetic:
+
 $$
 p(X) = \sum_{i=0}^{d}a_iX^i + O(X^{d+1}) \equiv f(X) \mod{X^d}
 $$
-Here O(X^(d+1)) represents all terms of X^(d+1) and higher. By marking terms higher than X^d as unconcerned tail terms, we get an approximate representation of power series p(X), where d indicates the precision of the approximation.
 
-Thus, F[X] is a subring of F[[X]], and we can embed elements from F[X] into F[[X]] through a monomorphism:
+Here $O(X^{d+1})$ represents all terms of $X^{d+1}$ and higher. By marking terms higher than $X^d$ as unconcerned tail terms, we get an approximate representation of power series $p(X)$, where $d$ indicates the precision of the approximation.
+
+Thus, $F[X]$ is a subring of $F[[X]]$, and we can embed elements from $F[X]$ into $F[[X]]$ through a monomorphism:
+
 $$
 \begin{aligned}
 \iota: & F[X] \to F[[X]] \\
 & f(X) \mapsto \sum_{i=0}^{d}a_iX^i + \sum_{i=d+1}^{\infty}0X^i
 \end{aligned}
 $$
+
 Why introduce power series rings? Because they have a very useful **property**:
 
-- Any power series p(X) with a non-zero constant term has a multiplicative inverse p̃(X) such that p(X)·p̃(X) = 1
+- Any power series $p(X)$ with a non-zero constant term has a multiplicative inverse $\tilde{p}(X)$ such that $p(X)\cdot \tilde{p}(X) = 1$
 
 This conclusion seems a bit magical. Let's look at a concrete example:
+
 $$
 p_1(X) = 1 + 2X + 3X^2 + 2X^3 \in \mathbb{F}_7[X]
 $$
-Its multiplicative inverse is a potentially infinite power series. For convenience, we'll take only its first ten terms, i.e., with precision 10:
+
+Its multiplicative inverse is a potentially infinite power series. For convenience, we'll take only its first ten terms, i.e., with precision $10$:
+
 $$
 \tilde{p}_1(X) = 1 + 5X + X^2 + 2X^3 + 4X^4 + 5X^5 + 2X^6 + X^7 + 3X^8 + X^9 + O(X^{10})
 $$
-The tail term O(X^10) represents the sum of all higher-degree terms after X^10.
 
-Let's try to take p̃₁(X) without the tail term as a polynomial and multiply it by p₁(X) to see the result:
+The tail term $O(X^{10})$ represents the sum of all higher-degree terms after $X^{10}$.
+
+Let's try to take $\tilde{p}_1(X)$ without the tail term as a polynomial and multiply it by $p_1(X)$ to see the result:
+
 $$
 \begin{aligned}
 & p_1(X)\cdot (1 + 5X + X^2 + 2X^3 + 4X^4 + 5X^5 + 2X^6 + X^7 + 3X^8 + X^9) \\
 = & 1 + 6X^{10} + 2X^{11} + 2X^{12}
 \end{aligned}
 $$
-As we can see, this is a polynomial approximately equal to 1. In other words, the product result only has terms with degrees greater than or equal to 10. If we consider precision 10, this product result is approximately equal to 1.
 
-How do we calculate this potentially infinite p̃(X)? Let's derive the calculation formula. Assume the multiplicative inverse p̃(X) of p(X) is:
+As we can see, this is a polynomial approximately equal to *one*. In other words, the product result only has terms with degrees greater than or equal to $10$. If we consider precision $10$, this product result is approximately equal to one.
+
+How do we calculate this potentially infinite $\tilde{p}(X)$? Let's derive the calculation formula. Assume the multiplicative inverse $\tilde{p}(X)$ of $p(X)$ is:
  
 $$
 \tilde{p}(X)=\sum_{i=0}^{\infty}b_iX^i
 $$
+
 satisfying:
+
 $$
 \Big(\sum_{i=0}^{\infty}b_iX^i\Big)\Big(\sum_{i=0}^{\infty}a_iX^i\Big) = 1
 $$
-Since a₀≠0, we have b₀ = 1/a₀, because a₀b₀ = 1. Then considering the coefficient of the first-degree term in the product, since the coefficient of X is zero:
+
+Since $a_0\neq 0$, we have $b_0 = \frac{1}{a_0}$, because $a_0b_0 = 1$. Then considering the coefficient of the first-degree term in the product, since the coefficient of $X$ is zero:
+
 $$
 a_1b_0 + a_0b_1 = 0
 $$
+
 So we can get:
+
 $$
 b_1 = -\frac{a_1b_0}{a_0}
 $$
-Through similar derivation, we can get the expression for b₂:
+
+Through similar derivation, we can get the expression for $b_2$:
+
 $$
 b_2 = -\frac{a_1b_1 + a_2b_0}{a_0}
 $$
-This pattern can be generalized to any b_k, resulting in a recursive calculation formula:
+
+This pattern can be generalized to any $b_k$, resulting in a recursive calculation formula:
+
 $$
 b_k = -\frac{a_1b_{k-1} + a_2b_{k-2} + \cdots a_kb_0 }{a_0} = \frac{-1}{a_0}\Big(\sum_{j=1}^{k}a_{j}b_{k-j}\Big)
 $$
-This recursion can continue, calculating from low-degree coefficient to high-degree coefficient of p̃(X), until the required computational precision is reached.
 
-The formal power series ring F[[X]] is actually a local ring, meaning it has only one maximal ideal ⟨X⟩. All power series outside this maximal ideal (elements with non-zero constant terms) are Unit Elements, meaning they have multiplicative inverses.
+This recursion can continue, calculating from low-degree coefficient to high-degree coefficient of $\tilde{p}(X)$, until the required computational precision is reached.
 
-Back to our problem: given a polynomial g∈F[X], we need to find its multiplicative inverse h∈F[X] satisfying g·h ≡ 1 mod X^l. Since g is the reversed polynomial of some polynomial, we can be sure its constant term is non-zero. Thus, according to the algorithm above, we can find a g̃∈F[[X]] satisfying g̃·g = 1. Of course, we don't need the exact result of g̃, since g̃ is an infinitely long power series; we just need its approximate solution, where the approximation precision only needs to be greater than X^l to stop the recursive calculation.
+The formal power series ring $F[[X]]$ is actually a local ring, meaning it has only one maximal ideal $\langle X\rangle$. All power series outside this maximal ideal (elements with non-zero constant terms) are *unit elements*, meaning they have multiplicative inverses.
+
+Back to our problem: given a polynomial $g\in F[X]$, we need to find its multiplicative inverse $h\in F[X]$ satisfying $g\cdot h \equiv 1 \mod X^l$. Since $g$ is the reversed polynomial of some polynomial, we can be sure its constant term is non-zero. Thus, according to the algorithm above, we can find a $\tilde{g}\in F[[X]]$ satisfying $\tilde{g}\cdot g = 1$. Of course, we don't need the exact result of $\tilde{g}$, since $\tilde{g}$ is an infinitely long power series; we just need its approximate solution, where the approximation precision only needs to be greater than $X^l$ to stop the recursive calculation.
+
 $$
 h(X) = b_0 + b_1X + b_2X^2 + \cdots + b_{l-1}X^{l-1}
 $$
-At this point, we already have an algorithm for polynomial division, but its complexity is still O(l²).
 
-Next, we'll introduce how to use Newton's method (Newton Iteration) to accelerate the calculation of a polynomial's multiplicative inverse, with algorithm complexity O(M(l)), where M(l) represents the computational cost of polynomial multiplication. If the finite field F is Algebraic-FFT friendly (meaning F contains a multiplication subgroup of size 2^κ large enough), then the complexity of O(M(l)) is O(l log l).
+At this point, we already have an algorithm for polynomial division, but its complexity is still $O(l^2)$.
+
+Next, we'll introduce how to use Newton's method (Newton Iteration) to accelerate the calculation of a polynomial's multiplicative inverse, with algorithm complexity $O(M(l))$, where $M(l)$ represents the computational cost of polynomial multiplication. If the finite field $F$ is Algebraic-FFT friendly (meaning $F$ contains a multiplicative subgroup of size $2^\kappa$ large enough), then the complexity of $O(M(l))$ is $O(l\log{l})$.
 
 ## Newton's Method
 
-Newton's method is an iterative algorithm in mathematical analysis for finding polynomial roots by successive approximation. For example, for a differentiable function φ: ℝ→ℝ in the real domain, to find α satisfying φ(α)=0, we first guess an initial value x=α₀, then successively solving for α₁, α₂, …, α_k, until α_k≅α, or until the precision meets requirements. The idea of successive approximation can be simply illustrated by the figure:
+Newton's method is an iterative algorithm in mathematical analysis for finding polynomial roots by successive approximation. For example, for a differentiable function $\phi: \mathbb{R}\to \mathbb{R}$ in the real domain, to find $\alpha$ satisfying $\phi(\alpha)=0$, we first guess an initial value $x=\alpha_0$, then successively solving for $\alpha_1, \alpha_2, \cdots, \alpha_k$, until $\alpha_k\cong\alpha$, or until the precision meets requirements. The idea of successive approximation can be simply illustrated by the figure:
 
 ![alt text](newton_it.png)
 
-Assume the slope of φ(x) at x=α_i is φ'(α_i), and the intersection of the tangent line with the x-axis is denoted as α_{i+1}, then they satisfy:
+Assume the slope of $\phi(x)$ at $x=\alpha_i$ is $\phi'(\alpha_i)$, and the intersection of the tangent line with the x-axis is denoted as $\alpha_{i+1}$, then they satisfy:
+
 $$
 \frac{\phi(\alpha_i)}{
 \alpha_i - \alpha_{i+1}
 } = \phi'(\alpha_{i})
 $$
-After simple formula transformation, we get the recursive expression for α_{i+1}:
+
+After simple formula transformation, we get the recursive expression for $\alpha_{i+1}$:
+
 $$
 \alpha_{i+1} = \alpha_i - \frac{\phi(\alpha_i)}{\phi'(\alpha_i)}
 $$
-Starting from α₀, through repeated iterations k times, we can get a fast converging approximate solution α_k≅α.
 
-Similarly, to solve g·h ≡ 1 mod X^l, we can construct a function Φ: F[[X]] → F[[X]] mimicking the real function φ(x):
+Starting from $\alpha_0$, through repeated iterations $k$ times, we can get a fast converging approximate solution $\alpha_k\cong\alpha$.
+
+Similarly, to solve $g\cdot h \equiv 1 \mod X^l$, we can construct a function $\Phi: F[[X]] \to F[[X]]$ mimicking the real function $\phi(x)$:
+
 $$
 \Phi(Y) = \frac{1}{Y} - g
 $$
-Its derivative function is denoted as Φ'(Y):
+
+Its derivative function is denoted as $\Phi'(Y)$:
+
 $$
 \Phi'(Y) = (\frac{1}{Y} - g)' = -\frac{1}{Y^2}
 $$
-The root Y = g̃∈F[[X]] of this function will satisfy g̃·g = 1:
+
+The root $Y = \tilde{g}\in F[[X]]$ of this function will satisfy $\tilde{g}\cdot g = 1$:
+
 $$
 \Phi(\tilde{g}) = \frac{1}{\tilde{g}} - g = g - g = 0
 $$
 
-Please note again that since g̃ is a power series with infinitely many terms, we only need an approximate solution h≈g̃, meaning:
+Please note again that since $\tilde{g}$ is a power series with infinitely many terms, we only need an approximate solution $h\approx\tilde{g}$, meaning:
+
 $$
 \Phi(h) = \frac{1}{h} - g \approx 0
 $$
-This exact solution g̃ has non-zero coefficients for X^l or higher terms X^{>l}, while the approximate solution h only needs to have the same coefficients as g̃ for lower-degree terms:
+
+This exact solution $\tilde{g}$ has non-zero coefficients for $X^l$ or higher terms $X^{>l}$, while the approximate solution $h$ only needs to have the same coefficients as $\tilde{g}$ for lower-degree terms:
+
 $$
 \tilde{g} = h + O(X^l)
 $$
-Then clearly h only needs to include all terms lower than X^l, making h an element of the polynomial ring F[X]/⟨X^l⟩:
+
+Then clearly $h$ only needs to include all terms lower than $X^l$, making $h$ an element of the polynomial ring $F[X]/\langle X^l \rangle$:
+
 $$
 h = \sum_{i=0}^{l-1}b_iX^i \quad \in F[X]/\langle X^l \rangle
 $$
+
 and satisfying:
+
 $$
  g\cdot h = g \cdot (\tilde{g} - O(X^l)) = 1 - g\cdot O(X^l) \equiv 1 \mod{X^l}
 $$
 
 Now let's try using Newton's method to solve for h, with the recursive formula:
+
 $$
 h_{i+1} = h_i - \frac{\Phi(h_i)}{\Phi'(h_i)} = h_i - \frac{\frac{1}{h_i} - g}{-\frac{1}{h_i^2}} = 2h_i - g\cdot h_i^2
 $$
 
-First, let's assume the constant term of g is 1, so g=1+O(X). Then let's guess an initial value for iteration h₀ = 1. When we substitute Y=h₀ into Φ(Y):
+First, let's assume the constant term of $g$ is one, so $g=1+O(X)$. Then let's guess an initial value for iteration $h_0 = 1$. When we substitute $Y=h_0$ into $\Phi(Y)$:
+
 $$
 \Phi(h_0) = \frac{1}{h_0} - g = 1 - g = O(X)
 $$
-We can use mod X modular arithmetic to **eliminate** the tail term O(X) on the right side of the equation, yielding:
+
+We can use $(\bmod{X})$ modular arithmetic to **eliminate** the tail term $O(X)$ on the right side of the equation, yielding:
+
 $$
 \Phi(h_0) = O(X) \equiv 0 \mod{X}
 $$
-This equation can be interpreted as: h₀ is an approximate root of Φ(Y) with **precision** X.
 
-Then using Newton's iterative formula for the first step, we get h₁:
+This equation can be interpreted as: $h_0$ is an approximate root of $\Phi(Y)$ with **precision** $X$.
+
+Then using Newton's iterative formula for the first step, we get $h_1$:
+
 $$
 h_1 = h_0 - \frac{\Phi(h_0)}{\Phi'(h_0)} = 2h_0 - g\cdot h_0^2 = 2 - g
 $$
-Let's check how far g·h₁ is from 1:
+
+Let's check how far $g\cdot h_1$ is from $1$:
+
 $$
 1 - g\cdot h_1 = 1- g(2-g) = (1 - g)^2 = (O(X))^2 = O(X^2) \equiv 0 \mod{X^2}
 $$
-Now we can consider: h₁ is an approximate root of the Φ(Y) function with **precision** X².
 
-Continuing with the iteration for h₂:
+Now we can consider: $h_1$ is an approximate root of the $\Phi(Y)$ function with **precision** $X^2$.
+
+Continuing with the iteration for $h_2$:
+
 $$
 h_2 = h_1 - \frac{\Phi(h_1)}{\Phi'(h_1)} = 2h_1 - g\cdot h_1^2 = 4 - 2g - g(2-g)^2 = 4 - 2g - 4g + 4g^2 - g^3
 $$
-Continuing to test how far g·h₂ is from 1, assuming g = 1 + e₀X + e₁X² + e₂X³ + O(X⁴), then:
+
+Continuing to test how far $g\cdot h_2$ is from one, assuming $g = 1 + e_0X + e_1X^2 + e_2X^3 + O(X^4)$, then:
+
 $$
 \begin{aligned}
 1 - g\cdot h_2 &= 1- g(4-6g+4g^2-g^3) \\
 & = 1 - 4g + 6g^2 - 4g^3 + g^4 \\
 \end{aligned}
 $$
-Substituting g = 1 + e₀X + e₁X² + e₂X³ + O(X⁴) into the right side, skipping the tedious calculation steps, we find that all coefficients of X, X², X³ terms are eliminated to zero, finally getting:
+
+Substituting $g = 1 + e_0X + e_1X^2 + e_2X^3 + O(X^4)$ into the right side, skipping the tedious calculation steps, we find that all coefficients of $X$, $X^2$, $X^3$ terms are eliminated to zero, finally getting:
 $$
 1 - g\cdot h_2 = \cdots = O(X^4) \equiv 0 \mod{X^4}
 $$
-So, h₂ is an approximate root of Φ(X) with precision X⁴.
+So, $h_2$ is an approximate root of $\Phi(X)$ with precision $X^4$.
 
-Through observation, it's not hard to see that each time Newton's method is used, the calculation result progressively approaches the root of Φ(Y), and (1-g·h_i) only retains terms of X^(2^i) and higher. We can conjecture:
+Through observation, it's not hard to see that each time Newton's method is used, the calculation result progressively approaches the root of $\Phi(Y)$, and $(1-g\cdot h_i)$ only retains terms of $X^{2^i}$ and higher. We can conjecture:
+
 $$
 g\cdot h_i \equiv 1 \mod{X^{2^i}}
 $$
-where h_i is calculated as follows:
+
+where $h_i$ is calculated as follows:
+
 $$
 h_{i} = h_{i-1} - \frac{\Phi(h_{i-1})}{\Phi'(h_{i-1})} \equiv 2\cdot h_{i-1} - g\cdot h_{i-1}^2 \mod{X^{2^{i}}}
 $$
 
-We'll use mathematical induction to prove this conjecture more rigorously:
+We use mathematical induction to prove this conjecture more rigorously:
 
-- If i = 0, then h₀ = 1, clearly g·h₀ = 1 + O(X) ≡ 1 mod X, so the theorem holds when i=0.
-- Assuming g·h_i ≡ 1 mod X^(2^i) holds, let's consider h_{i+1}, expand 1-gh_{i+1}, and similarly prove that h_{i+1} satisfies the theorem equation:
+- If $i = 0$, then $h_0 = 1$, clearly $g\cdot h_0 = 1 + O(X) \equiv 1 \mod X$, so the theorem holds when $i=0$.
+- Assuming $g\cdot h_i \equiv 1 \mod X^{2^i}$ holds, let's consider $h_{i+1}$, expand $1-g\cdot h_{i+1}$, and similarly prove that $h_{i+1}$ satisfies the theorem equation:
+
 $$
 \begin{aligned}
 1 - g\cdot h_{i+1} & = 1 - g\cdot \Big(2\cdot h_{i} - g\cdot h_{i}^2\Big) \\
@@ -314,22 +393,23 @@ $$
 \end{aligned}
 $$
 
-Now we can understand why we initially wanted to use the rev(g) function to get g's reversed polynomial: this is because when computing with the reversed polynomial as a power series, its constant term is stable. Though high-degree terms produce many cross-terms, they can be eliminated by modular arithmetic.
+Now we can understand why we initially wanted to use the $\mathsf{rev}(g)$ function to get $g$'s reversed polynomial: this is because when computing with the reversed polynomial as a power series, its constant term is stable. Though high-degree terms produce many cross-terms, they can be eliminated by modular arithmetic.
 
 ## Polynomial Inversion Algorithm
 
-Let's detail the calculation process for h_k:
+Let's detail the calculation process for $h_k$:
+
 $$
 \begin{aligned}
-h_{k+1}(X) & \equiv 2\cdot h_k(X) - f(X)\cdot h_{k}(X) \mod X^{2^k} \\
-h_{k}(X) & \equiv 2\cdot h_{k-1}(X) - f(X)\cdot h_{k-1}(X) \mod X^{2^{k-1}}\\
+h_{k+1}(X) & \equiv 2\cdot h_k(X) - f(X)\cdot h^2_{k}(X) \mod X^{2^k} \\
+h_{k}(X) & \equiv 2\cdot h_{k-1}(X) - f(X)\cdot h^2_{k-1}(X) \mod X^{2^{k-1}}\\
 \vdots \quad & \equiv \qquad \vdots \\
-h_{2}(X) & \equiv 2\cdot h_{1}(X) - f(X)\cdot h_{1}(X) \mod X^{2}\\
-h_{1}(X) & \equiv 2\cdot h_{0}(X) - f(X)\cdot h_{0}(X) \mod X\\
+h_{2}(X) & \equiv 2\cdot h_{1}(X) - f(X)\cdot h^2_{1}(X) \mod X^{2}\\
+h_{1}(X) & \equiv 2\cdot h_{0}(X) - f(X)\cdot h^2_{0}(X) \mod X\\
 \end{aligned}
 $$
 
-If we assume l is a power of 2, i.e., l=2^k, then we can get the following polynomial inversion algorithm (Python code), where the parameter is a known polynomial g(X)∈F[X], and the algorithm returns a polynomial h∈F[X]/⟨X^l⟩ satisfying gh≡1 mod X^l:
+If we assume $l$ is a power of two, i.e., $l=2^k$, then we can get the following polynomial inversion algorithm (Python code), where the first parameter is a known polynomial $g(X)\in F[X]$, and the algorithm returns a polynomial $h\in F[X]/\langle X^l \rangle$ satisfying $g\cdot h \equiv 1 \mod X^l$:
 
 ```python
 def poly_inverse(g: list[F], l: int):
@@ -338,8 +418,8 @@ def poly_inverse(g: list[F], l: int):
     h = [F(1)]
     for i in range(1, k+1):
         h_sq = poly_mul(h, h)
-        f_h_sq = poly_mul(h_sq, f)
-        h = poly_sub(poly_smul(h, F(2)), f_h_sq[:2**i])
+        g_h_sq = poly_mul(h_sq, g)
+        h = poly_sub(poly_smul(h, F(2)), g_h_sq[:2**i])
     return h
 
 def poly_sub(f, g):
@@ -353,20 +433,23 @@ def poly_mul(f, g):
     ...
 ```
 
-What if l is not a power of 2? How should we handle it?
+What if $l$ is not a power of two? How should we handle it?
 
-We have two methods. First, from paper [CC11]. This method is straightforward: if k is the power of 2 rounding up of l, so l≤k, we can have:
+We have two methods. The first is from book [GG13] Exercise 9.6 (page 287). The second, from paper [CC11], is simpler and more straightforward: if $k$ is the power of two rounding up of $l$, so $l\leq k$, we can have:
+
 $$
 X^k\mid (1 - gh) \Rightarrow  X^l\mid (1 - gh)
 $$
-This is easy to prove. Intuitively, if a power series computes to zero at precision X^k, it must also be zero at lower precision, just like 1 + O(X^k) can certainly be expressed as a 1 + O(X^l). So we only need to calculate h* polynomial satisfying X^k|1-gh*, then through modular arithmetic get h = h* mod X^l, which certainly satisfies:
+
+This is easy to prove. Intuitively, if a power series computes to zero at precision $X^k$, it must also be zero at lower precision, just like $(1 + O(X^k))$ can certainly be expressed as $(1 + O(X^l))$. So we only need to calculate $h^*$ polynomial satisfying $X^k|1-gh^*$, then through modular arithmetic get $h = h^* \mod X^l$, which certainly satisfies:
+
 $$
-X^l\mid 1 - gh
+X^l\mid (1 - gh)
 $$
 
-Another detail to handle is considering that g(0)'s constant term may not be 1. This is common since g's reversed polynomial is likely not a Monic polynomial (leading coefficient is 1). Although we have simple ways to convert a non-Monic polynomial into a Monic one, this conversion requires O(l) additional finite field multiplications. However, we can directly remove this constraint by setting the initial guess h₀ to g(0)^(-1), then continue with Newton's method.
+Another detail to handle is considering that $g(0)$'s constant term may not be one. This is common since $g$'s reversed polynomial is likely not a monic polynomial (leading coefficient is one). Although we have simple ways to convert a non-monic polynomial into a monic one, this conversion requires $O(l)$ additional finite field multiplications. However, we can directly remove this constraint by setting the initial guess $h_0$ to $g(0)^{-1}$, then continue with Newton's method.
 
-A third improvement is that in each polynomial multiplication operation, we can first truncate polynomials based on precision to reduce length and computational cost. For example, when calculating g·h_{i-1}², we need only compute (g mod X^(2^i))·h_{i-1}², first truncating polynomial g to precision, then performing multiplication.
+A third improvement is that in each polynomial multiplication operation, we can first truncate polynomials based on precision to reduce length and computational cost. For example, when calculating $g\cdot h_{i-1}^2$, we need only compute $(g \mod X^{2^i})\cdot h_{i-1}^2$, first truncating polynomial $g$ to precision, then performing multiplication.
 
 Here's the modified Python code:
 
@@ -387,39 +470,43 @@ def poly_inverse_rev1(g: list[F], l: int):
 
 ### Complexity Analysis
 
-The time complexity of this polynomial inversion algorithm is 3M(l) + 2l.
+The time complexity of this polynomial inversion algorithm is $3M(l) + 2l$.
 
-First, each round of polynomial multiplication has two operations: one for h_i², with complexity M(2^(i-1)), and one for h_i²·g, with complexity M(2^i). Computing 2h_i - g·h_i² has complexity 2^i.
+First, each round of polynomial multiplication has two operations: one for $h_i^2$, with complexity $M(2^{i-1})$, and one for $h_i^2\cdot g$, with complexity $M(2^i)$. Computing $(2h_i - g\cdot h_i^2)$ has complexity $2^i$.
 
 The total cost of one iteration is:
+
 $$
 M(2^i) + M(2^{i-1}) + 2^i \leq = \frac{3}{2}M(2^{i}) + 2^i
 $$
+
 The total cost of r iterations is:
+
 $$
 \sum_{1\leq i \leq r} \Big(\frac{3}{2}M(2^i) + 2^i\Big) \lt 3M(2^r) + 2^{r+1}
 $$
 
 ## Fast Polynomial Division Algorithm
 
-Now that we know how to calculate a polynomial's multiplicative inverse, let's outline the steps for the polynomial division algorithm. Given two polynomials f, g∈F[X], where f has degree n-1, g has degree m-1, and n≥m, the algorithm returns the quotient polynomial q of degree n-m and the remainder polynomial r of degree strictly less than m-2, satisfying:
+Now that we know how to calculate a polynomial's multiplicative inverse, let's outline the steps for the polynomial division algorithm. Given two polynomials $f(X), g(X)\in F[X]$, where $f$ has degree $n-1$, $g$ has degree $m-1$, and $n\geq m$, the algorithm returns the quotient polynomial $q$ of degree $n-m$ and the remainder polynomial $r$ of degree strictly less than $m-1$, satisfying:
+
 $$
 f(X) = q(X)\cdot g(X) + r(X)
 $$
 
-Step 1: Check that the highest degree coefficients of parameters f and g are non-zero, then calculate their degree difference, denoted as d=deg{f}-deg{g}, assuming deg{f}≥deg{g}.
+Step 1: Check that the highest degree coefficients of parameters $f(X)$ and $g(X)$ are non-zero, then calculate their degree difference, denoted as $d=\deg(f)-\deg(g)$, assuming $\deg(f)\geq\deg(g)$.
 
-Step 2: Calculate the reversed polynomials of f and g, denoted as rev_n(f) and rev_m(g), where deg{f}=n-1, deg{g}=m-1.
+Step 2: Calculate the reversed polynomials of $f(X)$ and $g(X)$, denoted as $\mathsf{rev}_n(f)$ and $\mathsf{rev}_m(g)$, where $\deg(f)=n-1$, $\deg(g)=m-1$.
 
-Step 3: Calculate the multiplicative inverse of rev_m(g) in the power series ring F[[X]] with precision X^(d+1), denote the result as g̃_d=rev_m(g)^(-1).
+Step 3: Calculate the multiplicative inverse of $\mathsf{rev}_m(g)$ in the power series ring $F[[X]]$ with precision $X^{d+1}$, denote the result as $\tilde{g}_d=\mathsf{rev}_m(g)^{-1}$.
 
-Step 4: Calculate q* ≡ rev_m(f)·g̃_d mod X^(d+1), denoted as rev_m(q).
+Step 4: Calculate $q^* \equiv \mathsf{rev}_m(f)\cdot \tilde{g}_d \mod X^{d+1}$, denoted as $\mathsf{rev}_m(q)$.
 
-Step 5: Calculate rev_{n-m}(q*)=rev_{n-m}(rev_{n-m}(q))=q.
+Step 5: Calculate $\mathsf{rev}_{n-m}(q^*)=\mathsf{rev}_{n-m}(\mathsf{rev}_{n-m}(q))=q(X)$.
 
-Step 6: Calculate the remainder polynomial r = f - q·g.
+Step 6: Calculate the remainder polynomial $r(X) = f(X) - q(X)\cdot g(X)$.
 
-Here's the Python code implementation for division, followed by complexity analysis:
+Here's the Python code implementation, followed by complexity analysis:
 
 ```python
 def poly_div_rem(f: list[F], g: list[F]):
@@ -449,14 +536,15 @@ def poly_div_rem(f: list[F], g: list[F]):
 
 ### Complexity Analysis
 
-In step 3, 3M(l) + 2l polynomial multiplication operations are needed; step 4 requires one polynomial multiplication with complexity M(l); step 6 requires one polynomial multiplication with complexity M(l) and one polynomial subtraction with complexity n. Thus, the total time complexity is:
+In step 3, $3M(l) + 2l$ polynomial multiplication operations are needed; step 4 requires one polynomial multiplication with complexity $M(l)$; step 6 requires one polynomial multiplication with complexity $M(l)$ and one polynomial subtraction with complexity $n$. Thus, the total time complexity is:
+
 $$
 5M(l) + 2l + n
 $$
 
 ## Conclusion
 
-This is a beautiful algorithm that reduces the time complexity of polynomial division from O(l²) to O(l log l). Newton's method is a classic and powerful technique; [GG13] has more examples of algorithms using Newton iteration, recommended for readers interested in deeper exploration.
+This is a beautiful algorithm that reduces the time complexity of polynomial division from $O(l^2)$ to $O(l\log{l})$. Newton's method is a classic and powerful technique; [GG13] has more examples of algorithms using Newton iteration, recommended for readers interested in deeper exploration.
 
 ## References
 
