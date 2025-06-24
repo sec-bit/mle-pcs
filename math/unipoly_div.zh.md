@@ -63,8 +63,8 @@ $$
 
 $$
 \begin{aligned}
-\mathsf{rev}_{n}(f) & = \mathsf{rev}_{n}(p\cdot g + r) \\
-& = \mathsf{rev}_{n}(p\cdot g) + \mathsf{rev}_{n}(r) \\
+\mathsf{rev}_{n}(f) & = \mathsf{rev}_{n}(q\cdot g + r) \\
+& = \mathsf{rev}_{n}(q\cdot g) + \mathsf{rev}_{n}(r) \\
 & = \mathsf{rev}_{n-m}(q)\cdot \mathsf{rev}_{m}(g) + X^{n-m+1}\mathsf{rev}_{m-1}(r)
 \end{aligned}
 $$
