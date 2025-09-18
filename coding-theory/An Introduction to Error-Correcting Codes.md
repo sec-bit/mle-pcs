@@ -114,6 +114,7 @@ With the above question in mind, let us consider the **Hamming Code** which we w
 $$ C_H(x_1, x_2, x_3, x_4) = (x_1, x_2, x_3, x_4, x_2 \oplus x_3 \oplus x_4, x_1 \oplus x_3 \oplus x_4, x_1 \oplus x_2 \oplus x_4). $$
 It can be verified that this code has the following parameters:
 $$ C_H : q = 2,\; k = 4,\; n = 7,\; R = \frac{4}{7}. $$
+
 $C_H$ has a minimum distance of 3. ([proof](#proof-section))
 
 This is a clear winner. It has the same distance as the 3-repetition code (d=3) but a much better rate (4/7 > 1/3). But can we do even better? Is there a code with d=3 and a rate higher than 4/7? The answer is no, and the reason lies in a geometric argument called the **Hamming Bound**.
@@ -201,8 +202,7 @@ Linear codes give us a shortcut. Because the code is a subspace, the difference 
 > The **minimum distance $d$** of a linear code is equal to the **minimum Hamming weight** of any of its *non-zero* codewords.
 > $$ d = \min_{\mathbf{c} \in C, \mathbf{c} \neq 0} w(\mathbf{c}) $$
 
-Instead of comparing pairs, we just need to find the non-zero codeword with the fewest '1's. ([proof](#proof-section))
-
+Instead of comparing pairs, we just need to find the non-zero codeword with the fewest '1's.
 
 ## Hamming Codes (The General Version)
 
@@ -238,5 +238,112 @@ For Hamming codes with $n = 2^r - 1$, $k = 2^r - r - 1$, and $d = 3$, this bound
 
 > **Intuition:** Hamming codes “pack” Hamming balls of radius 1 perfectly in $\{0,1\}^n$, leaving no overlaps and no gaps. That’s why they are called **perfect codes**.
 
+<h2 id="proof-section">Proofs</h2>
 
-#proof-section
+### Proposition: Capabilities from Minimum Distance (t-error correction)
+
+**Claim:**
+If a code $C$ has minimum distance $d = 2t+1$, then **maximum likelihood decoding (MLD)** (also called nearest-neighbor decoding) always returns the transmitted codeword whenever at most $t$ symbols are corrupted.
+
+#### A Quick Primer on MLD (Maximum Likelihood Decoding)
+
+Before we dive into the proof, let’s explain **Maximum Likelihood Decoding** (MLD).
+
+MLD is the decoding strategy that picks the codeword **closest** (in Hamming distance) to the received word. Formally, for a received word $y \in \Sigma^n$:
+$$ D_{\text{MLD}}(y) = \arg\min_{c \in C} \Delta(c, y) $$
+where $\Delta(c,y)$ is the Hamming distance. If multiple codewords are at exactly the same distance, ties are broken arbitrarily.
+
+> **In plain words:**
+> When noise corrupts a codeword, MLD guesses the codeword most likely to have been sent — namely, the one with the smallest number of bit differences from the received word.
+
+#### Proof
+
+We now show why a code with $d = 2t+1$ can always correct $t$ errors under MLD. Assume, for contradiction, that MLD fails on some received word when at most $t$ errors occurred.
+
+Let $c_1 \in C$ be the transmitted codeword and let $y$ be the received word with:
+$$ \Delta(y,c_1) \le t $$
+Suppose MLD outputs some other codeword $c_2 \ne c_1$. By the definition of MLD, this means $c_2$ is at least as close to $y$ as $c_1$ is:
+$$ \Delta(y, c_2) \le \Delta(y, c_1) $$
+Now, apply the triangle inequality to the three points $c_1, c_2, y$:
+$$
+\begin{aligned}
+\Delta(c_1, c_2) &\le \Delta(c_1, y) + \Delta(y, c_2) \\
+&\le \Delta(c_1, y) + \Delta(c_1, y) \\
+&\le 2 \cdot \Delta(c_1, y) \\
+&\le 2t
+\end{aligned}
+$$
+Since the minimum distance is $d = 2t+1$, we know that $2t = d-1$. This gives us:
+$$ \Delta(c_1, c_2) \le d-1 $$
+But $\Delta(c_1, c_2)$ is the distance between two **distinct** codewords, which by definition must be *at least* the minimum distance $d$. The inequality $\Delta(c_1, c_2) \le d-1$ is therefore a contradiction.
+
+Hence, our initial assumption was wrong, and MLD cannot fail when $\le t$ errors occur.
+
+#### Conclusion
+
+This proves that the **maximum number of errors that can be corrected** by a code with minimum distance $d$ is:
+$$ t = \left\lfloor \frac{d-1}{2} \right\rfloor $$
+
+---
+
+### Proposition: The [7,4,3] Hamming Code has Minimum Distance 3
+
+**Claim:**
+The $[7,4,3]_2$ Hamming code $C_H$ has a minimum distance of 3.
+
+#### Proof
+
+We will show this by analyzing the **Hamming weight** of all possible non-zero codewords in $C_H$. For linear codes, the minimum distance is equal to the minimum Hamming weight of any non-zero codeword.
+$$ d = \min_{\mathbf{c} \in C_H, \mathbf{c} \neq \mathbf{0}} wt(\mathbf{c}) $$
+Thus, our goal is to find the smallest Hamming weight of any non-zero codeword. We can do this by considering the weight of the message that generates the codeword.
+
+Let the message vector be $\mathbf{x} = (x_1,x_2,x_3,x_4)$ and the codeword be $C_H(\mathbf{x})$.
+
+* **Case 1: Message weight is 1 ($wt(\mathbf{x}) = 1$)**
+    Suppose $\mathbf{x} = (1,0,0,0)$. The codeword is $(1,0,0,0,0,1,1)$, which has a weight of 3. You can verify that any message with weight 1 produces a codeword of weight 3.
+
+* **Case 2: Message weight is 2 ($wt(\mathbf{x}) = 2$)**
+    Suppose $\mathbf{x} = (1,1,0,0)$. The codeword is $(1,1,0,0,1,1,0)$, which has a weight of 4. Any message with weight 2 will produce a codeword with a weight of at least 3.
+
+* **Case 3: Message weight is 3 ($wt(\mathbf{x}) = 3$)**
+    Suppose $\mathbf{x} = (1,1,1,0)$. The codeword is $(1,1,1,0,0,0,0)$, which has a weight of 3.
+
+* **Case 4: Message weight is 4 ($wt(\mathbf{x}) = 4$)**
+    If $\mathbf{x} = (1,1,1,1)$, the codeword is $(1,1,1,1,1,1,1)$, which has a weight of 7.
+
+In all non-zero cases, the minimum weight we found was 3.
+
+#### Conclusion
+
+The minimum Hamming weight of any non-zero codeword is 3. Since $C_H$ is a linear code, its minimum distance is equal to this minimum weight.
+$$ \min_{\mathbf{c} \in C_H, \mathbf{c} \neq \mathbf{0}} wt(\mathbf{c}) = 3 $$
+Therefore, the $[7,4,3]_2$ Hamming code has a **minimum distance of 3**.
+
+
+---
+
+### Proposition: The Hamming Bound
+
+**Claim:**
+Every binary code with block length $n$, dimension $k$, and minimum distance $d=3$ satisfies:
+$$ k \le n - \log_{2}(n + 1) $$
+
+#### Proof
+
+The proof relies on a "sphere packing" argument using the concept of **Hamming balls**. A Hamming ball of radius $e$ centered at a codeword $\mathbf{c}$ is the set of all vectors within Hamming distance $e$ of $\mathbf{c}$:
+$$ B(\mathbf{c},e) = \{\mathbf{y} \in \{0,1\}^n \mid \Delta(\mathbf{c},\mathbf{y}) \le e\} $$
+For a code with minimum distance $d=3$, we can correct $t = \lfloor(3-1)/2\rfloor = 1$ error. This means that the Hamming balls of radius 1 around any two distinct codewords, $\mathbf{c}_1$ and $\mathbf{c}_2$, must be disjoint (they cannot overlap). If they did, a received word in the overlapping region would be equidistant from two codewords, making unique decoding impossible.
+$$ B(\mathbf{c}_1,1) \cap B(\mathbf{c}_2,1) = \varnothing \quad \text{for} \quad \mathbf{c}_1 \ne \mathbf{c}_2 $$
+The size (or volume) of a Hamming ball of radius 1 is the number of vectors it contains. This includes the center codeword itself (distance 0) and all vectors that differ in exactly one position. There are $\binom{n}{1} = n$ such vectors. So, the total size is:
+$$ |B(\mathbf{c},1)| = 1 + n $$
+The total number of codewords in the code is $2^k$. Since all $2^k$ Hamming balls are disjoint, their total volume cannot exceed the volume of the entire space $\{0,1\}^n$, which is $2^n$.
+$$ \left|\bigcup_{\mathbf{c} \in C} B(\mathbf{c},1)\right| = \sum_{\mathbf{c} \in C} |B(\mathbf{c},1)| = 2^k (n+1) \le 2^n $$
+This gives us the inequality:
+$$ 2^k (n+1) \le 2^n $$
+Dividing both sides by $(n+1)$ gives:
+$$ 2^k \le \frac{2^n}{n+1} $$
+Finally, taking the logarithm base 2 of both sides yields the Hamming Bound:
+$$ k \le n - \log_{2}(n+1) $$
+This completes the proof. ∎
+
+> You can find a visual representation of this concept: [Hamming Bound](#a-better-code-and-its-limits-the-hamming-code).
