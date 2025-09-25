@@ -106,7 +106,7 @@ This explains everything we observed: $C_{3,\text{rep}}$ $(d=3)$ can correct $\l
 
 The proof relies on a simple geometric idea: for a decoder to uniquely identify the correct codeword, the received word must be closer to the original codeword than to any other. This is only possible if the codewords are sufficiently far apart. Our fundamental question can now be reframed: **For a given block length n, what is the best rate R we can achieve for a code with minimum distance d?**
 
----
+
 
 ## A Better Code and Its Limits: The Hamming Code
 
@@ -245,18 +245,31 @@ For Hamming codes with $n = 2^r - 1$, $k = 2^r - r - 1$, and $d = 3$, this bound
 **Claim:**
 If a code $C$ has minimum distance $d = 2t+1$, then **maximum likelihood decoding (MLD)** (also called nearest-neighbor decoding) always returns the transmitted codeword whenever at most $t$ symbols are corrupted.
 
-#### A Quick Primer on MLD (Maximum Likelihood Decoding)
+### A Quick Primer on MLD (Maximum Likelihood Decoding)
 
-Before we dive into the proof, let’s explain **Maximum Likelihood Decoding** (MLD).
+**Maximum Likelihood Decoding (MLD)** is the strategy that decodes a received word $\mathbf{y}$ to the codeword $\mathbf{c}$ that is closest to it in Hamming distance.
 
-MLD is the decoding strategy that picks the codeword **closest** (in Hamming distance) to the received word. Formally, for a received word $y \in \Sigma^n$:
-$$ D_{\text{MLD}}(y) = \arg\min_{c \in C} \Delta(c, y) $$
-where $\Delta(c,y)$ is the Hamming distance. If multiple codewords are at exactly the same distance, ties are broken arbitrarily.
+$$ D_{\text{MLD}}(\mathbf{y}) = \arg\min_{\mathbf{c} \in C} \Delta(\mathbf{c}, \mathbf{y}) $$
 
-> **In plain words:**
-> When noise corrupts a codeword, MLD guesses the codeword most likely to have been sent — namely, the one with the smallest number of bit differences from the received word.
+For a general code without algebraic structure, this is a **brute-force** operation, requiring a comparison of the received word to every possible codeword, which is computationally infeasible for large codes.
 
-#### Proof
+#### MLD for Linear Codes
+
+Linear codes achieve MLD efficiently using **syndrome decoding**, which uses the parity-check matrix $H$ to find the error directly, bypassing the brute-force search.
+
+Let the transmitted codeword be $\mathbf{c}$ and the received word be $\mathbf{y} = \mathbf{c} + \mathbf{e}$, where $\mathbf{e}$ is the error vector.
+
+1.  **Calculate the Syndrome ($\mathbf{s}$):**
+    $$ \mathbf{s} = H\mathbf{y}^T $$
+
+2.  **Isolate the Error:** Since $H\mathbf{c}^T = \mathbf{0}$ for any valid codeword $\mathbf{c}$, the syndrome simplifies to depend only on the error:
+    $$ \mathbf{s} = H(\mathbf{c} + \mathbf{e})^T = H\mathbf{c}^T + H\mathbf{e}^T = \mathbf{0} + H\mathbf{e}^T = H\mathbf{e}^T $$
+
+For **Hamming codes**, this property is particularly powerful. The columns of the Hamming parity-check matrix are the binary representations of each position index. If a single-bit error occurs at position $i$, the syndrome $\mathbf{s}$ will be equal to the $i$-th column of $H$.
+
+Therefore, the calculated syndrome is the binary representation of the **error's location**. The decoder can instantly identify the position of the error and flip the bit, achieving MLD with a single matrix multiplication.
+
+### Proof
 
 We now show why a code with $d = 2t+1$ can always correct $t$ errors under MLD. Assume, for contradiction, that MLD fails on some received word when at most $t$ errors occurred.
 

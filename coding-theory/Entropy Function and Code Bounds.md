@@ -1,4 +1,4 @@
-# Essential Coding Theory, Part 2: Entropy and the Fundamental Limits of Codes
+# Entropy Function and the Fundamental Limits of Codes
 
 ## Introduction
 
@@ -8,9 +8,8 @@ The core lies in understanding the relationship between a code's **rate**, denot
 
 To navigate this landscape, an important mathematical instrument is required: the **q-ary entropy function**, $H_q(x)$. This function provides the essential language for describing the combinatorial geometry of code spaces. It is deeply connected to the concept of a Hamming ball's volume, which represents the number of possible corrupted versions of a given codeword. By understanding the entropy function, we can formulate sharp bounds on the achievable pairs of $(R,\delta)$.
 
-First, we will conduct a deep dive into the q-ary entropy function, defining it formally and exploring its connection to the volume of Hamming balls. Second, we will chart the limits of what is possible and impossible in code design by examining four foundational bounds: the Asymptotic Hamming Bound, the Gilbert-Varshamov Bound, the Singleton Bound, and the Plotkin Bound. These bounds collectively define the achievable region for code parameters. Finally, for the readers seeking complete mathematical rigor, a detailed appendix provides the full, step-by-step derivations of the key propositions and theorems discussed.
+First, we will conduct a deep dive into the q-ary entropy function, defining it formally and exploring its connection to the volume of Hamming balls. Second, we will chart the limits of what is possible and impossible in code design by examining four foundational bounds: the _Asymptotic Hamming Bound_, the _Gilbert-Varshamov Bound_, the _Singleton Bound_, and the _Plotkin Bound_. These bounds collectively define the achievable region for code parameters. Finally, for the readers seeking complete mathematical rigor, a detailed appendix provides the full, step-by-step derivations of the key propositions and theorems discussed.
 
----
 
 ## The q-ary Entropy Function
 
@@ -31,7 +30,7 @@ For $q > 2$, the q-ary entropy function does not have a direct analogue to the e
 
 ### The Volume of Hamming Balls: Connecting Entropy to Code Space
 
-The primary reason for the centrality of the entropy function in coding theory is its profound connection to the volume of a Hamming ball. This connection provides the bridge between abstract combinatorial counting and the concrete analysis of code parameters like rate and distance.
+The primary reason for the centrality of the entropy function in coding theory is its connection to the volume of a Hamming ball. This connection provides the bridge between abstract combinatorial counting and the concrete analysis of code parameters like rate and distance.
 
 > **Definition (Volume of a Hamming Ball):** Let $q \ge 2$ and $n \ge r \ge 1$ be integers. The volume of a Hamming ball of radius $r$ in the space $[q]^n$, denoted $\text{Vol}_q(r,n)$, is the number of vectors at a Hamming distance of at most $r$ from a given center point (e.g., the all-zero vector). It is given by:
 > $$ \text{Vol}_q(r,n) = |B_q(0,r)| = \sum_{i=0}^{r} \binom{n}{i}(q-1)^i $$
