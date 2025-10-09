@@ -8,7 +8,7 @@ The core lies in understanding the relationship between a code's **rate**, denot
 
 To navigate this landscape, an important mathematical instrument is required: the **q-ary entropy function**, $H_q(x)$. This function provides the essential language for describing the combinatorial geometry of code spaces. It is deeply connected to the concept of a Hamming ball's volume, which represents the number of possible corrupted versions of a given codeword. By understanding the entropy function, we can formulate sharp bounds on the achievable pairs of $(R,\delta)$.
 
-First, we will conduct a deep dive into the q-ary entropy function, defining it formally and exploring its connection to the volume of Hamming balls. Second, we will chart the limits of what is possible and impossible in code design by examining four foundational bounds: the _Asymptotic Hamming Bound_, the _Gilbert-Varshamov Bound_, the _Singleton Bound_, and the _Plotkin Bound_. These bounds collectively define the achievable region for code parameters. Finally, for the readers seeking complete mathematical rigor, a detailed appendix provides the full, step-by-step derivations of the key propositions and theorems discussed.
+First, we will conduct a deep dive into the q-ary entropy function, defining it formally and exploring its connection to the volume of Hamming balls. Second, we will chart the limits of what is possible and impossible in code design by examining four foundational bounds: the *Asymptotic Hamming Bound*, the *Gilbert-Varshamov Bound*, the *Singleton Bound*, and the *Plotkin Bound*. These bounds collectively define the achievable region for code parameters. Finally, for the readers seeking complete mathematical rigor, a detailed appendix provides the full, step-by-step derivations of the key propositions and theorems discussed.
 
 
 ## The q-ary Entropy Function
@@ -55,7 +55,6 @@ To effectively apply the entropy function in deriving code bounds, it is necessa
 * **Behavior Near Zero:** For very small error fractions, the behavior of the entropy function is also important. For a small $\epsilon > 0$, $H_q(\epsilon) = \Theta(\log_q(1/\epsilon) \cdot \epsilon\log(1/\epsilon))$. This describes the characteristic shape of the entropy curve as it rises from zero, which is relevant for analyzing codes designed to correct a very small number of errors.
 
 
-
 ## The R vs. δ Trade-off: Charting the Boundaries of Possibility
 
 Armed with the q-ary entropy function as our primary analytical tool, we can now explore the fundamental limits of error-correcting codes. This exploration involves establishing bounds on the rate $R$ and relative distance $\delta$. These bounds fall into two categories: **upper bounds** (or impossibility results), which set a ceiling on what can be achieved, and **lower bounds** (or existence results), which provide a floor, guaranteeing that codes with certain parameters do exist.
@@ -69,11 +68,11 @@ $$ M \cdot \text{Vol}_q(t,n) \le q^n $$
 Taking the base-q logarithm of both sides and dividing by $n$ yields a bound on the rate $R=k/n$:
 $$ R = \frac{k}{n} \le 1 - \frac{\log_q \text{Vol}_q(\lfloor\frac{d-1}{2}\rfloor,n)}{n} $$
 To find the asymptotic form of this bound, we use the connection between the volume of a Hamming ball and the entropy function. Using the lower bound from our proposition, with a relative distance $\delta=d/n$ (implying a correction radius of approximately $(\delta/2)n$), we have:
-$$ \text{Vol}_q(\lfloor\frac{d-1}{2}\rfloor,n) \ge q^{H_q(\frac{\delta}{2})n - o(n)} $$
+$$ \text{Vol}_q\left(\left\lfloor\frac{d-1}{2}\right\rfloor,n\right) \ge q^{H_q(\frac{\delta}{2})n - o(n)} $$
 Substituting this into the rate inequality, the second term on the right-hand side is lower-bounded by $H_q(\delta/2)-o(1)$. This leads directly to the final statement of the bound.
 
 > **Proposition (Asymptotic Hamming Bound):** Let $C$ be an infinite family of q-ary codes with rate $R$ and relative distance $\delta$. Then:
-> $$ R \le 1 - H_q(\frac{\delta}{2}) $$
+> $$ R \le 1 - H_q\left(\frac{\delta}{2}\right) $$
 
 This bound establishes a fundamental ceiling on performance. No code, regardless of its construction, can achieve a rate higher than that permitted by the Asymptotic Hamming Bound for a given relative distance.
 
@@ -92,7 +91,7 @@ Two primary methods are used to prove the GV bound, each offering a different pe
     1.  Start with an empty code $C$.
     2.  Iteratively add any vector $v$ from the space $[q]^n$ to $C$, provided that $v$ has a Hamming distance of at least $d$ from every codeword already in $C$.
     3.  Terminate when no such vector $v$ can be found.
-    When the algorithm terminates, the Hamming balls of radius $d-1$ centered at each codeword in $C$ must completely cover the entire space $[q]^n$. If they did not, there would be an uncovered vector, which by definition would be at a distance of at least $d$ from all codewords and could have been added, contradicting termination. This covering property implies the inequality $|C| \cdot \text{Vol}_q(d-1,n) \ge q^n$. Applying the asymptotic upper bound for the volume, $\text{Vol}_q((d-1),n) \approx \text{Vol}_q(\delta n,n) \le q^{nH_q(\delta)}$, and solving for the rate $R=(\log_q|C|)/n$ yields the GV bound.
+    When the algorithm terminates, the Hamming balls of radius $d-1$ centered at each codeword in $C$ must completely cover the entire space $[q]^n$. If they did not, there would be an uncovered vector, which by definition would be at a distance of at least $d$ from all codewords and could have been added, contradicting termination. This covering property implies the inequality $|C| \cdot \text{Vol}_q(d-1,n) \ge q^n$. Applying the asymptotic upper bound for the volume, $\text{Vol}_q(d-1,n) \approx \text{Vol}_q(\delta n,n) \le q^{nH_q(\delta)}$, and solving for the rate $R=(\log_q|C|)/n$ yields the GV bound.
 
 * **Proof Method 2: The Probabilistic Method for Linear Codes**
     For linear codes over fields where $q$ is a prime power, a more abstract and powerful argument can be made using the probabilistic method. Instead of building a code, one proves its existence by showing that a randomly chosen linear code has the desired properties with high probability. The argument proceeds in these key steps:
@@ -127,7 +126,7 @@ The Plotkin bound provides a stronger upper bound on rate, particularly for code
 The first part implies that for any $\delta > 1-1/q$, the code size $|C|$ is bounded by a constant that does not grow with $n$, meaning the rate $R$ must asymptotically be zero. The bound can be extended via a "shortening" argument to cover the entire range of $\delta$.
 
 > **Corollary:** For an infinite family of q-ary codes with rate $R$ and relative distance $0 \le \delta \le 1 - 1/q$:
-> $$ R \le 1 - (\frac{q}{q-1})\delta $$
+> $$ R \le 1 - \left(\frac{q}{q-1}\right)\delta $$
 
 The proof of the Plotkin bound is the most mathematically sophisticated in this chapter, showcasing a powerful technique of transforming a discrete problem into a continuous geometric one. This progression from the simple combinatorial argument of the Singleton bound to the geometric abstraction of the Plotkin bound illustrates a key pattern in modern mathematics: solving problems by mapping them to different domains where more powerful tools are available. The high-level strategy is as follows:
 
@@ -136,7 +135,6 @@ The proof of the Plotkin bound is the most mathematically sophisticated in this 
 3.  **Solve the Geometric Problem:** A geometric lemma establishes a fundamental limit on how many non-zero vectors can exist in an N-dimensional real space if every pair has a non-positive inner product.
 4.  **Conclude:** By applying this geometric limit to the set of vectors corresponding to the codewords, we obtain an upper bound on the number of codewords, which is precisely the Plotkin bound.
 
----
 
 ## Visualizing the Achievable Region
 
@@ -152,17 +150,123 @@ The interplay of these four fundamental bounds defines the landscape of what is 
 
 To synthesize this information, the following table summarizes the key characteristics of each bound. This table distills the core information of the chapter into a single, comparative artifact, facilitating a structured understanding of their roles and relationships.
 
-| Bound Name | Type | Asymptotic Formula (for q≥2) | Key Insight / Proof Technique | When is it Strongest? |
-| :--- | :--- | :--- | :--- | :--- |
-| **Hamming** | Upper (Impossibility) | $R \le 1 - H_q(\delta/2)$ | Sphere Packing / Volume Argument | For small $\delta$ (high rate). |
-| **Gilbert-Varshamov** | Lower (Existence) | $R \ge 1 - H_q(\delta)$ | Greedy Algorithm / Probabilistic Method | The best general existence bound. |
-| **Singleton** | Upper (Impossibility) | $R \le 1 - \delta$ | Puncturing / Pigeonhole Principle | Simple and alphabet-independent. |
-| **Plotkin**| Upper (Impossibility) | $R \le 1 - (\frac{q}{q-1})\delta$ | Geometric Mapping / Inner Products | For large $\delta$ (low rate), especially $\delta > 1-1/q$. |
-
----
+| Bound Name          | Type                 | Asymptotic Formula (for q≥2)                 | Key Insight / Proof Technique          | When is it Strongest?                          |
+| :------------------ | :------------------- | :------------------------------------------- | :------------------------------------- | :--------------------------------------------- |
+| **Hamming** | Upper (Impossibility) | $R \le 1 - H_q(\delta/2)$                    | Sphere Packing / Volume Argument       | For small $\delta$ (high rate).                |
+| **Gilbert-Varshamov** | Lower (Existence)    | $R \ge 1 - H_q(\delta)$                      | Greedy Algorithm / Probabilistic Method | The best general existence bound.              |
+| **Singleton** | Upper (Impossibility) | $R \le 1 - \delta$                           | Puncturing / Pigeonhole Principle      | Simple and alphabet-independent.               |
+| **Plotkin** | Upper (Impossibility) | $R \le 1 - (\frac{q}{q-1})\delta$             | Geometric Mapping / Inner Products     | For large $\delta$ (low rate), especially $\delta > 1-1/q$. |
 
 ## Conclusion
 
-This article has traversed the foundational combinatorial landscape of coding theory. We began by defining the q-ary entropy function, establishing it not merely as a formula but as the intrinsic language of asymptotic counting in q-ary spaces, directly tied to the volume of Hamming balls. With this powerful tool, we systematically charted the critical trade-off between a code's rate $R$ and its relative distance $\delta$.
+This report has traversed the foundational combinatorial landscape of coding theory. We began by defining the q-ary entropy function, establishing it not merely as a formula but as the intrinsic language of asymptotic counting in q-ary spaces, directly tied to the volume of Hamming balls. With this powerful tool, we systematically charted the critical trade-off between a code's rate $R$ and its relative distance $\delta$.
 
-The analysis of four fundamental bounds has delineated the boundaries
+The analysis of four fundamental bounds has delineated the boundaries of our knowledge. The Gilbert-Varshamov bound provides a robust proof of existence, guaranteeing a baseline level of performance that can be achieved. Conversely, the Hamming, Singleton, and Plotkin bounds establish a firm ceiling, defining a forbidden region of parameters that no code can attain. The Hamming bound, based on sphere-packing, is strongest for high-rate codes, while the Plotkin bound, derived from an elegant geometric argument, dominates for high-distance codes, revealing a sharp "phase transition" at a relative distance of $\delta = 1 - 1/q$.
+
+A significant gap persists between the best-known existence bounds and the tightest impossibility bounds. The precise location of the optimal trade-off curve, $\alpha_q(\delta)$, within this region of uncertainty remains one of the most important open problems in the field, driving ongoing research.
+
+While this chapter has focused on the existence and non-existence of codes, the methods have been largely non-constructive. The probabilistic proof of the GV bound, for instance, tells us that good codes are abundant but does not tell us how to find one efficiently. The next stage of our exploration will shift focus from the combinatorial to the algebraic, examining powerful techniques that yield explicit constructions of codes. These constructions, such as the celebrated Reed-Solomon codes, not only provide practical solutions but also meet some of the fundamental bounds we have established, thereby connecting the abstract limits of possibility with concrete algorithmic reality.
+
+---
+
+## Appendix: Detailed Mathematical Proofs
+
+This appendix provides the full mathematical derivations for the key results presented in the main body of the report.
+
+### A.1. Proof of Proposition: Asymptotic Bounds on the Volume of a Hamming Ball
+
+This proposition establishes the crucial link between the combinatorial quantity $\text{Vol}_q(pn, n)$ and the analytical function $H_q(p)$.
+
+#### Part (i) - The Upper Bound
+
+We want to prove $\text{Vol}_q(pn, n) \le q^{H_q(p)n}$. The proof leverages the binomial expansion. For $0 \le p \le 1 - 1/q$, we have:
+$$
+\begin{aligned}
+1 &= (p + (1-p))^n = \sum_{i=0}^{n} \binom{n}{i} p^i (1-p)^{n-i} \\
+&\ge \sum_{i=0}^{pn} \binom{n}{i} p^i (1-p)^{n-i} \\
+&= \sum_{i=0}^{pn} \binom{n}{i} (q-1)^i \left(\frac{p}{q-1}\right)^i (1-p)^{n-i} \\
+&= \sum_{i=0}^{pn} \binom{n}{i} (q-1)^i (1-p)^n \left(\frac{p}{(q-1)(1-p)}\right)^i
+\end{aligned}
+$$
+Since $p \le 1-1/q$, the term $\frac{p}{(q-1)(1-p)} \le 1$. As $i \le pn$, we can weaken the inequality by replacing the exponent $i$ with $pn$:
+$$
+\begin{aligned}
+1 &\ge \sum_{i=0}^{pn} \binom{n}{i} (q-1)^i (1-p)^n \left(\frac{p}{(q-1)(1-p)}\right)^{pn} \\
+&= \left(\sum_{i=0}^{pn} \binom{n}{i} (q-1)^i\right) (1-p)^{n-pn} \left(\frac{p}{q-1}\right)^{pn} \\
+&= \text{Vol}_q(pn, n) \cdot \frac{p^{pn}(1-p)^{n-pn}}{(q-1)^{pn}}
+\end{aligned}
+$$
+The final term is $q^{-H_q(p)n}$. Thus:
+$$ 1 \ge \text{Vol}_q(pn, n) \cdot q^{-H_q(p)n} $$
+Rearranging gives the desired bound:
+$$ \text{Vol}_q(pn, n) \le q^{H_q(p)n} $$
+
+#### Part (ii) - The Lower Bound
+
+We want to prove $\text{Vol}_q(pn, n) \ge q^{H_q(p)n - o(n)}$. The volume is at least its largest term, which is at $i=pn$:
+$$ \text{Vol}_q(pn, n) \ge \binom{n}{pn} (q - 1)^{pn} $$
+Using Stirling's approximation, $\binom{n}{k} \approx \frac{1}{\sqrt{2\pi n p (1-p)}} 2^{n H(p)}$ for the binary case, a similar analysis gives:
+$$ \binom{n}{pn} \ge q^{n(-p\log_q p - (1-p)\log_q(1-p))} \cdot q^{-o(n)} $$
+Substituting this back into the inequality for the volume:
+$$
+\begin{aligned}
+\text{Vol}_q(pn, n) &\ge (q-1)^{pn} \cdot q^{n(-p\log_q p - (1-p)\log_q(1-p))} \cdot q^{-o(n)} \\
+&= q^{pn \log_q(q-1)} \cdot q^{n(-p\log_q p - (1-p)\log_q(1-p))} \cdot q^{-o(n)} \\
+&= q^{n(p\log_q(q-1) - p\log_q p - (1-p)\log_q(1-p))} \cdot q^{-o(n)} \\
+&= q^{n H_q(p)} \cdot q^{-o(n)} = q^{H_q(p)n - o(n)}
+\end{aligned}
+$$
+This completes the proof.
+
+### A.2. Proof of Theorem: The Gilbert-Varshamov Bound for Linear Codes
+
+We prove the existence of a linear $[n, k, d]_q$ code for $k \approx n(1 - H_q(\delta))$ using the probabilistic method. We must show a generator matrix $G$ exists such that for every non-zero message $m$, $wt(mG) \ge d$.
+
+1.  **Setup:** Pick a $k \times n$ matrix $G$ uniformly at random. We bound the probability that there exists some non-zero $m$ such that $wt(mG) < d$.
+2.  **Union Bound:** We sum the failure probability over all $q^k - 1$ non-zero messages:
+    $$ P[\text{failure}] \le \sum_{m \neq 0} P[wt(mG) < d] $$
+3.  **Probability for a Single Message:** For a fixed non-zero $m$, the codeword $c=mG$ is a uniformly random vector. The probability that its weight is less than $d$ is the ratio of the volume of the ball of radius $d-1$ to the size of the space:
+    $$ P[wt(mG) < d] = \frac{\text{Vol}_q(d-1, n)}{q^n} $$
+4.  **Bounding the Probability:** Using the volume upper bound with $d=\delta n$:
+    $$ P[wt(mG) < d] \le \frac{q^{n H_q(\delta)}}{q^n} = q^{n(H_q(\delta) - 1)} $$
+5.  **Completing the Union Bound:**
+    $$ P[\text{failure}] \le (q^k - 1) \cdot q^{n(H_q(\delta) - 1)} < q^k \cdot q^{n(H_q(\delta) - 1)} $$
+    By choosing $k = n(1 - H_q(\delta) - \epsilon)$:
+    $$ P[\text{failure}] < q^{n(1 - H_q(\delta) - \epsilon)} \cdot q^{n(H_q(\delta) - 1)} = q^{-n\epsilon} $$
+6.  **Conclusion:** For any $\epsilon > 0$, this probability is less than 1. Therefore, a "good" matrix $G$ must exist. This argument also ensures $G$ has full rank.
+
+### A.3. Proof of Theorem: The Singleton Bound
+
+The theorem states that for any $(n, k, d)_q$ code, $k \le n - d + 1$.
+
+1.  **Setup:** Let $C$ be an $(n, k, d)_q$ code with $M = q^k$ codewords.
+2.  **Puncturing Operation:** Create a new set of strings $C'$ by keeping only the first $n - d + 1$ symbols of each codeword in $C$.
+3.  **Injectivity Argument:** All strings in $C'$ must be unique. If two distinct original codewords $c_i$ and $c_j$ became identical after puncturing, they must have agreed on their first $n-d+1$ symbols. This would mean they differed in at most the final $d-1$ symbols, so $\Delta(c_i, c_j) \le d-1$, which contradicts the code's minimum distance of $d$.
+4.  **Pigeonhole Principle:** Since all $M$ strings in $C'$ are unique, $M$ cannot be larger than the total number of possible strings of length $n-d+1$.
+    $$ M \le q^{n-d+1} $$
+5.  **Final Step:** Taking $\log_q$ of both sides gives $k \le n-d+1$. The asymptotic version $R \le 1-\delta$ follows by dividing by $n$ and letting $n \to \infty$.
+
+### A.4. Proof of Theorem: The Plotkin Bound
+
+The proof uses a geometric argument.
+
+**Stage 1: Mapping Lemma**
+There exists a map $f : [q]^n \to \mathbb{R}^{nq}$ that turns codewords into unit vectors such that the inner product is related to Hamming distance:
+$$ \langle f(c_1), f(c_2) \rangle = 1 - \left(\frac{q}{q - 1}\right) \frac{\Delta(c_1, c_2)}{n} $$
+The proof involves constructing a local map $\phi(i) = e_i - \bar{e}$ and concatenating these vectors with a normalization factor.
+
+**Stage 2: Geometric Lemma**
+For a set of $m$ vectors $\{v_i\}$ in $\mathbb{R}^N$:
+1.  If $\langle v_i, v_j \rangle \le 0$ for all $i \neq j$, then $m \le 2N$.
+2.  If the vectors are unit vectors and $\langle v_i, v_j \rangle \le -\epsilon < 0$ for all $i \neq j$, then $m \le 1 + 1/\epsilon$.
+The proof for (2) involves analyzing the squared norm of the sum of the vectors, $\| \sum v_i \|^2 \ge 0$.
+
+**Stage 3: Main Proof**
+1.  **Setup:** Map the $m$ codewords of $C$ to $m$ unit vectors $\{v_i\}$ in $\mathbb{R}^{nq}$ using the Mapping Lemma.
+2.  **Bound the Inner Product:** Since $\Delta(c_i, c_j) \ge d$:
+    $$ \langle v_i, v_j \rangle \le 1 - \left( \frac{q}{q - 1} \right) \frac{d}{n} $$
+3.  **Case 1: $d > (1 - 1/q)n$.** The inner product is negative. Let $\epsilon = (\frac{q}{q-1})\frac{d}{n} - 1 > 0$. From the Geometric Lemma (Part 2), $m \le 1+1/\epsilon$, which simplifies to:
+    $$ m \le \frac{qd}{qd - (q-1)n} $$
+4.  **Case 2: $d = (1 - 1/q)n$.** The inner product is $\le 0$. From the Geometric Lemma (Part 1), with $N=nq$:
+    $$ m \le 2N = 2nq $$
+This completes the proof.
