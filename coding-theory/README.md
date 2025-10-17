@@ -1,6 +1,6 @@
 # Coding Theory Learning 
 
-This sections is a comprehensive exploration of error-correcting codes! It contains a structured learning path that helps you from the fundamental concepts of coding theory to  list decoding algorithms. Each file builds upon the previous ones, creating a cohesive understanding of how we can reliably transmit information through noisy channels.
+This section is a comprehensive exploration of error-correcting codes! It contains a structured learning path that helps you understand the fundamental concepts of coding theory all the way up to  list decoding algorithms. Each file builds upon the previous ones, creating a cohesive understanding of how we can reliably transmit information through noisy channels.
 
 ##  Overview
 
